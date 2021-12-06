@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 1.0.1
+    echo 1.0.2
 }
 
 # (): string
@@ -128,10 +128,9 @@ osCheck() {
 
 # (): string
 uuid() {
-    local N B C='89ab'
-    
-    for (( N=0; N < 16; ++N ))
-    do
+    local B C='89ab'
+    local N=0
+    while [ "$N" -lt 16 ]; do
         B=$(( $RANDOM%256 ))
         
         case $N in
@@ -148,6 +147,7 @@ uuid() {
                 printf '%02x' $B
             ;;
         esac
+        N=$(( N + 1 ))
     done
     echo
 }
