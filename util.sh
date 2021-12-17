@@ -1,11 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
 # debug mode
 # verbose=3
+# Author: Awada.Z
 
 # (): string
 version() {
-    echo 1.0.2
+    echo 1.0.3
 }
 
 # (): string
@@ -191,9 +192,22 @@ password() {
     LC_ALL=C tr -dc $range </dev/urandom | head -c $length ; echo
 }
 
+# (string): string
+## sanitize to cmdline
+sanitizeC() {
+    local string=$@
+    echo "'"${string//\'/\'\\\'\'}"'"
+}
+
 # (string, segment): bool
 stringContains() {
     if $(echo "$1" | grep -q $2); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+}
+
+# (string, search, replace): string
+stringReplace() {
+    local string=$1 search=$2 replace=$3
+    echo "${string//$search/$replace}"
 }
 
 # (string, segment): bool
