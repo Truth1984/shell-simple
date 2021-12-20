@@ -259,6 +259,11 @@ dockerfile() {
             TINI_VERSION="v0.19.0"
             curl https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -o /tini
             chmod +x /tini
+            echo "/tini --" > entrypoint.sh
+            chmod 777 entrypoint.sh
+        else
+            echo "/bin/sh -c" > entrypoint.sh
+            chmod 777 entrypoint.sh
         fi;
     }
 
