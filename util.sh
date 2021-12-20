@@ -253,17 +253,17 @@ dockerfile() {
             TINI_VERSION="v0.19.0"
             curl https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -o /tini
             chmod +x /tini
-            echo "/tini --" > entrypoint.sh
+            echo "/tini -- " > entrypoint.sh
             chmod 777 entrypoint.sh
             echo "echo started, powered by tini" > entrycmd.sh
             chmod 777 entrycmd.sh
         elif $(arrayHas supervisor $@); then
-            echo "supervisord" > entrypoint.sh
+            echo "supervisord " > entrypoint.sh
             chmod 777 entrypoint.sh
-            echo "supervisord" > entrycmd.sh
+            echo "supervisord -c /etc/supervisord.conf" > entrycmd.sh
             chmod 777 entrycmd.sh
         else
-            echo "echo started" > entrypoint.sh
+            echo "/bin/sh -c " > entrypoint.sh
             chmod 777 entrypoint.sh
             echo "echo started" > entrycmd.sh
             chmod 777 entrycmd.sh
@@ -273,10 +273,10 @@ dockerfile() {
     if $(osCheck yum); then
         yum install -y epel-release nano net-tools curl redhat-lsb-core $arr
         _postinstall
-        yum clean all 
     fi;
 
     if $(osCheck apk); then
+        apk update
         apk add --no-cache nano curl $arr
         _postinstall
     fi;
@@ -288,6 +288,20 @@ dockerfile() {
         apt-get -qq clean && rm -rf /var/lib/apt/lists/*
     fi;
     
+}
+# ()
+dockerfileClean () {
+    if $(osCheck yum); then
+        yum clean all 
+    fi;
+
+    if $(osCheck apk); then 
+        apk cache clean
+    fi;
+
+    if $(osCheck apt); then
+        apt-get -qq clean && rm -rf /var/lib/apt/lists/*
+    fi;
 }
 
 setup() {
