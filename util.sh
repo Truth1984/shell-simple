@@ -262,6 +262,11 @@ dockerfile() {
             chmod 777 entrypoint.sh
             echo "supervisord" > entrycmd.sh
             chmod 777 entrycmd.sh
+        else
+            echo "echo started" > entrypoint.sh
+            chmod 777 entrypoint.sh
+            echo "echo started" > entrycmd.sh
+            chmod 777 entrycmd.sh
         fi;
     }
 
