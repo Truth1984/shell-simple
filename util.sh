@@ -245,7 +245,7 @@ dockerfile() {
 
     setup
 
-    local arr="$@"
+    local arr="${@:1:$#}"
     if $(arrayHas tini $@); then arr=$(arrayDelete tini $arr); fi;
 
     _postinstall() {
@@ -326,7 +326,7 @@ setup() {
     fi;
     
     cp $(_SCRIPTPATH)/util.sh $storageDir
-    source $profile
+    if $(hasCmd source); then source $profile; fi;
 }
 
 # (): string[]
