@@ -215,6 +215,25 @@ stringEqual() {
     if [ "$1" == "$2" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
 }
 
+# (element, array): bool
+arrayHas() {
+    local search=$1 array=${@:2:$#}
+    for i in $array; do
+        if [ "$i" == "$search" ]; then return $(_RC 0 $@); fi;
+    done;
+    return $(_RC 1 $@);
+}
+
+# (element, array): array
+arrayDelete() {
+    local search=$1 array=${@:2:$#}
+    result=""
+    for i in $array; do
+        if ! [ "$i" == "$search" ]; then result=$result" "$i; fi;
+    done;
+    _EC "$result"
+}
+
 # (name, directory="."): string[]
 searchFile() {
     local base=${!2:="."}
@@ -226,21 +245,38 @@ dockerfile() {
 
     setup
 
+    local arr="$@" tini=1
+    
+    if $(arrayHas tini); then 
+        tini=0
+        arr=$(arrayDelete tini $arr)
+    else
+        arr=$arr" supervisor"
+    fi; 
+
+    _istTini() {
+        if [ $tini -eq 0 ]; then
+            TINI_VERSION="v0.19.0"
+            curl https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -o /tini
+            chmod +x /tini
+        fi;
+    }
+
     if $(osCheck yum); then
-        yum install -y epel-release nano net-tools curl redhat-lsb-core supervisor
-        yum install -y ${@}
+        yum install -y epel-release nano net-tools curl redhat-lsb-core $arr
+        _istTini
         yum clean all 
     fi;
 
     if $(osCheck apk); then
-        apk add --no-cache nano curl supervisor
-        apk add --no-cache ${@}
+        apk add --no-cache nano curl $arr
+        _istTini
     fi;
 
     if $(osCheck apt); then
         apt-get -qq update  
-        apt-get -qq --no-install-recommends install nano curl wget net-tools supervisor 
-        apt-get -qq --no-install-recommends install ${@}
+        apt-get -qq --no-install-recommends install nano curl net-tools $arr
+        _istTini
         apt-get -qq clean && rm -rf /var/lib/apt/lists/*
     fi;
     
