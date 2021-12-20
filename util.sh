@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # debug mode
 # verbose=3
@@ -21,9 +21,9 @@ _UTILDATE() {
 # (number): number
 # return callback, set verbose value to enable
 _RC() {
-    if [ "$verbose" == 1 ]; then
+    if [ "$verbose" = 1 ]; then
         echo L1, RC, $1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\> >&2
-    elif [ "$verbose" == 2 ] || [ "$verbose" == 3 ]  ; then
+    elif [ "$verbose" = 2 ] || [ "$verbose" = 3 ]  ; then
         echo L$verbose, RC, $1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\) >&2
     fi;
     return $1
@@ -32,9 +32,9 @@ _RC() {
 # (string): number
 # error callback, set verbose value to enable
 _ERC() {
-    if [ "$verbose" == 1 ]; then
+    if [ "$verbose" = 1 ]; then
         echo L1, ERC, 1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, "<x "$1" x>" >&2
-    elif [ "$verbose" == 2 ] || [ "$verbose" == 3 ]  ; then
+    elif [ "$verbose" = 2 ] || [ "$verbose" = 3 ]  ; then
         echo L$verbose, ERC, 1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), "<x "$1" x>" >&2
     fi;
     return 1
@@ -43,11 +43,11 @@ _ERC() {
 # (string): string
 # echo callback
 _EC() {
-    if [ "$verbose" == 1 ]; then
+    if [ "$verbose" = 1 ]; then
         echo L1, EC, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\> >&2
-    elif [ "$verbose" == 2 ]; then
+    elif [ "$verbose" = 2 ]; then
         echo L2, EC, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\) >&2
-    elif [ "$verbose" == 3 ]; then
+    elif [ "$verbose" = 3 ]; then
         echo L3, EC, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), \"\["$1"\]\" >&2
     fi;
     echo $1
@@ -120,7 +120,7 @@ osCheck() {
             if $(echo "$OSTYPE" | grep -q msys || echo "$OSTYPE" | grep -q cygwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
         ;;
         *)
-            if [ "$OSTYPE" == "$1" ]; then return $(_RC 0 $@);
+            if [ "$OSTYPE" = "$1" ]; then return $(_RC 0 $@);
             else return $(_ERC "Error: not listed, this is actual ostype: $OSTYPE");
             fi;
         ;;
@@ -212,14 +212,14 @@ stringReplace() {
 
 # (string, segment): bool
 stringEqual() {
-    if [ "$1" == "$2" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    if [ "$1" = "$2" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
 }
 
 # (element, array): bool
 arrayHas() {
     local search=$1 array=${@:2:$#}
     for i in $array; do
-        if [ "$i" == "$search" ]; then return $(_RC 0 $@); fi;
+        if [ "$i" = "$search" ]; then return $(_RC 0 $@); fi;
     done;
     return $(_RC 1 $@);
 }
@@ -229,7 +229,7 @@ arrayDelete() {
     local search=$1 array=${@:2:$#}
     result=""
     for i in $array; do
-        if ! [ "$i" == "$search" ]; then result=$result" "$i; fi;
+        if ! [ "$i" = "$search" ]; then result=$result" "$i; fi;
     done;
     _EC "$result"
 }
