@@ -245,43 +245,41 @@ dockerfile() {
 
     setup
 
-    local arr="$@" tini=1
-    
-    if $(arrayHas tini); then 
-        tini=0
-        arr=$(arrayDelete tini $arr)
-    else
-        arr=$arr" supervisor"
-    fi; 
+    local arr="$@"
+    if $(arrayHas tini $@); then arr=$(arrayDelete tini $arr); fi;
 
-    _istTini() {
-        if [ $tini -eq 0 ]; then
+    _postinstall() {
+        if $(arrayHas tini $@); then 
             TINI_VERSION="v0.19.0"
             curl https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -o /tini
             chmod +x /tini
             echo "/tini --" > entrypoint.sh
             chmod 777 entrypoint.sh
-        else
-            echo "/bin/sh -c" > entrypoint.sh
+            echo "echo started, powered by tini" > entrycmd.sh
+            chmod 777 entrycmd.sh
+        elif $(arrayHas supervisor $@); then
+            echo "supervisord" > entrypoint.sh
             chmod 777 entrypoint.sh
+            echo "supervisord" > entrycmd.sh
+            chmod 777 entrycmd.sh
         fi;
     }
 
     if $(osCheck yum); then
         yum install -y epel-release nano net-tools curl redhat-lsb-core $arr
-        _istTini
+        _postinstall
         yum clean all 
     fi;
 
     if $(osCheck apk); then
         apk add --no-cache nano curl $arr
-        _istTini
+        _postinstall
     fi;
 
     if $(osCheck apt); then
         apt-get -qq update  
         apt-get -qq --no-install-recommends install nano curl net-tools $arr
-        _istTini
+        _postinstall
         apt-get -qq clean && rm -rf /var/lib/apt/lists/*
     fi;
     
