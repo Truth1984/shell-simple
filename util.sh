@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # debug mode
 # verbose=3
@@ -245,50 +245,44 @@ dockerfile() {
 
     setup
 
-    local arr="${@:1:$#}"
+    local arr="$@"
     if $(arrayHas tini $@); then arr=$(arrayDelete tini $arr); fi;
 
     _postinstall() {
-        if $(arrayHas tini $@); then 
-            TINI_VERSION="v0.19.0"
-            curl https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -o /tini
-            chmod +x /tini
-            echo "/tini -- " > entrypoint.sh
+        if $(arrayHas supervisor $@); then
+            printf '#!/bin/bash\nexec $@' > entrypoint.sh
             chmod 777 entrypoint.sh
-            echo "echo started, powered by tini" > entrycmd.sh
-            chmod 777 entrycmd.sh
-        elif $(arrayHas supervisor $@); then
-            echo "supervisord " > entrypoint.sh
-            chmod 777 entrypoint.sh
-            echo "supervisord -c /etc/supervisord.conf" > entrycmd.sh
+            printf "#!/bin/bash\nsupervisord -c /etc/supervisord.conf" > entrycmd.sh
             chmod 777 entrycmd.sh
         else
-            echo "/bin/sh -c " > entrypoint.sh
+            printf '#!/bin/bash\nexec $@' > entrypoint.sh
             chmod 777 entrypoint.sh
-            echo "echo started" > entrycmd.sh
+            printf "#!/bin/bash\necho started" > entrycmd.sh
             chmod 777 entrycmd.sh
         fi;
     }
 
     if $(osCheck yum); then
-        yum install -y epel-release nano net-tools curl redhat-lsb-core $arr
-        _postinstall
+        yum install -y epel-release nano net-tools redhat-lsb-core 
+        yum install -y curl $arr
+        _postinstall $@
     fi;
 
     if $(osCheck apk); then
         apk update
         apk add --no-cache nano curl $arr
-        _postinstall
+        _postinstall $@
     fi;
 
     if $(osCheck apt); then
         apt-get -qq update  
         apt-get -qq --no-install-recommends install nano curl net-tools $arr
-        _postinstall
+        _postinstall $@
         apt-get -qq clean && rm -rf /var/lib/apt/lists/*
     fi;
     
 }
+
 # ()
 dockerfileClean () {
     if $(osCheck yum); then
@@ -304,6 +298,26 @@ dockerfileClean () {
     fi;
 }
 
+_setupBash() {
+    if $(hasCmd bash); then
+        return 0
+    fi;
+
+    if $(osCheck yum); then
+        yum install -y bash
+    fi;
+
+    if $(osCheck apk); then 
+        apk add bash
+    fi;
+
+    if $(osCheck apt); then
+        apt-get -qq update
+        apt-get -qq install bash
+    fi;
+}
+
+# call setup bash beforehand
 setup() {
     profile="$HOME/.bashrc"
     storageDir="$HOME/.application/bash_util/"
@@ -326,7 +340,7 @@ setup() {
     fi;
     
     cp $(_SCRIPTPATH)/util.sh $storageDir
-    if $(hasCmd source); then source $profile; fi;
+    source $profile
 }
 
 # (): string[]
