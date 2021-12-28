@@ -348,7 +348,7 @@ update(){
     local scriptLoc=$storageDir"/util.sh" 
     local updateUrl="https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh"
     if $(hasCmd curl); then
-        curl $updateUrl -o $scriptLoc
+        curl $updateUrl > $scriptLoc
     elif $(hasCmd wget); then
         wget -O $scriptLoc $updateUrl 
     fi;
