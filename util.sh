@@ -6,8 +6,10 @@
 
 # (): string
 version() {
-    echo 1.0.3
+    echo 1.0.4
 }
+
+storageDir="$HOME/.application/bash_util"
 
 # (): string
 _SCRIPTPATH() {
@@ -320,7 +322,6 @@ _setupBash() {
 # call setup bash beforehand
 setup() {
     profile="$HOME/.bashrc"
-    storageDir="$HOME/.application/bash_util/"
     
     if $(osCheck mac); then profile="$HOME/.bash_profile"; fi;
     
@@ -341,6 +342,19 @@ setup() {
     
     cp $(_SCRIPTPATH)/util.sh $storageDir
     source $profile
+}
+
+update(){
+    local scriptLoc=$storageDir"/util.sh" 
+    local updateUrl="https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh"
+    if $(hasCmd curl); then
+        curl $updateUrl -o $scriptLoc
+    elif $(hasCmd wget); then
+        wget -O $scriptLoc $updateUrl 
+    fi;
+    
+    chmod 777 $scriptLoc
+    $scriptLoc setup
 }
 
 # (): string[]
