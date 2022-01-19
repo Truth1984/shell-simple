@@ -6,7 +6,7 @@
 
 # (): string
 version() {
-    echo 1.0.4
+    echo 1.0.5
 }
 
 storageDir="$HOME/.application/bash_util"
@@ -362,6 +362,7 @@ setup() {
 
 update(){
     local scriptLoc=$storageDir"/util.sh" 
+    mkdir -p $storageDir
     local updateUrl="https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh"
     if $(hasCmd curl); then
         curl $updateUrl > $scriptLoc
