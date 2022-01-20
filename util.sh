@@ -6,7 +6,7 @@
 
 # (): string
 version() {
-    echo 1.0.4
+    echo 1.0.5
 }
 
 storageDir="$HOME/.application/bash_util"
@@ -319,6 +319,22 @@ _setupBash() {
     fi;
 }
 
+# (url, data)
+post() {
+    local url=$1 data=$2
+    if $(hasCmd wget); then wget -qO- --header "Content-Type: application/json" --post-data "$data" $url;
+        elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: application/json"  -d "$data" "$url";
+    fi;
+}
+
+# (url)
+get() {
+    local url=$1
+    if $(hasCmd wget); then wget -qO- "$url";
+        elif $(hasCmd curl); then curl -s -X GET "$url";
+    fi;
+}
+
 # call setup bash beforehand
 setup() {
     profile="$HOME/.bashrc"
@@ -347,6 +363,7 @@ setup() {
 
 update(){
     local scriptLoc=$storageDir"/util.sh" 
+    mkdir -p $storageDir
     local updateUrl="https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh"
     if $(hasCmd curl); then
         curl $updateUrl > $scriptLoc
