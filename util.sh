@@ -375,6 +375,14 @@ update(){
     $scriptLoc setup
 }
 
+edit(){
+    if $(hasCmd nano); then
+        nano $(_SCRIPTPATH)/util.sh
+    elif $(hasCmd vi); then
+        vi $(_SCRIPTPATH)/util.sh
+    fi;
+}
+
 # (): string[]
 help(){
     compgen -A function
