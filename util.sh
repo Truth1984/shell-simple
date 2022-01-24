@@ -335,6 +335,16 @@ post() {
     echo ""
 }
 
+# (url, data)
+# post string
+posts() {
+    local url=$1 data=$2
+    if $(hasCmd wget); then wget -qO- --header "Content-Type: text/plain" --post-data "$data" $url;
+        elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: text/plain" -d "$data" "$url";
+    fi;
+    echo ""
+}
+
 # (url)
 get() {
     local url=$1
