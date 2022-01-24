@@ -330,7 +330,7 @@ _setupBash() {
 post() {
     local url=$1 data=$2
     if $(hasCmd wget); then wget -qO- --header "Content-Type: application/json" --post-data "$data" $url;
-        elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: application/json"  -d "$data" "$url";
+        elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: application/json" -d "$data" "$url";
     fi;
     echo ""
 }
@@ -359,6 +359,7 @@ download() {
         else 
             curl -O $url; 
         fi;
+    fi;
 }
 
 # call setup bash beforehand
