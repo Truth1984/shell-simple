@@ -6,7 +6,7 @@
 
 # (): string
 version() {
-    echo 1.0.5
+    echo 1.0.6
 }
 
 storageDir="$HOME/.application/bash_util"
@@ -18,6 +18,13 @@ _SCRIPTPATH() {
 
 _UTILDATE() {
     echo $(date +"%Y-%m-%dT%H:%M:%S%z")
+}
+
+_PROFILE() {
+    profile="$HOME/.bashrc"
+    if $(osCheck mac); then profile="$HOME/.bash_profile"; fi;
+    if $(osCheck apk); then profile="$HOME/.profile"; fi;
+    echo $profile
 }
 
 # (number): number
@@ -325,6 +332,7 @@ post() {
     if $(hasCmd wget); then wget -qO- --header "Content-Type: application/json" --post-data "$data" $url;
         elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: application/json"  -d "$data" "$url";
     fi;
+    echo ""
 }
 
 # (url)
@@ -333,14 +341,29 @@ get() {
     if $(hasCmd wget); then wget -qO- "$url";
         elif $(hasCmd curl); then curl -s -X GET "$url";
     fi;
+    echo ""
+}
+
+# (url, outputFileName?)
+download() {
+    local url=$1 filename=$2
+    if $(hasCmd wget); then 
+        if $(hasValue $filename); then 
+            wget -O $filename $url;
+        else 
+            wget $url; 
+        fi;
+    elif $(hasCmd curl); then
+        if $(hasValue $filename); then 
+            curl $url --output $filename;
+        else 
+            curl -O $url; 
+        fi;
 }
 
 # call setup bash beforehand
 setup() {
-    profile="$HOME/.bashrc"
-    
-    if $(osCheck mac); then profile="$HOME/.bash_profile"; fi;
-    if $(osCheck apk); then profile="$HOME/.profile"; fi;
+    profile="$(_PROFILE)"
     
     if ! $(hasFile "$storageDir/util.sh");  then
         mkdir -p $storageDir
@@ -362,7 +385,7 @@ setup() {
 }
 
 update(){
-    local scriptLoc=$storageDir"/util.sh" 
+    local scriptLoc="$storageDir/util.sh" 
     mkdir -p $storageDir
     local updateUrl="https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh"
     if $(hasCmd curl); then
