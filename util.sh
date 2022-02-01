@@ -23,7 +23,6 @@ _UTILDATE() {
 _PROFILE() {
     profile="$HOME/.bashrc"
     if $(osCheck mac); then profile="$HOME/.bash_profile"; fi;
-    if $(osCheck apk); then profile="$HOME/.profile"; fi;
     echo $profile
 }
 
