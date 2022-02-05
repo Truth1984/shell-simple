@@ -257,17 +257,20 @@ dockerfile() {
     if $(arrayHas tini $@); then arr=$(arrayDelete tini $arr); fi;
 
     _postinstall() {
-        if $(arrayHas supervisor $@); then
-            printf '#!/bin/bash\nexec $@' > entrypoint.sh
-            chmod 777 entrypoint.sh
-            printf "#!/bin/bash\nsupervisord -c /etc/supervisord.conf" > entrycmd.sh
-            chmod 777 entrycmd.sh
+        if $(osCheck apk); then
+            printf '#!/bin/bash\n/sbin/tini -s -- $@' > entrypoint.sh
         else
             printf '#!/bin/bash\nexec $@' > entrypoint.sh
-            chmod 777 entrypoint.sh
-            printf "#!/bin/bash\necho started" > entrycmd.sh
-            chmod 777 entrycmd.sh
         fi;
+
+        if $(arrayHas supervisor $@); then
+            printf "#!/bin/bash\nsupervisord -c /etc/supervisord.conf" > entrycmd.sh
+        else
+            printf "#!/bin/bash\necho started" > entrycmd.sh
+        fi;
+
+        chmod 777 entrypoint.sh
+        chmod 777 entrycmd.sh
     }
 
     if $(osCheck yum); then
@@ -278,7 +281,7 @@ dockerfile() {
 
     if $(osCheck apk); then
         apk update
-        apk add --no-cache nano curl $arr
+        apk add --no-cache nano curl tini $arr
         _postinstall $@
     fi;
 
