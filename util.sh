@@ -86,6 +86,13 @@ hasEnv() {
     if ! [[ -z ${!1+set} ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
 }
 
+# (path, content): bool
+hasContent() {
+    local path=$1 content=$2
+    if ! $(hasFile $path); then return $(_ERC "$path : file not found"); fi;
+    if $(cat $1 | grep -q $2); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+}
+
 # (value): bool
 hasValue() {
     if ! [[ -z $1 ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
