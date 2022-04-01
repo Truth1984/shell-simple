@@ -6,10 +6,12 @@
 
 # (): string
 version() {
-    echo 1.0.6
+    echo 1.0.7
 }
 
 storageDir="$HOME/.application/bash_util"
+# set verbose=0 to suppress logging
+verbose=3
 
 # (): string
 _SCRIPTPATH() {
@@ -397,10 +399,14 @@ setup() {
         echo 'function cdb { _oldback=$_back && _back=$(pwd) && cd $_oldback && ls -a; }' >> $HOME/.bash_mine
         echo 'export no_proxy=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16' >> $HOME/.bash_mine
         echo 'export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16' >> $HOME/.bash_mine
+    fi;
+
+    source $HOME/.bash_mine
+    if ! $(hasCmd u2); then
         echo "alias u2=$storageDir/util.sh" >> $HOME/.bash_mine
     fi;
     
-    cp $(_SCRIPTPATH)/util.sh $storageDir
+    mv $(_SCRIPTPATH)/util.sh $storageDir
     source $profile
 }
 
