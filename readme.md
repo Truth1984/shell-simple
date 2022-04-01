@@ -10,4 +10,4 @@ personalized shell sciprt
 
 ## quick setup
 
-`curl "https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh" -o util.sh && ./util.sh setup`
+`curl "https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh" -o util.sh && chmod 777 util.sh && ./util.sh setup`
