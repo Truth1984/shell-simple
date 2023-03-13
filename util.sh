@@ -1,4 +1,5 @@
 #!/bin/bash
+#!/bin/sh
 
 # debug mode
 # verbose=3
@@ -6,7 +7,7 @@
 
 # (): string
 version() {
-    echo 1.0.7
+    echo 1.0.8
 }
 
 storageDir="$HOME/.application/bash_util"
@@ -115,23 +116,26 @@ osCheck() {
         mac | darwin | macos | apple | osx | brew)
             if $(hasCmd uname && uname | grep -q Darwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
         ;;
-        redhat | dnf | rhel)
-            if $(hasCmd dnf); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-        ;;
         centos | yum)
             if $(hasCmd yum); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
         ;;
         alpine | apk)
             if $(hasCmd apk); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
         ;;
-        deb | debian | dpkg)
+        debian | deb | dpkg)
             if $(hasCmd dpkg); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
         ;;
         ubuntu | apt)
             if $(hasCmd apt-get); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
         ;;
+        arch | archlinux | pacman )
+            if $(hasCmd pacman); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+        ;;
+                redhat | dnf | rhel)
+            if $(hasCmd dnf); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+        ;;
         linux)
-            if $(echo "$OSTYPE" | grep -q Linux); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+            if $(hasCmd uname) && uname | grep -q Linux; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
         ;;
         win | windows)
             if $(echo "$OSTYPE" | grep -q msys || echo "$OSTYPE" | grep -q cygwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
@@ -176,6 +180,7 @@ pkgManager() {
     elif $(hasCmd brew); then _EC "brew";
     elif $(hasCmd apt); then _EC "apt";
     elif $(hasCmd apk); then _EC "apk";
+    elif $(hasCmd pacman); then _EC "pacman";
     elif $(hasCmd dnf); then _EC "dnf";
     elif $(hasCmd winget); then _EC "winget";
     elif $(hasCmd choco); then _EC "choco";
@@ -191,6 +196,7 @@ install() {
     elif $(stringEqual $m brew); then eval $(_EC "HOMEBREW_NO_AUTO_UPDATE=1 brew install $@");
     elif $(stringEqual $m apt); then eval $(_EC "$prefix apt-get install -y $@");
     elif $(stringEqual $m apk); then eval $(_EC "$prefix apk add $@");
+    elif $(stringEqual $m pacman); then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
     elif $(stringEqual $m dnf); then eval $(_EC "$prefix dnf install -y $@");
     elif $(stringEqual $m winget); then eval $(_EC "winget --accept-package-agreements --accept-source-agreements install $@");
     elif $(stringEqual $m choco); then eval $(_EC "choco install -y $@");
@@ -334,6 +340,11 @@ _setupBash() {
     if $(osCheck apt); then
         apt-get -qq update
         apt-get -qq install bash
+    fi;
+
+    if $(osCheck arch); then
+        pacman -Syu --noconfirm
+        pacman -Syu --noconfirm bash
     fi;
 }
 

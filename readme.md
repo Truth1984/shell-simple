@@ -10,4 +10,6 @@ personalized shell sciprt
 
 ## quick setup
 
-`curl "https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh" -o util.sh && chmod 777 util.sh && ./util.sh setup`
+````sh
+ssurl="https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup```
+````
