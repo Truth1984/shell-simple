@@ -154,7 +154,7 @@ uuid() {
     local N=0
     while [ "$N" -lt 16 ]; do
         B=$(( $RANDOM%256 ))
-        
+
         case $N in
             6)
                 printf '4%x' $(( B%16 ))
@@ -191,7 +191,7 @@ pkgManager() {
 install() {
     local prefix="" m=$(pkgManager)
     if $(osCheck linux) && $(hasCmd sudo); then prefix=$prefix."sudo "; fi;
-    
+
     if $(stringEqual $m yum); then eval $(_EC "$prefix yum install -y $@");
     elif $(stringEqual $m brew); then eval $(_EC "HOMEBREW_NO_AUTO_UPDATE=1 brew install $@");
     elif $(stringEqual $m apt); then eval $(_EC "$prefix apt-get install -y $@");
@@ -301,21 +301,21 @@ dockerfile() {
     fi;
 
     if $(osCheck apt); then
-        apt-get -qq update  
+        apt-get -qq update
         apt-get -qq --no-install-recommends install nano curl net-tools $arr
         _postinstall $@
         apt-get -qq clean && rm -rf /var/lib/apt/lists/*
     fi;
-    
+
 }
 
 # ()
 dockerfileClean () {
     if $(osCheck yum); then
-        yum clean all 
+        yum clean all
     fi;
 
-    if $(osCheck apk); then 
+    if $(osCheck apk); then
         apk cache clean
     fi;
 
@@ -333,7 +333,7 @@ _setupBash() {
         yum install -y bash
     fi;
 
-    if $(osCheck apk); then 
+    if $(osCheck apk); then
         apk add bash
     fi;
 
@@ -379,17 +379,17 @@ get() {
 # (url, outputFileName?)
 download() {
     local url=$1 filename=$2
-    if $(hasCmd wget); then 
-        if $(hasValue $filename); then 
+    if $(hasCmd wget); then
+        if $(hasValue $filename); then
             wget -O $filename $url;
-        else 
+        else
             wget $url; 
         fi;
     elif $(hasCmd curl); then
-        if $(hasValue $filename); then 
+        if $(hasValue $filename); then
             curl $url --output $filename;
-        else 
-            curl -O $url; 
+        else
+            curl -O $url;
         fi;
     fi;
 }
@@ -397,12 +397,12 @@ download() {
 # call setup bash beforehand
 setup() {
     profile="$(_PROFILE)"
-    
-    if ! $(hasFile "$storageDir/util.sh");  then
+
+    if ! $(hasFile "$storageDir/util.sh"); then
         mkdir -p $storageDir
         cp $(_SCRIPTPATH)/util.sh $storageDir
     fi;
-    
+
     if ! $(hasFile "$HOME/.bash_mine"); then
         touch $HOME/.bash_mine
         echo 'source $HOME/.bash_mine' >> $profile
@@ -416,21 +416,21 @@ setup() {
     if ! $(hasCmd u2); then
         echo "alias u2=$storageDir/util.sh" >> $HOME/.bash_mine
     fi;
-    
+
     mv $(_SCRIPTPATH)/util.sh $storageDir
     source $profile
 }
 
 update(){
-    local scriptLoc="$storageDir/util.sh" 
+    local scriptLoc="$storageDir/util.sh"
     mkdir -p $storageDir
     local updateUrl="https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh"
     if $(hasCmd curl); then
         curl $updateUrl > $scriptLoc
     elif $(hasCmd wget); then
-        wget -O $scriptLoc $updateUrl 
+        wget -O $scriptLoc $updateUrl
     fi;
-    
+
     chmod 777 $scriptLoc
     $scriptLoc setup
 }
