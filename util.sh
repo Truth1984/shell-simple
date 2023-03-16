@@ -7,7 +7,7 @@
 
 # (): string
 version() {
-    echo 1.0.8
+    echo 1.0.9
 }
 
 storageDir="$HOME/.application/bash_util"
@@ -64,6 +64,18 @@ _EC() {
     echo $1
 }
 
+# (string): string
+# echo debug
+_ED() {
+    if [ "$verbose" = 1 ]; then
+        echo L1, ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\> >&2
+    elif [ "$verbose" = 2 ]; then
+        echo L2, ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\) >&2
+    elif [ "$verbose" = 3 ]; then
+        echo L3, ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), \"\["$1"\]\" >&2
+    fi;
+}
+
 # (item1, item2): bool
 equal() {
     if [ $1 = $2 ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
@@ -108,6 +120,46 @@ envGet() {
 
 length() {
     if [ ${#1} -gt ${#1[*]} ]; then _EC ${#1}; else _EC ${#1[@]}; fi;
+}
+
+# ():string
+ip_local() {
+    local ethernet wifi
+
+    if $(osCheck linux); then
+
+        ethernet=$(ip addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+        wifi=$(ip addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+        if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
+        elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
+        else _ED ip && _EC $(ip route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
+    
+    elif $(osCheck mac);then
+
+        ethernet=$(ipconfig getifaddr en1)
+        wifi=$(ipconfig getifaddr en0)
+        if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet; 
+        else _ED wifi && _EC $wifi; fi;
+
+    fi;
+}
+
+# (route_number):string
+ip_public() {
+    case $1 in
+        2)
+            _EC $(get ipinfo.io/ip)
+        ;;
+        3)
+            _EC $(get api.ipify.org)
+        ;;
+        4)
+            _EC $(get ifconfig.me)
+        ;;
+        *)
+            _EC $(get ident.me)
+        ;;
+    esac
 }
 
 # (osTrait): bool
