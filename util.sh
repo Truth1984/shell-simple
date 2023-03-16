@@ -1,18 +1,18 @@
 #!/bin/bash
 #!/bin/sh
 
-# debug mode
-# verbose=3
 # Author: Awada.Z
 
 # (): string
 version() {
-    echo 1.0.9
+    echo 1.1.0
 }
 
 storageDir="$HOME/.application/bash_util"
-# set verbose=0 to suppress logging
-verbose=3
+
+# (): number
+# default verbose=3, set verbose=0 to suppress logging
+verbose=${verbose:-3}
 
 # (): string
 _SCRIPTPATH() {
@@ -183,7 +183,7 @@ osCheck() {
         arch | archlinux | pacman )
             if $(hasCmd pacman); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
         ;;
-                redhat | dnf | rhel)
+        redhat | dnf | rhel)
             if $(hasCmd dnf); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
         ;;
         linux)
