@@ -128,12 +128,16 @@ ip_local() {
 
     if $(osCheck linux); then
 
-        ethernet=$(ip addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
-        wifi=$(ip addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
-        if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
-        elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
-        else _ED ip && _EC $(ip route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
-    
+        if $(hasCmd ip); then
+            ethernet=$(ip addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+            wifi=$(ip addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+            if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
+            elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
+            else _ED ip && _EC $(ip route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
+        elif $(hasCmd hostname); then
+            _ED hostname && _EC $(hostname -i)
+        fi;
+        
     elif $(osCheck mac);then
 
         ethernet=$(ipconfig getifaddr en1)
@@ -373,30 +377,6 @@ dockerfileClean () {
 
     if $(osCheck apt); then
         apt-get -qq clean && rm -rf /var/lib/apt/lists/*
-    fi;
-}
-
-_setupBash() {
-    if $(hasCmd bash); then
-        return 0
-    fi;
-
-    if $(osCheck yum); then
-        yum install -y bash
-    fi;
-
-    if $(osCheck apk); then
-        apk add bash
-    fi;
-
-    if $(osCheck apt); then
-        apt-get -qq update
-        apt-get -qq install bash
-    fi;
-
-    if $(osCheck arch); then
-        pacman -Syu --noconfirm
-        pacman -Syu --noconfirm bash
     fi;
 }
 

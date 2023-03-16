@@ -1,7 +1,7 @@
 #!/bin/bash
 
 APT="debian:stable-slim"
-YUM="almalinux:minimal"
+YUM="oraclelinux:9"
 APK="alpine:edge"
 APK2="alpine-bash"
 verbose=0
