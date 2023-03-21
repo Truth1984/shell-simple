@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 1.1.0
+    echo 1.1.1
 }
 
 storageDir="$HOME/.application/bash_util"
@@ -243,6 +243,23 @@ pkgManager() {
     fi;
 }
 
+# (...?pkgname)
+## package update, or general update
+upgrade() {
+    local prefix="" m=$(pkgManager)
+    if $(osCheck linux) && $(hasCmd sudo); then prefix=$prefix."sudo "; fi;
+
+    if $(stringEqual $m yum); then eval $(_EC "$prefix yum update -y $@");
+    elif $(stringEqual $m brew); then eval $(_EC "brew install $@");
+    elif $(stringEqual $m apt); then eval $(_EC "$prefix apt-get upgrade -y $@");
+    elif $(stringEqual $m apk); then eval $(_EC "$prefix apk upgrade $@");
+    elif $(stringEqual $m pacman); then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
+    elif $(stringEqual $m dnf); then eval $(_EC "$prefix dnf upgrade -y $@");
+    elif $(stringEqual $m winget); then eval $(_EC "winget --accept-package-agreements --accept-source-agreements upgrade $@");
+    elif $(stringEqual $m choco); then eval $(_EC "choco upgrade -y $@");
+    fi;
+}
+
 # (...pkgname): string
 install() {
     local prefix="" m=$(pkgManager)
@@ -294,90 +311,10 @@ stringEqual() {
     if [ "$1" = "$2" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
 }
 
-# (element, array): bool
-arrayHas() {
-    local search=$1 array=${@:2:$#}
-    for i in $array; do
-        if [ "$i" = "$search" ]; then return $(_RC 0 $@); fi;
-    done;
-    return $(_RC 1 $@);
-}
-
-# (element, array): array
-arrayDelete() {
-    local search=$1 array=${@:2:$#}
-    result=""
-    for i in $array; do
-        if ! [ "$i" = "$search" ]; then result=$result" "$i; fi;
-    done;
-    _EC "$result"
-}
-
 # (name, directory="."): string[]
 searchFile() {
     local base=${!2:="."}
     find $base -name $1
-}
-
-# (...pkgname)
-dockerfile() {
-
-    setup
-
-    local arr="$@"
-    if $(arrayHas tini $@); then arr=$(arrayDelete tini $arr); fi;
-
-    _postinstall() {
-        if $(osCheck apk); then
-            printf '#!/bin/bash\n/sbin/tini -s -- $@' > entrypoint.sh
-        else
-            printf '#!/bin/bash\nexec $@' > entrypoint.sh
-        fi;
-
-        if $(arrayHas supervisor $@); then
-            printf "#!/bin/bash\nsupervisord -c /etc/supervisord.conf" > entrycmd.sh
-        else
-            printf "#!/bin/bash\necho started" > entrycmd.sh
-        fi;
-
-        chmod 777 entrypoint.sh
-        chmod 777 entrycmd.sh
-    }
-
-    if $(osCheck yum); then
-        yum install -y epel-release nano net-tools redhat-lsb-core 
-        yum install -y curl $arr
-        _postinstall $@
-    fi;
-
-    if $(osCheck apk); then
-        apk update
-        apk add --no-cache nano curl tini $arr
-        _postinstall $@
-    fi;
-
-    if $(osCheck apt); then
-        apt-get -qq update
-        apt-get -qq --no-install-recommends install nano curl net-tools $arr
-        _postinstall $@
-        apt-get -qq clean && rm -rf /var/lib/apt/lists/*
-    fi;
-
-}
-
-# ()
-dockerfileClean () {
-    if $(osCheck yum); then
-        yum clean all
-    fi;
-
-    if $(osCheck apk); then
-        apk cache clean
-    fi;
-
-    if $(osCheck apt); then
-        apt-get -qq clean && rm -rf /var/lib/apt/lists/*
-    fi;
 }
 
 # (url, data)
@@ -438,10 +375,24 @@ setup() {
     if ! $(hasFile "$HOME/.bash_mine"); then
         touch $HOME/.bash_mine
         echo 'source $HOME/.bash_mine' >> $profile
+        echo 'if [ "$PWD" = "$HOME" ]; then cd Documents; fi;' >> $HOME/.bash_mine
+        echo 'PATH=$HOME/.npm_global/bin/:$PATH' >> $HOME/.bash_mine
+        echo '' >> $HOME/.bash_mine
         echo 'function cdd { _back=$(pwd) && cd $1 && ls -a; }' >> $HOME/.bash_mine
         echo 'function cdb { _oldback=$_back && _back=$(pwd) && cd $_oldback && ls -a; }' >> $HOME/.bash_mine
         echo 'export no_proxy=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16' >> $HOME/.bash_mine
         echo 'export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16' >> $HOME/.bash_mine
+        echo '' >> $HOME/.bash_mine
+        echo 'u_proxy=' >> $HOME/.bash_mine
+        echo 'export https_proxy=$u_proxy' >> $HOME/.bash_mine
+        echo 'export http_proxy=$u_proxy' >> $HOME/.bash_mine
+        echo 'export HTTPS_PROXY=$u_proxy' >> $HOME/.bash_mine
+        echo 'export HTTP_PROXY=$u_proxy' >> $HOME/.bash_mine 
+        echo '' >> $HOME/.bash_mine
+
+        if $(osCheck mac); then 
+            printf 'export BASH_SILENCE_DEPRECATION_WARNING=1\n' >> $HOME/.bash_mine; 
+        fi;
     fi;
 
     source $HOME/.bash_mine
@@ -475,9 +426,9 @@ edit(){
     fi;
 }
 
-# (): string[]
-help(){
-    compgen -A function
+# (?segment): string[]
+help(){    
+    if ! [[ -z $1 ]]; then compgen -A function | grep $1; else compgen -A function; fi;
 }
 
 # put this at the end of the file
