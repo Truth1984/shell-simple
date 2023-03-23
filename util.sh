@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 1.1.1
+    echo 1.1.2
 }
 
 storageDir="$HOME/.application/bash_util"
@@ -93,7 +93,7 @@ hasFile() {
 
 # (cmdName): bool
 hasCmd() {
-    if [ -x "$(command -v $1)" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    if ! [[ -z "$(command -v $1)" ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
 }
 
 # (envName): bool
@@ -391,12 +391,12 @@ setup() {
         echo '' >> $HOME/.bash_mine
 
         if $(osCheck mac); then 
-            printf 'export BASH_SILENCE_DEPRECATION_WARNING=1\n' >> $HOME/.bash_mine; 
+            printf 'export BASH_SILENCE_DEPRECATION_WARNING=1\n' >> $HOME/.bash_mine 
         fi;
     fi;
 
     source $HOME/.bash_mine
-    if ! $(hasCmd u2); then
+    if ! $(hasContent $HOME/.bash_mine "alias u2"); then
         echo "alias u2=$storageDir/util.sh" >> $HOME/.bash_mine
     fi;
 
