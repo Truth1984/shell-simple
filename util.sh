@@ -345,6 +345,15 @@ get() {
     echo ""
 }
 
+# (url, ?filePath): string
+# emit script path
+getScript() {
+    local url=$1 file
+    if $(hasValue $2); then file=$2; else file="/tmp/$(password).sh"; fi;
+    download $url $file && chmod 777 $file
+    _EC $file
+}
+
 # (url, outputFileName?)
 download() {
     local url=$1 filename=$2
