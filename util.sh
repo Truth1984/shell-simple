@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 1.1.2
+    echo 1.1.3
 }
 
 storageDir="$HOME/.application/bash_util"
@@ -101,11 +101,11 @@ hasEnv() {
     if ! [[ -z ${!1+set} ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
 }
 
-# (path, content): bool
+# (path, ...content): bool
 hasContent() {
-    local path=$1 content=$2
+    local path=$1 content="${@:2}"
     if ! $(hasFile $path); then return $(_ERC "$path : file not found"); fi;
-    if $(cat $1 | grep -q $2); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    if $(cat $1 | grep -q "$content"); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
 }
 
 # (value): bool
@@ -407,6 +407,7 @@ setup() {
     source $HOME/.bash_mine
     if ! $(hasContent $HOME/.bash_mine "alias u2"); then
         echo "alias u2=$storageDir/util.sh" >> $HOME/.bash_mine
+        ln -s $storageDir/util.sh /usr/local/bin/u2
     fi;
 
     mv $(_SCRIPTPATH)/util.sh $storageDir
