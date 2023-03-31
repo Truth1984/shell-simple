@@ -441,9 +441,9 @@ update(){
 
 edit(){
     if $(hasCmd nano); then
-        nano $storageDir/util.sh
+        nano $(_SCRIPTPATHFULL)
     elif $(hasCmd vi); then
-        vi $storageDir/util.sh
+        vi $(_SCRIPTPATHFULL)
     fi;
 }
 
