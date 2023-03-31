@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 1.1.3
+    echo 1.1.4
 }
 
 storageDir="$HOME/.application/bash_util"
@@ -17,6 +17,11 @@ verbose=${verbose:-3}
 # (): string
 _SCRIPTPATH() {
     echo "$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+}
+
+# (): string
+_SCRIPTPATHFULL() {
+    echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 }
 
 _UTILDATE() {
@@ -354,6 +359,12 @@ getScript() {
     _EC $file
 }
 
+# (url, ...param)
+getScriptRun() {
+    local url=$1
+    bash <($(get $url)) ${@:2}
+}
+
 # (url, outputFileName?)
 download() {
     local url=$1 filename=$2
@@ -430,9 +441,9 @@ update(){
 
 edit(){
     if $(hasCmd nano); then
-        nano $(_SCRIPTPATH)/util.sh
+        nano $storageDir/util.sh
     elif $(hasCmd vi); then
-        vi $(_SCRIPTPATH)/util.sh
+        vi $storageDir/util.sh
     fi;
 }
 
