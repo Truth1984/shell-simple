@@ -429,10 +429,11 @@ update(){
     local scriptLoc="$storageDir/util.sh"
     mkdir -p $storageDir
     local updateUrl="https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh"
+    local tmpfile=/tmp/$(password).sh
     if $(hasCmd curl); then
-        curl $updateUrl > $scriptLoc
+        curl $updateUrl --output $tmpfile && mv $tmpfile $scriptLoc
     elif $(hasCmd wget); then
-        wget -O $scriptLoc $updateUrl
+        wget -O $tmpfile $updateUrl && mv $tmpfile $scriptLoc
     fi;
 
     chmod 777 $scriptLoc
