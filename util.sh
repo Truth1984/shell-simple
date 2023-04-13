@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 1.2.0
+    echo 1.2.1
 }
 
 storageDir="$HOME/.application/bash_util"
@@ -252,7 +252,7 @@ pkgManager() {
 ## package update, or general update
 upgrade() {
     local prefix="" m=$(pkgManager)
-    if $(osCheck linux) && $(hasCmd sudo); then prefix=$prefix."sudo "; fi;
+    if $(osCheck linux) && $(hasCmd sudo); then prefix="sudo "; fi;
 
     if $(stringEqual $m yum); then eval $(_EC "$prefix yum update -y $@");
     elif $(stringEqual $m brew); then eval $(_EC "brew install $@");
@@ -268,7 +268,7 @@ upgrade() {
 # (...pkgname): string
 install() {
     local prefix="" m=$(pkgManager)
-    if $(osCheck linux) && $(hasCmd sudo); then prefix=$prefix."sudo "; fi;
+    if $(osCheck linux) && $(hasCmd sudo); then prefix="sudo "; fi;
 
     if $(stringEqual $m yum); then eval $(_EC "$prefix yum install -y $@");
     elif $(stringEqual $m brew); then eval $(_EC "HOMEBREW_NO_AUTO_UPDATE=1 brew install $@");
