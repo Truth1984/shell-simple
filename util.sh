@@ -398,7 +398,7 @@ setup() {
         echo 'source $HOME/.bash_mine' >> $profile
         echo 'source $HOME/.bash_env' >> $HOME/.bash_mine
 
-        echo 'u_proxy=' >> $HOME/.bash_env
+        echo 'export u_proxy=' >> $HOME/.bash_env
 
         echo 'if [ "$PWD" = "$HOME" ]; then cd Documents; fi;' >> $HOME/.bash_mine
         echo 'PATH=$HOME/.npm_global/bin/:$PATH' >> $HOME/.bash_mine
