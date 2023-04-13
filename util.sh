@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 1.1.4
+    echo 1.2.0
 }
 
 storageDir="$HOME/.application/bash_util"
@@ -394,7 +394,12 @@ setup() {
 
     if ! $(hasFile "$HOME/.bash_mine"); then
         touch $HOME/.bash_mine
+        touch $HOME/.bash_env
         echo 'source $HOME/.bash_mine' >> $profile
+        echo 'source $HOME/.bash_env' >> $HOME/.bash_mine
+
+        echo 'u_proxy=' >> $HOME/.bash_env
+
         echo 'if [ "$PWD" = "$HOME" ]; then cd Documents; fi;' >> $HOME/.bash_mine
         echo 'PATH=$HOME/.npm_global/bin/:$PATH' >> $HOME/.bash_mine
         echo '' >> $HOME/.bash_mine
@@ -403,7 +408,6 @@ setup() {
         echo 'export no_proxy=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16' >> $HOME/.bash_mine
         echo 'export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16' >> $HOME/.bash_mine
         echo '' >> $HOME/.bash_mine
-        echo 'u_proxy=' >> $HOME/.bash_mine
         echo 'export https_proxy=$u_proxy' >> $HOME/.bash_mine
         echo 'export http_proxy=$u_proxy' >> $HOME/.bash_mine
         echo 'export HTTPS_PROXY=$u_proxy' >> $HOME/.bash_mine
