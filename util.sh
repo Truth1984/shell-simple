@@ -75,9 +75,9 @@ _ED() {
     if [ "$verbose" = 1 ]; then
         echo L1, ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\> >&2
     elif [ "$verbose" = 2 ]; then
-        echo L2, ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\) >&2
+        echo L2, ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \""$@"\" >&2
     elif [ "$verbose" = 3 ]; then
-        echo L3, ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), \"\["$1"\]\" >&2
+        echo L3, ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \""$@"\" >&2
     fi;
 }
 
