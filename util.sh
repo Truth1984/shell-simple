@@ -156,18 +156,10 @@ ip_local() {
 # (route_number):string
 ip_public() {
     case $1 in
-        2)
-            _EC $(get ipinfo.io/ip)
-        ;;
-        3)
-            _EC $(get api.ipify.org)
-        ;;
-        4)
-            _EC $(get ifconfig.me)
-        ;;
-        *)
-            _EC $(get ident.me)
-        ;;
+        2) _EC $(get ipinfo.io/ip) ;;
+        3) _EC $(get api.ipify.org) ;;
+        4) _EC $(get ifconfig.me) ;;
+        *) _EC $(get ident.me) ;;
     esac
 }
 
@@ -215,20 +207,11 @@ uuid() {
     local N=0
     while [ "$N" -lt 16 ]; do
         B=$(( $RANDOM%256 ))
-
         case $N in
-            6)
-                printf '4%x' $(( B%16 ))
-            ;;
-            8)
-                printf '%c%x' ${C:$RANDOM%${#C}:1} $(( B%16 ))
-            ;;
-            3 | 5 | 7 | 9)
-                printf '%02x-' $B
-            ;;
-            *)
-                printf '%02x' $B
-            ;;
+            6) printf '4%x' $(( B%16 )) ;;
+            8) printf '%c%x' ${C:$RANDOM%${#C}:1} $(( B%16 )) ;;
+            3 | 5 | 7 | 9) printf '%02x-' $B ;;
+            *) printf '%02x' $B ;;
         esac
         N=$(( N + 1 ))
     done
@@ -252,7 +235,7 @@ pkgManager() {
 ## package update, or general update
 upgrade() {
     local prefix="" m=$(pkgManager)
-    if $(osCheck linux) && $(hasCmd sudo); then prefix="sudo "; fi;
+    if $(osCheck linux) && $(hasCmd sudo); then prefix="sudo"; fi;
 
     if $(stringEqual $m yum); then eval $(_EC "$prefix yum update -y $@");
     elif $(stringEqual $m brew); then eval $(_EC "brew install $@");
@@ -268,7 +251,7 @@ upgrade() {
 # (...pkgname): string
 install() {
     local prefix="" m=$(pkgManager)
-    if $(osCheck linux) && $(hasCmd sudo); then prefix="sudo "; fi;
+    if $(osCheck linux) && $(hasCmd sudo); then prefix="sudo"; fi;
 
     if $(stringEqual $m yum); then eval $(_EC "$prefix yum install -y $@");
     elif $(stringEqual $m brew); then eval $(_EC "HOMEBREW_NO_AUTO_UPDATE=1 brew install $@");
@@ -397,9 +380,7 @@ setup() {
         touch $HOME/.bash_env
         echo 'source $HOME/.bash_mine' >> $profile
         echo 'source $HOME/.bash_env' >> $HOME/.bash_mine
-
-        echo 'export u_proxy=' >> $HOME/.bash_env
-
+        
         echo 'if [ "$PWD" = "$HOME" ]; then cd Documents; fi;' >> $HOME/.bash_mine
         echo 'PATH=$HOME/.npm_global/bin/:$PATH' >> $HOME/.bash_mine
         echo '' >> $HOME/.bash_mine
