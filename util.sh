@@ -1,3 +1,4 @@
+#!/usr/local/bin/bash
 #!/bin/bash
 #!/bin/sh
 
