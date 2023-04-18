@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 APT="debian:stable-slim"
 YUM="oraclelinux:9"

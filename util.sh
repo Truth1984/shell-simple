@@ -182,6 +182,42 @@ uuid() {
     echo
 }
 
+# ():string
+ip_local() {
+    local ethernet wifi
+
+    if $(osCheck linux); then
+
+        if $(hasCmd ip); then
+            ethernet=$(ip addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+            wifi=$(ip addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+            if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
+            elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
+            else _ED ip && _EC $(ip route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
+        elif $(hasCmd hostname); then
+            _ED hostname && _EC $(hostname -i)
+        fi;
+        
+    elif $(osCheck mac);then
+
+        ethernet=$(ipconfig getifaddr en1)
+        wifi=$(ipconfig getifaddr en0)
+        if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet; 
+        else _ED wifi && _EC $wifi; fi;
+
+    fi;
+}
+
+# (route_number):string
+ip_public() {
+    case $1 in
+        2) _EC $(get ipinfo.io/ip) ;;
+        3) _EC $(get api.ipify.org) ;;
+        4) _EC $(get ifconfig.me) ;;
+        *) _EC $(get ident.me) ;;
+    esac
+}
+
 # (): string
 pkgManager() {
     if $(hasCmd yum); then _EC "yum";
@@ -390,7 +426,7 @@ help(){
     if ! [[ -z $1 ]]; then compgen -A function | grep $1; else compgen -A function; fi;
 }
 
-if [ -d $storageDirBinExtra ]; then for i in $(ls $storageDirBinExtra); do source $i; done; fi;
+if [ -d $storageDirBinExtra ]; then for i in $(ls $storageDirBinExtra); do source $storageDirBinExtra/$i; done; fi;
 
 # put this at the end of the file
 $@;
