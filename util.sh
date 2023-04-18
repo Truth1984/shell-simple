@@ -7,7 +7,7 @@ version() {
     echo 2.0.0
 }
 
-storageDirBin='$HOME/.application/bin'
+storageDirBin="$HOME/.application/bin"
 storageDirBinExtra=$storageDirBin/extra
 
 # (): number
