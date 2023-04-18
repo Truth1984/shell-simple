@@ -1,15 +1,14 @@
-#!/usr/local/bin/bash
-#!/bin/bash
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Author: Awada.Z
 
 # (): string
 version() {
-    echo 1.2.1
+    echo 2.0.0
 }
 
-storageDir="$HOME/.application/bash_util"
+storageDirBin='$HOME/.application/bin'
+storageDirBinExtra=$storageDirBin/extra
 
 # (): number
 # default verbose=3, set verbose=0 to suppress logging
@@ -128,42 +127,6 @@ length() {
     if [ ${#1} -gt ${#1[*]} ]; then _EC ${#1}; else _EC ${#1[@]}; fi;
 }
 
-# ():string
-ip_local() {
-    local ethernet wifi
-
-    if $(osCheck linux); then
-
-        if $(hasCmd ip); then
-            ethernet=$(ip addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
-            wifi=$(ip addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
-            if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
-            elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
-            else _ED ip && _EC $(ip route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
-        elif $(hasCmd hostname); then
-            _ED hostname && _EC $(hostname -i)
-        fi;
-        
-    elif $(osCheck mac);then
-
-        ethernet=$(ipconfig getifaddr en1)
-        wifi=$(ipconfig getifaddr en0)
-        if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet; 
-        else _ED wifi && _EC $wifi; fi;
-
-    fi;
-}
-
-# (route_number):string
-ip_public() {
-    case $1 in
-        2) _EC $(get ipinfo.io/ip) ;;
-        3) _EC $(get api.ipify.org) ;;
-        4) _EC $(get ifconfig.me) ;;
-        *) _EC $(get ident.me) ;;
-    esac
-}
-
 # (osTrait): bool
 osCheck() {
     case $1 in
@@ -227,8 +190,8 @@ pkgManager() {
     elif $(hasCmd apk); then _EC "apk";
     elif $(hasCmd pacman); then _EC "pacman";
     elif $(hasCmd dnf); then _EC "dnf";
-    elif $(hasCmd winget); then _EC "winget";
     elif $(hasCmd choco); then _EC "choco";
+    elif $(hasCmd winget); then _EC "winget";
     fi;
 }
 
@@ -244,7 +207,7 @@ upgrade() {
     elif $(stringEqual $m apk); then eval $(_EC "$prefix apk upgrade $@");
     elif $(stringEqual $m pacman); then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
     elif $(stringEqual $m dnf); then eval $(_EC "$prefix dnf upgrade -y $@");
-    elif $(stringEqual $m winget); then eval $(_EC "winget --accept-package-agreements --accept-source-agreements upgrade $@");
+    elif $(stringEqual $m winget); then eval $(_EC "winget upgrade --accept-package-agreements --accept-source-agreements $@");
     elif $(stringEqual $m choco); then eval $(_EC "choco upgrade -y $@");
     fi;
 }
@@ -260,8 +223,8 @@ install() {
     elif $(stringEqual $m apk); then eval $(_EC "$prefix apk add $@");
     elif $(stringEqual $m pacman); then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
     elif $(stringEqual $m dnf); then eval $(_EC "$prefix dnf install -y $@");
-    elif $(stringEqual $m winget); then eval $(_EC "winget --accept-package-agreements --accept-source-agreements install $@");
     elif $(stringEqual $m choco); then eval $(_EC "choco install -y $@");
+    elif $(stringEqual $m winget); then eval $(_EC "winget install --accept-package-agreements --accept-source-agreements $@");
     fi;
 }
 
@@ -370,11 +333,7 @@ download() {
 # call setup bash beforehand
 setup() {
     profile="$(_PROFILE)"
-
-    if ! $(hasFile "$storageDir/util.sh"); then
-        mkdir -p $storageDir
-        cp $(_SCRIPTPATH)/util.sh $storageDir
-    fi;
+    mkdir -p $storageDirBin && mkdir -p $storageDirBinExtra
 
     if ! $(hasFile "$HOME/.bash_mine"); then
         touch $HOME/.bash_mine
@@ -383,7 +342,7 @@ setup() {
         echo 'source $HOME/.bash_env' >> $HOME/.bash_mine
         
         echo 'if [ "$PWD" = "$HOME" ]; then cd Documents; fi;' >> $HOME/.bash_mine
-        echo 'PATH=$HOME/.npm_global/bin/:$PATH' >> $HOME/.bash_mine
+        echo 'PATH=$HOME/.npm_global/bin:'$storageDirBin':$PATH' >> $HOME/.bash_mine
         echo '' >> $HOME/.bash_mine
         echo 'function cdd { _back=$(pwd) && cd $1 && ls -a; }' >> $HOME/.bash_mine
         echo 'function cdb { _oldback=$_back && _back=$(pwd) && cd $_oldback && ls -a; }' >> $HOME/.bash_mine
@@ -401,29 +360,21 @@ setup() {
         fi;
     fi;
 
-    source $HOME/.bash_mine
-    if ! $(hasContent $HOME/.bash_mine "alias u2"); then
-        echo "alias u2=$storageDir/util.sh" >> $HOME/.bash_mine
-        ln -s $storageDir/util.sh /usr/local/bin/u2
-    fi;
-
-    mv $(_SCRIPTPATH)/util.sh $storageDir
-    source $profile
+    mv $(_SCRIPTPATHFULL) $storageDirBin/u2
 }
 
 update(){
-    local scriptLoc="$storageDir/util.sh"
-    mkdir -p $storageDir
+    local scriptLoc="$storageDirBin/u2"
     local updateUrl="https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh"
     local tmpfile=/tmp/$(password).sh
     if $(hasCmd curl); then
-        curl $updateUrl --output $tmpfile && mv $tmpfile $scriptLoc
+        curl $updateUrl --output $tmpfile
     elif $(hasCmd wget); then
-        wget -O $tmpfile $updateUrl && mv $tmpfile $scriptLoc
+        wget -O $tmpfile $updateUrl
     fi;
 
-    chmod 777 $scriptLoc
-    $scriptLoc setup
+    chmod 777 $tmpfile
+    $tmpfile setup
 }
 
 edit(){
@@ -438,6 +389,8 @@ edit(){
 help(){    
     if ! [[ -z $1 ]]; then compgen -A function | grep $1; else compgen -A function; fi;
 }
+
+if [ -d $storageDirBinExtra ]; then for i in $(ls $storageDirBinExtra); do source $i; done; fi;
 
 # put this at the end of the file
 $@;
