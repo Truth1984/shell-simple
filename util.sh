@@ -81,6 +81,30 @@ _ED() {
     fi;
 }
 
+# (declare -A Option, ...data): {key:value, _:"" } 
+# example: declare -A data; parseArg data $@; parseGet data _;
+parseArg() {
+    local -n parse_result=$1;
+    _target="_"
+    for i in ${@:2:$#}; do    
+        if ! [[ "$i" =~ ^"-" ]]; then parse_result[$_target]="${parse_result[$_target]}$i ";
+        else _target=$(echo $i | sed 's/^-*//'); parse_result[$_target]='';
+        fi;
+    done;
+}
+
+# (declare -A Option, key): bool
+parseHas() {
+    local -n parse_has=$1;
+    if ! [[ -z ${parse_has[$2]} ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+}
+
+# (declare -A Option, key): string
+parseGet() {
+    local -n parse_get=$1;
+    _EC ${parse_get[$2]} $@
+}
+
 # (item1, item2): bool
 equal() {
     if [ $1 = $2 ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
