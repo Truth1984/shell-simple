@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.0.0
+    echo 2.1.0
 }
 
 storageDirBin="$HOME/.application/bin"
@@ -88,21 +88,16 @@ parseArg() {
     _target="_"
     for i in ${@:2:$#}; do    
         if ! [[ "$i" =~ ^"-" ]]; then parse_result[$_target]="${parse_result[$_target]}$i ";
-        else _target=$(echo $i | sed 's/^-*//'); parse_result[$_target]='';
+        else _target=$(echo $i | sed 's/^-*//'); parse_result[$_target]=' ';
         fi;
     done;
 }
 
-# (declare -A Option, key): bool
-parseHas() {
-    local -n parse_has=$1;
-    if ! [[ -z ${parse_has[$2]} ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-}
-
-# (declare -A Option, key): string
+# (declare -A Option, ...keys): string
 parseGet() {
     local -n parse_get=$1;
-    _EC ${parse_get[$2]} $@
+    for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then echo $(_EC ${parse_get[$i]} $i); fi; done;
+    return $(_RC 1 $@);
 }
 
 # (item1, item2): bool
@@ -140,6 +135,11 @@ hasContent() {
 # (value): bool
 hasValue() {
     if ! [[ -z $1 ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+}
+
+# hasValue quiet
+hasValueq() {
+    ! [[ -z $1 ]]
 }
 
 # (envName, ?replacement): string | null
@@ -206,40 +206,64 @@ uuid() {
     echo
 }
 
-# ():string
-ip_local() {
-    local ethernet wifi
-
-    if $(osCheck linux); then
-
-        if $(hasCmd ip); then
-            ethernet=$(ip addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
-            wifi=$(ip addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
-            if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
-            elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
-            else _ED ip && _EC $(ip route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
-        elif $(hasCmd hostname); then
-            _ED hostname && _EC $(hostname -i)
-        fi;
-        
-    elif $(osCheck mac);then
-
-        ethernet=$(ipconfig getifaddr en1)
-        wifi=$(ipconfig getifaddr en0)
-        if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet; 
-        else _ED wifi && _EC $wifi; fi;
-
-    fi;
+# (string):string
+# replace \n with \n\n\t
+helpDoc(){
+    value=$(echo $@ | sed 's/\\n/\\n\\t/g')
+    printf "$value\n"
 }
 
-# (route_number):string
-ip_public() {
-    case $1 in
-        2) _EC $(get ipinfo.io/ip) ;;
-        3) _EC $(get api.ipify.org) ;;
-        4) _EC $(get ifconfig.me) ;;
-        *) _EC $(get ident.me) ;;
-    esac
+# -p,--public (router_number) Public ip *_default
+# -P,--private private ip 
+ip() {
+    declare -A ip_data; parseArg ip_data $@;
+    public=$(parseGet ip_data p public _);
+    private=$(parseGet ip_data P private);
+    help=$(parseGet ip_data h help);
+
+    helpmsg='ip:\n-p,--public,_:\t(router_number)\tdisplay public ip\n-P,--private:\t()\tdisplay private ip'
+
+    # ():string
+    ipLocal() {
+        local ethernet wifi
+
+        if $(osCheck linux); then
+
+            if $(hasCmd ip); then
+                ethernet=$(ip addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+                wifi=$(ip addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+                if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
+                elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
+                else _ED ip && _EC $(ip route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
+            elif $(hasCmd hostname); then
+                _ED hostname && _EC $(hostname -i)
+            fi;
+            
+        elif $(osCheck mac);then
+
+            ethernet=$(ipconfig getifaddr en1)
+            wifi=$(ipconfig getifaddr en0)
+            if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet; 
+            else _ED wifi && _EC $wifi; fi;
+
+        fi;
+    }
+
+        # (route_number):string
+    ipPublic() {
+        case $1 in
+            2) _EC $(get ipinfo.io/ip) ;;
+            3) _EC $(get api.ipify.org) ;;
+            4) _EC $(get ifconfig.me) ;;
+            *) _EC $(get ident.me) ;;
+        esac
+    }
+
+    if $(hasValueq $help); then helpDoc $helpmsg; 
+    elif $(hasValueq $public); then ipPublic $public; 
+    elif $(hasValueq $private); then ipLocal $private; 
+    else ipPublic $public; 
+    fi;
 }
 
 # (): string
@@ -267,8 +291,8 @@ upgrade() {
     elif $(stringEqual $m apk); then eval $(_EC "$prefix apk upgrade $@");
     elif $(stringEqual $m pacman); then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
     elif $(stringEqual $m dnf); then eval $(_EC "$prefix dnf upgrade -y $@");
-    elif $(stringEqual $m winget); then eval $(_EC "winget upgrade --accept-package-agreements --accept-source-agreements $@");
     elif $(stringEqual $m choco); then eval $(_EC "choco upgrade -y $@");
+    elif $(stringEqual $m winget); then eval $(_EC "winget upgrade --accept-package-agreements --accept-source-agreements $@");
     fi;
 }
 
@@ -425,7 +449,7 @@ setup() {
 
 update(){
     local scriptLoc="$storageDirBin/u2"
-    local updateUrl="https://raw.githubusercontent.com/Truth1984/shell-simple/main/util.sh"
+    local updateUrl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"
     local tmpfile=/tmp/$(password).sh
     if $(hasCmd curl); then
         curl $updateUrl --output $tmpfile
