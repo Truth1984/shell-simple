@@ -206,13 +206,6 @@ uuid() {
     echo
 }
 
-# (string):string
-# replace \n with \n\n\t
-helpDoc(){
-    value=$(echo $@ | sed 's/\\n/\\n\\t/g')
-    printf "$value\n"
-}
-
 # -p,--public (router_number) Public ip *_default
 # -P,--private private ip 
 ip() {
@@ -221,7 +214,9 @@ ip() {
     private=$(parseGet ip_data P private);
     help=$(parseGet ip_data h help);
 
-    helpmsg='ip:\n-p,--public,_:\t(router_number)\tdisplay public ip\n-P,--private:\t()\tdisplay private ip'
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-p,--public,_ \t (router_number) \t display public ip\n'
+    helpmsg+='\t-P,--private \t () \t display private ip\n'
 
     # ():string
     ipLocal() {
@@ -249,7 +244,7 @@ ip() {
         fi;
     }
 
-        # (route_number):string
+    # (route_number):string
     ipPublic() {
         case $1 in
             2) _EC $(get ipinfo.io/ip) ;;
@@ -259,7 +254,7 @@ ip() {
         esac
     }
 
-    if $(hasValueq $help); then helpDoc $helpmsg; 
+    if $(hasValueq $help); then printf "$helpmsg"; 
     elif $(hasValueq $public); then ipPublic $public; 
     elif $(hasValueq $private); then ipLocal $private; 
     else ipPublic $public; 
