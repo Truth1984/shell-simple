@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.1.0
+    echo 2.1.1
 }
 
 storageDirBin="$HOME/.application/bin"
@@ -340,6 +340,10 @@ stringReplace() {
 # (string, segment): bool
 stringEqual() {
     if [ "$1" = "$2" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+}
+
+noproxy() {
+    https_proxy="" http_proxy="" HTTPS_PROXY="" HTTP_PROXY="" no_proxy="" NO_PROXY="" $@
 }
 
 # (name, directory="."): string[]
