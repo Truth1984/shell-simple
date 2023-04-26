@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.2.0
+    echo 2.2.1
 }
 
 storageDirBin="$HOME/.application/bin"
@@ -411,17 +411,9 @@ getScriptRun() {
 download() {
     local url=$1 filename=$2
     if $(hasCmd wget); then
-        if $(hasValue $filename); then
-            wget -O $filename $url;
-        else
-            wget $url; 
-        fi;
+        if $(hasValue $filename); then wget -O $filename $url; else wget $url; fi;
     elif $(hasCmd curl); then
-        if $(hasValue $filename); then
-            curl $url --output $filename;
-        else
-            curl -O $url;
-        fi;
+        if $(hasValue $filename); then curl $url --output $filename; else curl -O $url; fi;
     fi;
 }
 
@@ -431,28 +423,19 @@ setup() {
     mkdir -p $storageDirBin && mkdir -p $storageDirBinExtra
 
     if ! $(hasFile "$HOME/.bash_mine"); then
-        touch $HOME/.bash_mine
-        touch $HOME/.bash_env
+        touch $HOME/.bash_mine && touch $HOME/.bash_env
         echo 'source $HOME/.bash_mine' >> $profile
         echo 'source $HOME/.bash_env' >> $HOME/.bash_mine
         
         echo 'if [ "$PWD" = "$HOME" ]; then cd Documents; fi;' >> $HOME/.bash_mine
         echo 'PATH=$HOME/.npm_global/bin:'$storageDirBin':$PATH' >> $HOME/.bash_mine
-        echo '' >> $HOME/.bash_mine
-        echo 'function cdd { _back=$(pwd) && cd $1 && ls -a; }' >> $HOME/.bash_mine
+        echo 'function cdd { _back=$(pwd) && cd $@ && ls -a; }' >> $HOME/.bash_mine
         echo 'function cdb { _oldback=$_back && _back=$(pwd) && cd $_oldback && ls -a; }' >> $HOME/.bash_mine
-        echo 'export no_proxy=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16' >> $HOME/.bash_mine
-        echo 'export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16' >> $HOME/.bash_mine
-        echo '' >> $HOME/.bash_mine
-        echo 'export https_proxy=$u_proxy' >> $HOME/.bash_mine
-        echo 'export http_proxy=$u_proxy' >> $HOME/.bash_mine
-        echo 'export HTTPS_PROXY=$u_proxy' >> $HOME/.bash_mine
-        echo 'export HTTP_PROXY=$u_proxy' >> $HOME/.bash_mine 
-        echo '' >> $HOME/.bash_mine
 
-        if $(osCheck mac); then 
-            printf 'export BASH_SILENCE_DEPRECATION_WARNING=1\n' >> $HOME/.bash_mine 
-        fi;
+        printf 'export no_proxy=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\nexport NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\n\n' >> $HOME/.bash_mine 
+        printf 'export https_proxy=$u_proxy\nexport http_proxy=$u_proxy\nexport HTTPS_PROXY=$u_proxy\nexport HTTP_PROXY=$u_proxy\n\n' >> $HOME/.bash_mine
+
+        if $(osCheck mac); then printf 'export BASH_SILENCE_DEPRECATION_WARNING=1\n' >> $HOME/.bash_mine; fi;
     fi;
 
     mv $(_SCRIPTPATHFULL) $storageDirBin/u2
@@ -462,22 +445,16 @@ update(){
     local scriptLoc="$storageDirBin/u2"
     local updateUrl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"
     local tmpfile=/tmp/$(password).sh
-    if $(hasCmd curl); then
-        curl $updateUrl --output $tmpfile
-    elif $(hasCmd wget); then
-        wget -O $tmpfile $updateUrl
+    if $(hasCmd curl); then curl $updateUrl --output $tmpfile
+    elif $(hasCmd wget); then wget -O $tmpfile $updateUrl
     fi;
 
-    chmod 777 $tmpfile
-    $tmpfile setup
+    chmod 777 $tmpfile && $tmpfile setup
 }
 
 edit(){
-    if $(hasCmd nano); then
-        nano $(_SCRIPTPATHFULL)
-    elif $(hasCmd vi); then
-        vi $(_SCRIPTPATHFULL)
-    fi;
+    if $(hasCmd nano); then nano $(_SCRIPTPATHFULL);
+    elif $(hasCmd vi); then vi $(_SCRIPTPATHFULL); fi;
 }
 
 # (?segment): string[]
