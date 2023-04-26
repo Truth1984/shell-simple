@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.1.1
+    echo 2.2.0
 }
 
 storageDirBin="$HOME/.application/bin"
@@ -88,7 +88,7 @@ parseArg() {
     _target="_"
     for i in ${@:2:$#}; do    
         if ! [[ "$i" =~ ^"-" ]]; then parse_result[$_target]="${parse_result[$_target]}$i ";
-        else _target=$(echo $i | sed 's/^-*//'); parse_result[$_target]=' ';
+        else _target=$(echo $i | sed 's/^-*//'); ! $(hasValueq ${parse_result[$_target]}) && parse_result[$_target]=' ';
         fi;
     done;
 }
@@ -96,7 +96,7 @@ parseArg() {
 # (declare -A Option, ...keys): string
 parseGet() {
     local -n parse_get=$1;
-    for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then echo $(_EC ${parse_get[$i]} $i); fi; done;
+    for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then echo $(_EC "${parse_get[$i]}" $i); fi; done;
     return $(_RC 1 $@);
 }
 
@@ -145,10 +145,6 @@ hasValueq() {
 # (envName, ?replacement): string | null
 envGet() {
     if $(hasEnv $1); then _EC "${!1}"; else _EC "$2"; fi;
-}
-
-length() {
-    if [ ${#1} -gt ${#1[*]} ]; then _EC ${#1}; else _EC ${#1[@]}; fi;
 }
 
 # (osTrait): bool
@@ -307,14 +303,9 @@ install() {
     fi;
 }
 
-# (defaultValue, userInput): string
-varDef() {
-    if ! [[ -z $2 ]]; then echo $2; else echo $1; fi;
-}
-
 # (length=10, ?useSymbol): string
 password() {
-    local length=$(varDef 10 $1) symbol=$2 range='A-Za-z0-9'
+    local length=${1:-10} symbol=$2 range='A-Za-z0-9'
     if ! [[ -z ${symbol} ]]; then range=$range.'!"#$%&'\''()*+,-./:;<=>?@[\]^_`{|}~'; fi;
     LC_ALL=C tr -dc $range </dev/urandom | head -c $length ; echo
 }
@@ -352,23 +343,44 @@ searchFile() {
     find $base -name $1
 }
 
-# (url, data)
+# -u,--url,_ *_default
+# -j,--json, *_2
+# -s,--string post string
 post() {
-    local url=$1 data=$2
-    if $(hasCmd wget); then wget -qO- --header "Content-Type: application/json" --post-data "$data" $url;
-        elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: application/json" -d "$data" "$url";
-    fi;
-    echo ""
-}
+    declare -A post_data; parseArg post_data $@;
+    url=$(parseGet post_data u url _);
+    json=$(parseGet post_data j json);
+    string=$(parseGet post_data s string);
+    help=$(parseGet post_data help);
 
-# (url, data)
-# post string
-posts() {
-    local url=$1 data=$2
-    if $(hasCmd wget); then wget -qO- --header "Content-Type: text/plain" --post-data "$data" $url;
-        elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: text/plain" -d "$data" "$url";
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
+    helpmsg+='\t-j,--json \t (string) \t json data to post\n'
+    helpmsg+='\t-s,--string \t (string) \t string data to post\n'
+
+    # (url, data)
+    post_json(){
+        local url=$1 data=$2
+        if $(hasCmd wget); then wget -qO- --header "Content-Type: application/json" --post-data "$data" $url;
+            elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: application/json" -d "$data" "$url";
+        fi;
+        echo "" 
+    }
+
+    # (url, data)
+    post_string() {
+        local url=$1 data=$2
+        if $(hasCmd wget); then wget -qO- --header "Content-Type: text/plain" --post-data "$data" $url;
+            elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: text/plain" -d "$data" "$url";
+        fi;
+        echo ""
+    }
+    
+    if $(hasValueq $help); then printf "$helpmsg"; 
+    elif $(hasValueq $string); then post_string $url $string;
+    elif $(hasValueq $json); then post_json $url $json; 
+    else post_json $url; 
     fi;
-    echo ""
 }
 
 # (url)
