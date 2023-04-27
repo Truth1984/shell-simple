@@ -4,10 +4,12 @@
 
 # (): string
 version() {
-    echo 2.2.1
+    echo 2.4.1
 }
 
-storageDirBin="$HOME/.application/bin"
+storageDir="$HOME/.application"
+storageDirQuick="$storageDir/quick"
+storageDirBin="$storageDir/bin"
 storageDirBinExtra=$storageDirBin/extra
 
 # (): number
@@ -88,7 +90,7 @@ parseArg() {
     _target="_"
     for i in ${@:2:$#}; do    
         if ! [[ "$i" =~ ^"-" ]]; then parse_result[$_target]="${parse_result[$_target]}$i ";
-        else _target=$(echo $i | sed 's/^-*//'); ! $(hasValueq ${parse_result[$_target]}) && parse_result[$_target]=' ';
+        else _target=$(echo " $i" | sed 's/^ -*//'); ! $(hasValueq "${parse_result[$_target]}") && parse_result[$_target]=' ';
         fi;
     done;
 }
@@ -96,7 +98,7 @@ parseArg() {
 # (declare -A Option, ...keys): string
 parseGet() {
     local -n parse_get=$1;
-    for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then echo $(_EC "${parse_get[$i]}" $i); fi; done;
+    for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then _EC "${parse_get[$i]}" $i && echo "${parse_get[$i]}" && return $(_RC 0 $@); fi; done;
     return $(_RC 1 $@);
 }
 
@@ -129,17 +131,17 @@ hasEnv() {
 hasContent() {
     local path=$1 content="${@:2}"
     if ! $(hasFile $path); then return $(_ERC "$path : file not found"); fi;
-    if $(cat $1 | grep -q "$content"); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    if $(cat $1 | grep -q "$content"); then return $(_RC 0 "$@"); else return $(_RC 1 "$@"); fi;
 }
 
 # (value): bool
 hasValue() {
-    if ! [[ -z $1 ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    if ! [[ -z $1 ]]; then return $(_RC 0 "$@"); else return $(_RC 1 "$@"); fi;
 }
 
 # hasValue quiet
 hasValueq() {
-    ! [[ -z $1 ]]
+    ! [[ -z "$1" ]]
 }
 
 # (envName, ?replacement): string | null
@@ -250,9 +252,9 @@ ip() {
         esac
     }
 
-    if $(hasValueq $help); then printf "$helpmsg"; 
-    elif $(hasValueq $public); then ipPublic $public; 
-    elif $(hasValueq $private); then ipLocal $private; 
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$public"); then ipPublic $public; 
+    elif $(hasValueq "$private"); then ipLocal $private; 
     else ipPublic $public; 
     fi;
 }
@@ -376,9 +378,9 @@ post() {
         echo ""
     }
     
-    if $(hasValueq $help); then printf "$helpmsg"; 
-    elif $(hasValueq $string); then post_string $url $string;
-    elif $(hasValueq $json); then post_json $url $json; 
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$string"); then post_string $url $string;
+    elif $(hasValueq "$json"); then post_json $url $json; 
     else post_json $url; 
     fi;
 }
@@ -417,10 +419,62 @@ download() {
     fi;
 }
 
+# -n,--name,_ *_default
+# -v,--variable
+# -a,--add 
+# -e,--edit
+# -r,--remove,--delete
+# -l,--list
+quick() {
+    declare -A quick_data; parseArg quick_data $@;
+    name=$(parseGet quick_data n name _);
+    variable=$(parseGet quick_data v variable);
+    add=$(parseGet quick_data a add)
+    edit=$(parseGet quick_data e edit);
+    remove=$(parseGet quick_data r remove delete);
+    list=$(parseGet quick_data l list);
+    help=$(parseGet quick_data h help);
+
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-n,--name,_ \t (string) \t *_default, name of the quick data\n'
+    helpmsg+='\t-v,--variable \t (string) \t variable to use\n'
+    helpmsg+='\t-a,--add \t () \t add command to name\n'
+    helpmsg+='\t-e,--edit \t () \t edit the target file\n'
+    helpmsg+='\t-r,--remove,--delete \t () \t remove the target file\n'
+    helpmsg+='\t-l,--list \t () \t list total quick command\n'
+
+    targetFile="$storageDirQuick/$name"
+
+    edit_quick(){
+        if $(hasCmd nano); then nano $targetFile; elif $(hasCmd vi); then vi $targetFile; fi;
+    }
+
+    add_quick() {
+        echo "$add" > $targetFile
+    }
+
+    run_quick(){
+        bash <(cat $targetFile) $variable
+    }
+
+    remove_quick(){
+        if $(hasFile $targetFile); then if $(hasCmd trash); then trash $targetFile; else rm -r $targetFile; fi; fi;
+    }
+    
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$add"); then add_quick;
+    elif $(hasValueq "$edit"); then edit_quick;
+    elif $(hasValueq "$remove"); then remove_quick;
+    elif $(hasValueq "$list"); then ls -a $storageDirQuick;
+    else run_quick; 
+    fi;
+}
+
+
 # call setup bash beforehand
 setup() {
     profile="$(_PROFILE)"
-    mkdir -p $storageDirBin && mkdir -p $storageDirBinExtra
+    mkdir -p $storageDirBin && mkdir -p $storageDirBinExtra && mkdir -p $storageDirQuick
 
     if ! $(hasFile "$HOME/.bash_mine"); then
         touch $HOME/.bash_mine && touch $HOME/.bash_env
