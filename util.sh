@@ -68,7 +68,7 @@ _EC() {
     elif [ "$verbose" = 3 ]; then
         echo L3, EC, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), \"\["$1"\]\" >&2
     fi;
-    echo $1
+    echo "$1"
 }
 
 # (string): string
@@ -98,7 +98,7 @@ parseArg() {
 # (declare -A Option, ...keys): string
 parseGet() {
     local -n parse_get=$1;
-    for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then _EC "${parse_get[$i]}" $i && echo "${parse_get[$i]}" && return $(_RC 0 $@); fi; done;
+    for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then _EC "${parse_get[$i]}" && return $(_RC 0 $@); fi; done;
     return $(_RC 1 $@);
 }
 
@@ -427,7 +427,7 @@ download() {
 # -l,--list
 quick() {
     declare -A quick_data; parseArg quick_data $@;
-    name=$(parseGet quick_data n name _);
+    name=$(parseGet quick_data n name _ e edit r remove delete);
     variable=$(parseGet quick_data v variable);
     add=$(parseGet quick_data a add)
     edit=$(parseGet quick_data e edit);
@@ -436,7 +436,7 @@ quick() {
     help=$(parseGet quick_data h help);
 
     helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-n,--name,_ \t (string) \t *_default, name of the quick data\n'
+    helpmsg+='\t-n,--name,_ \t (string) \t *_default, + -e,--edit,-r,--remove,--delete name of the quick data\n'
     helpmsg+='\t-v,--variable \t (string) \t variable to use\n'
     helpmsg+='\t-a,--add \t () \t add command to name\n'
     helpmsg+='\t-e,--edit \t () \t edit the target file\n'
