@@ -461,11 +461,12 @@ quick() {
         if $(hasFile $targetFile); then if $(hasCmd trash); then trash $targetFile; else rm -r $targetFile; fi; fi;
     }
     
-    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    if $(hasValueq "$help"); then printf "$helpmsg";  
+    elif $(hasValueq "$list"); then ls -a $storageDirQuick;
+    elif ! $(hasValueq "$name"); then return $(_ERC "name not specified"); 
     elif $(hasValueq "$add"); then add_quick;
     elif $(hasValueq "$edit"); then edit_quick;
     elif $(hasValueq "$remove"); then remove_quick;
-    elif $(hasValueq "$list"); then ls -a $storageDirQuick;
     else run_quick; 
     fi;
 }
