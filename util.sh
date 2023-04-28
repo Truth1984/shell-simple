@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.4.1
+    echo 2.4.2
 }
 
 storageDir="$HOME/.application"
@@ -245,10 +245,10 @@ ip() {
     # (route_number):string
     ipPublic() {
         case $1 in
-            2) _EC $(get ipinfo.io/ip) ;;
-            3) _EC $(get api.ipify.org) ;;
-            4) _EC $(get ifconfig.me) ;;
-            *) _EC $(get ident.me) ;;
+            2) _ED ipinfo.io/ip && _EC $(get ipinfo.io/ip) ;;
+            3) _ED api.ipify.org && _EC $(get api.ipify.org) ;;
+            4) _ED ifconfig.me && _EC $(get ifconfig.me) ;;
+            *) _ED ident.me && _EC $(get ident.me) ;;
         esac
     }
 
@@ -421,16 +421,18 @@ download() {
 
 # -n,--name,_ *_default
 # -v,--variable
-# -a,--add 
+# -a,--add,--cmd 
 # -e,--edit
+# -c,--cat,--display,--show
 # -r,--remove,--delete
 # -l,--list
 quick() {
     declare -A quick_data; parseArg quick_data $@;
-    name=$(parseGet quick_data n name _ e edit r remove delete);
+    name=$(parseGet quick_data n name _ e edit r remove delete c cat display show);
     variable=$(parseGet quick_data v variable);
-    add=$(parseGet quick_data a add)
+    add=$(parseGet quick_data a add cmd)
     edit=$(parseGet quick_data e edit);
+    display=$(parseGet quick_data c cat display show)
     remove=$(parseGet quick_data r remove delete);
     list=$(parseGet quick_data l list);
     help=$(parseGet quick_data h help);
@@ -438,15 +440,21 @@ quick() {
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,_ \t (string) \t *_default, + -e,--edit,-r,--remove,--delete name of the quick data\n'
     helpmsg+='\t-v,--variable \t (string) \t variable to use\n'
-    helpmsg+='\t-a,--add \t () \t add command to name\n'
+    helpmsg+='\t-a,--add,--cmd \t () \t add command to name\n'
     helpmsg+='\t-e,--edit \t () \t edit the target file\n'
+    helpmsg+='\t-c,--cat,--display,--show \t () \t display the content of file\n'
     helpmsg+='\t-r,--remove,--delete \t () \t remove the target file\n'
     helpmsg+='\t-l,--list \t () \t list total quick command\n'
 
+    name=$(echo $name | sed 's/ *//')
     targetFile="$storageDirQuick/$name"
 
     edit_quick(){
         if $(hasCmd nano); then nano $targetFile; elif $(hasCmd vi); then vi $targetFile; fi;
+    }
+
+    display_quick() {
+        cat "$targetFile"
     }
 
     add_quick() {
@@ -454,7 +462,9 @@ quick() {
     }
 
     run_quick(){
-        bash <(cat $targetFile) $variable
+        part1=$(echo $targetFile | cut -d ' ' -f 1 )
+        part2=$(echo $targetFile | sed 's/.* *//')
+        bash <(cat $part1) $part2 $variable
     }
 
     remove_quick(){
@@ -466,6 +476,7 @@ quick() {
     elif ! $(hasValueq "$name"); then return $(_ERC "name not specified"); 
     elif $(hasValueq "$add"); then add_quick;
     elif $(hasValueq "$edit"); then edit_quick;
+    elif $(hasValueq "$display"); then display_quick;
     elif $(hasValueq "$remove"); then remove_quick;
     else run_quick; 
     fi;
