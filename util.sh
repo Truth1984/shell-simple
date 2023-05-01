@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.4.2
+    echo 2.4.3
 }
 
 storageDir="$HOME/.application"
@@ -68,7 +68,7 @@ _EC() {
     elif [ "$verbose" = 3 ]; then
         echo L3, EC, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), \"\["$1"\]\" >&2
     fi;
-    echo "$1"
+    echo "$@"
 }
 
 # (string): string
