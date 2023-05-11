@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.4.3
+    echo 2.4.4
 }
 
 storageDir="$HOME/.application"
@@ -205,15 +205,21 @@ uuid() {
 }
 
 # -p,--public (router_number) Public ip *_default
-# -P,--private private ip 
+# -4,--ipv4 () use ipv4 to connect to internet *_default
+# -6,--ipv6 () use ipv6 to connect to internet
+# -P,--private () private ip 
 ip() {
     declare -A ip_data; parseArg ip_data $@;
     public=$(parseGet ip_data p public _);
     private=$(parseGet ip_data P private);
+    ipv4=$(parseGet ip_data 4 ipv4);
+    ipv6=$(parseGet ip_data 6 ipv6);
     help=$(parseGet ip_data h help);
 
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--public,_ \t (router_number) \t display public ip\n'
+    helpmsg+='\t-4,--ipv4 \t () \t use ipv4 to connect to internet\n'
+    helpmsg+='\t-6,--ipv6 \t () \t use ipv6 to connect to internet\n'
     helpmsg+='\t-P,--private \t () \t display private ip\n'
 
     # ():string
@@ -242,13 +248,24 @@ ip() {
         fi;
     }
 
+    get2() {
+        local url=$1 version=$2 wgetArg="--inet4-only --prefer-family=IPv4" curlArg="--ipv4"
+        if $(u2 equal $version 6); then wgetArg="--inet6-only --prefer-family=IPv6" curlArg="--ipv6"; fi;
+        if $(hasCmd wget); then wget -qO- $wgetArg "$url";
+            elif $(hasCmd curl); then curl -s -X $curlArg GET "$url";
+        fi;
+        echo ""
+    }
+
     # (route_number):string
     ipPublic() {
+        iv=4
+        if $(hasValueq $ipv6); then iv=6; fi;
         case $1 in
-            2) _ED ipinfo.io/ip && _EC $(get ipinfo.io/ip) ;;
-            3) _ED api.ipify.org && _EC $(get api.ipify.org) ;;
-            4) _ED ifconfig.me && _EC $(get ifconfig.me) ;;
-            *) _ED ident.me && _EC $(get ident.me) ;;
+            2) _ED ipinfo.io/ip with ipv$iv && _EC $(get2 ipinfo.io/ip $iv) ;;
+            3) _ED api.ipify.org with ipv$iv && _EC $(get2 api.ipify.org $iv) ;;
+            4) _ED ifconfig.me with ipv$iv && _EC $(get2 ifconfig.me $iv) ;;
+            *) _ED ident.me with ipv$iv && _EC $(get2 ident.me $iv) ;;
         esac
     }
 
