@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.4.4
+    echo 2.4.5
 }
 
 storageDir="$HOME/.application"
@@ -21,9 +21,19 @@ _SCRIPTPATH() {
     echo "$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 }
 
+# eval following line to get the current dir
+_PATH() {
+    echo 'echo "$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"'
+}
+
 # (): string
 _SCRIPTPATHFULL() {
     echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+}
+
+# eval following line to get the current path
+_PATHFULL() {
+    echo 'echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"'
 }
 
 _UTILDATE() {
