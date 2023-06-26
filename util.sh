@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.4.5
+    echo 2.4.6
 }
 
 storageDir="$HOME/.application"
@@ -526,7 +526,7 @@ setup() {
         echo 'function cdb { _oldback=$_back && _back=$(pwd) && cd $_oldback && ls -a; }' >> $HOME/.bash_mine
 
         printf 'export no_proxy=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\nexport NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\n\n' >> $HOME/.bash_mine 
-        printf 'export https_proxy=$u_proxy\nexport http_proxy=$u_proxy\nexport HTTPS_PROXY=$u_proxy\nexport HTTP_PROXY=$u_proxy\n\n' >> $HOME/.bash_mine
+        printf 'if [[ ! -z "$u_proxy" ]] && curl --output /dev/null --silent --head "$u_proxy"; then\n export https_proxy=$u_proxy\n export http_proxy=$u_proxy\n export HTTPS_PROXY=$u_proxy\n export HTTP_PROXY=$u_proxy\nfi;\n'  >> $HOME/.bash_mine
 
         if $(osCheck mac); then printf 'export BASH_SILENCE_DEPRECATION_WARNING=1\n' >> $HOME/.bash_mine; fi;
     fi;
