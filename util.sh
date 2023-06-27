@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.4.6
+    echo 2.4.7
 }
 
 storageDir="$HOME/.application"
@@ -237,16 +237,12 @@ ip() {
         local ethernet wifi
 
         if $(osCheck linux); then
-
-            if $(hasCmd ip); then
-                ethernet=$(ip addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
-                wifi=$(ip addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
-                if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
-                elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
-                else _ED ip && _EC $(ip route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
-            elif $(hasCmd hostname); then
-                _ED hostname && _EC $(hostname -i)
-            fi;
+            ips=$(which /sbin/ip || which /usr/sbin/ip);
+            ethernet=$($ips addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+            wifi=$($ips addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+            if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
+            elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
+            else _ED ip && _EC $($ips route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
             
         elif $(osCheck mac);then
 
