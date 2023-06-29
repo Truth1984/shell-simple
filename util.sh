@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.4.8
+    echo 2.4.9
 }
 
 storageDir="$HOME/.application"
@@ -528,9 +528,11 @@ setup() {
     fi;
 
     mv $(_SCRIPTPATHFULL) $storageDirBin/u2
+    . $storageDirBin/u2 _ED Current Version: $(version)
 }
 
 update(){
+    _ED Current Version: $(version)
     local scriptLoc="$storageDirBin/u2"
     local updateUrl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"
     local tmpfile=/tmp/$(password).sh
