@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.4.7
+    echo 2.4.8
 }
 
 storageDir="$HOME/.application"
@@ -303,7 +303,7 @@ upgrade() {
 
     if $(stringEqual $m yum); then eval $(_EC "$prefix yum update -y $@");
     elif $(stringEqual $m brew); then eval $(_EC "brew install $@");
-    elif $(stringEqual $m apt); then eval $(_EC "$prefix apt-get upgrade -y $@");
+    elif $(stringEqual $m apt); then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get upgrade -y $@");
     elif $(stringEqual $m apk); then eval $(_EC "$prefix apk upgrade $@");
     elif $(stringEqual $m pacman); then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
     elif $(stringEqual $m dnf); then eval $(_EC "$prefix dnf upgrade -y $@");
@@ -319,7 +319,7 @@ install() {
 
     if $(stringEqual $m yum); then eval $(_EC "$prefix yum install -y $@");
     elif $(stringEqual $m brew); then eval $(_EC "HOMEBREW_NO_AUTO_UPDATE=1 brew install $@");
-    elif $(stringEqual $m apt); then eval $(_EC "$prefix apt-get install -y $@");
+    elif $(stringEqual $m apt); then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get install -y $@");
     elif $(stringEqual $m apk); then eval $(_EC "$prefix apk add $@");
     elif $(stringEqual $m pacman); then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
     elif $(stringEqual $m dnf); then eval $(_EC "$prefix dnf install -y $@");
