@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.4.9
+    echo 2.5.2
 }
 
 storageDir="$HOME/.application"
@@ -417,15 +417,6 @@ get() {
     echo ""
 }
 
-# (url, ?filePath): string
-# emit script path
-getScript() {
-    local url=$1 file
-    if $(hasValue $2); then file=$2; else file="/tmp/$(password).sh"; fi;
-    download $url $file && chmod 777 $file
-    _EC $file
-}
-
 # (url, ...param)
 getScriptRun() {
     local url=$1
@@ -531,26 +522,46 @@ setup() {
     . $storageDirBin/u2 _ED Current Version: $(version)
 }
 
-update(){
-    _ED Current Version: $(version)
-    local scriptLoc="$storageDirBin/u2"
-    local updateUrl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"
-    local tmpfile=/tmp/$(password).sh
-    if $(hasCmd curl); then curl $updateUrl --output $tmpfile
-    elif $(hasCmd wget); then wget -O $tmpfile $updateUrl
-    fi;
-
-    chmod 777 $tmpfile && $tmpfile setup
-}
-
 edit(){
     if $(hasCmd nano); then nano $(_SCRIPTPATHFULL);
     elif $(hasCmd vi); then vi $(_SCRIPTPATHFULL); fi;
 }
 
-# (?segment): string[]
+# -n,--name,_ *_default
+# -u,--update,--upgrade
+# -v,--version
+# -h,--help
 help(){    
-    if ! [[ -z $1 ]]; then compgen -A function | grep $1; else compgen -A function; fi;
+    declare -A help_data; parseArg help_data $@;
+    name=$(parseGet help_data n name _);
+    update=$(parseGet help_data u update upgrade);
+    version=$(parseGet help_data v version);
+    help=$(parseGet help_data h help);
+
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-n,--name,_ \t (string) \t grep functions with name\n'
+    helpmsg+='\t-u,--update,--upgrade \t (string) \t upgrade current script\n'
+    helpmsg+='\t-v,--version \t (string) \t display current version\n'
+    helpmsg+='\t-h,--help \t (string) \t display help message\n'
+
+    update_help() {
+        _ED Current Version: $(version)
+        local scriptLoc="$storageDirBin/u2"
+        local updateUrl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"
+        local tmpfile=/tmp/$(password).sh
+        if $(hasCmd curl); then curl $updateUrl --output $tmpfile
+        elif $(hasCmd wget); then wget -O $tmpfile $updateUrl
+        fi;
+
+        chmod 777 $tmpfile && $tmpfile setup
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";  
+    elif $(hasValueq "$name"); then if ! [[ -z $name ]]; then compgen -A function | grep $name; else compgen -A function; fi;
+    elif $(hasValueq "$update"); then $(update_help);
+    elif $(hasValueq "$version"); then echo $(version);
+    fi;
+    
 }
 
 if [ -d $storageDirBinExtra ]; then for i in $(ls $storageDirBinExtra); do source $storageDirBinExtra/$i; done; fi;
