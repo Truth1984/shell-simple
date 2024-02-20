@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.5.2
+    echo 2.5.3
 }
 
 storageDir="$HOME/.application"
@@ -13,8 +13,8 @@ storageDirBin="$storageDir/bin"
 storageDirBinExtra=$storageDirBin/extra
 
 # (): number
-# default verbose=3, set verbose=0 to suppress logging
-verbose=${verbose:-3}
+# default verbose=1, set verbose="" to suppress logging
+if [ -z "${verbose+x}" ]; then verbose="1"; fi;
 
 # (): string
 _SCRIPTPATH() {
@@ -49,10 +49,8 @@ _PROFILE() {
 # (number): number
 # return callback, set verbose value to enable
 _RC() {
-    if [ "$verbose" = 1 ]; then
-        echo L1, RC, $1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\> >&2
-    elif [ "$verbose" = 2 ] || [ "$verbose" = 3 ]  ; then
-        echo L$verbose, RC, $1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\) >&2
+    if [ -n "$verbose" ]; then
+        echo RC, $1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\) >&2
     fi;
     return $1
 }
@@ -60,10 +58,8 @@ _RC() {
 # (string): number
 # error callback, set verbose value to enable
 _ERC() {
-    if [ "$verbose" = 1 ]; then
-        echo L1, ERC, 1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, "<x "$1" x>" >&2
-    elif [ "$verbose" = 2 ] || [ "$verbose" = 3 ]  ; then
-        echo L$verbose, ERC, 1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), "<x "$1" x>" >&2
+    if [ -n "$verbose" ]; then
+        echo ERC, 1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), "<x "$1" x>" >&2
     fi;
     return 1
 }
@@ -71,12 +67,8 @@ _ERC() {
 # (string): string
 # echo callback
 _EC() {
-    if [ "$verbose" = 1 ]; then
-        echo L1, EC, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\> >&2
-    elif [ "$verbose" = 2 ]; then
-        echo L2, EC, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\) >&2
-    elif [ "$verbose" = 3 ]; then
-        echo L3, EC, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), \"\["$1"\]\" >&2
+    if [ -n "$verbose" ]; then
+        echo EC, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), \"\["$1"\]\" >&2
     fi;
     echo "$@"
 }
@@ -84,12 +76,8 @@ _EC() {
 # (string): string
 # echo debug
 _ED() {
-    if [ "$verbose" = 1 ]; then
-        echo L1, ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\> >&2
-    elif [ "$verbose" = 2 ]; then
-        echo L2, ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \""$@"\" >&2
-    elif [ "$verbose" = 3 ]; then
-        echo L3, ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \""$@"\" >&2
+    if [ -n "$verbose" ]; then
+        echo ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \""$@"\" >&2
     fi;
 }
 
