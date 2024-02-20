@@ -384,7 +384,7 @@ post() {
     helpmsg+='\t-s,--string \t (string) \t string data to post\n'
 
     # (url, data)
-    post_json(){
+    json_post(){
         local url=$1 data=$2
         if $(hasCmd wget); then wget -qO- --header "Content-Type: application/json" --post-data "$data" $url;
             elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: application/json" -d "$data" "$url";
@@ -393,7 +393,7 @@ post() {
     }
 
     # (url, data)
-    post_string() {
+    string_post() {
         local url=$1 data=$2
         if $(hasCmd wget); then wget -qO- --header "Content-Type: text/plain" --post-data "$data" $url;
             elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: text/plain" -d "$data" "$url";
@@ -402,25 +402,39 @@ post() {
     }
     
     if $(hasValueq "$help"); then printf "$helpmsg"; 
-    elif $(hasValueq "$string"); then post_string $url $string;
-    elif $(hasValueq "$json"); then post_json $url $json; 
-    else post_json $url; 
+    elif $(hasValueq "$string"); then string_post $url $string;
+    elif $(hasValueq "$json"); then json_post $url $json; 
+    else json_post $url; 
     fi;
 }
 
-# (url)
+# -u,--url,_ *_default
+# -r,--run
 get() {
-    local url=$1
-    if $(hasCmd wget); then wget -qO- "$url";
-        elif $(hasCmd curl); then curl -s -X GET "$url";
-    fi;
-    echo ""
-}
+    declare -A get_data; parseArg get_data $@;
+    url=$(parseGet get_data u url _);
+    run=$(parseGet get_data r run);
+    help=$(parseGet get_data help);
 
-# (url, ...param)
-getScriptRun() {
-    local url=$1
-    bash <($(get $url)) ${@:2}
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
+    helpmsg+='\t-r,--run \t (string) \t run the script from url\n'
+
+    script_get() {
+        bash <($(get $1)) 
+    }
+
+    url_get(){
+        if $(hasCmd wget); then wget -qO- "$1";
+            elif $(hasCmd curl); then curl -s -X GET "$1";
+        fi;
+        echo ""
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$run"); then script_get $run;
+    elif $(hasValueq "$url"); then url_get $url;
+    fi;
 }
 
 # (url, outputFileName?)
@@ -556,10 +570,15 @@ help(){
         chmod 777 $tmpfile && $tmpfile setup
     }
 
+    list_help() {
+        if ! [[ -z $1 ]]; then compgen -A function | grep $1; else compgen -A function; fi;
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";  
-    elif $(hasValueq "$name"); then if ! [[ -z $name ]]; then compgen -A function | grep $name; else compgen -A function; fi;
+    elif $(hasValueq "$name"); then list_help $name;
     elif $(hasValueq "$update"); then $(update_help);
     elif $(hasValueq "$version"); then echo $(version);
+    else $(list_help);
     fi;
     
 }
