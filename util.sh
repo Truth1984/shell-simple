@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.5.3
+    echo 2.5.4
 }
 
 storageDir="$HOME/.application"
@@ -14,7 +14,8 @@ storageDirBinExtra=$storageDirBin/extra
 
 # (): number
 # default verbose=1, set verbose="" to suppress logging
-if [ -z "${verbose+x}" ]; then verbose="1"; fi;
+if [ -z "${verbose+x}" ] || [ "$verbose" = "false" ] || [ "$verbose" = "0" ]; then verbose="";
+else verbose="1"; fi;
 
 # (): string
 _SCRIPTPATH() {
