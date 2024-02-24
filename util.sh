@@ -543,7 +543,7 @@ help(){
 
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,_ \t (string) \t grep functions with name\n'
-    helpmsg+='\t-u,--update,--upgrade \t (string) \t upgrade current script\n'
+    helpmsg+='\t-u,--update,--upgrade \t () \t upgrade current script\n'
     helpmsg+='\t-v,--version \t (string) \t display current version\n'
     helpmsg+='\t-h,--help \t (string) \t display help message\n'
 

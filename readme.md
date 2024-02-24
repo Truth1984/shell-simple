@@ -6,7 +6,9 @@ personalized shell sciprt
 
 `verbose=3 ./util setup`
 
-`u2 version`
+## upgrade
+
+`u2 help --upgrade`
 
 ## quick setup
 
