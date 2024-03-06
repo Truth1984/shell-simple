@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.5.6
+    echo 2.5.7
 }
 
 storageDir="$HOME/.application"
@@ -436,6 +436,37 @@ download() {
     elif $(hasCmd curl); then
         if $(hasValue $filename); then curl $url --output $filename; else curl -O $url; fi;
     fi;
+}
+
+# -c,--cmd,--command,_ *_default
+# -i,--interval
+# -r,--retry
+retry() {
+    declare -A retry_data; parseArg retry_data $@;
+    command=$(parseGet retry_data c cmd command _);
+    interval=$(parseGet retry_data i interval);
+    retry=$(parseGet retry_data r retry)
+    help=$(parseGet quick_data h help);
+
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-c,--cmd,--command,_ \t (string) \t *_default, command to eval\n'
+    helpmsg+='\t-i,interval \t (string) \t interval, in seconds, default to 1 sec\n'
+    helpmsg+='\t-r,--retry \t (string) \t retry, default to 3 times\n'
+
+    if ! $(hasValueq $interval); then interval=1; fi;
+    if ! $(hasValueq $retry); then retry=3; fi;
+
+    while [[ $retry -ne 0 ]]; do
+        _ED retry: $retry, remain
+        eval "$command"
+        if [[ $? -eq 0 ]]; then
+            return $(_RC 0)
+        else
+            retry=$((retry - 1))
+            sleep "$interval"
+        fi
+    done
+    return $(_RC 1)
 }
 
 # -n,--name,_ *_default
