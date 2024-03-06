@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.5.4
+    echo 2.5.6
 }
 
 storageDir="$HOME/.application"
@@ -13,9 +13,9 @@ storageDirBin="$storageDir/bin"
 storageDirBinExtra=$storageDirBin/extra
 
 # (): number
-# default verbose=1, set verbose="" to suppress logging
-if [ -z "${verbose+x}" ] || [ "$verbose" = "false" ] || [ "$verbose" = "0" ]; then verbose="";
-else verbose="1"; fi;
+# default verbose=1, set verbose to something else to suppress logging
+if [ -z "$verbose" ] || [ "$verbose" = "true" ] || [ "$verbose" = "1" ]; then verbose="1"; 
+else verbose=""; fi;
 
 # (): string
 _SCRIPTPATH() {
@@ -410,12 +410,14 @@ get() {
     helpmsg+='\t-r,--run \t (string) \t run the script from url\n'
 
     script_get() {
-        bash <($(get $1)) 
+        if $(hasCmd curl); then bash <(curl -s $1); 
+        elif $(hasCmd wget); then bash <(wget -O - $1); 
+        fi;
     }
 
     url_get(){
         if $(hasCmd wget); then wget -qO- "$1";
-            elif $(hasCmd curl); then curl -s -X GET "$1";
+        elif $(hasCmd curl); then curl -s -X GET "$1";
         fi;
         echo ""
     }
