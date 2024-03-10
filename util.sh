@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 2.5.7
+    echo 3.0.0
 }
 
 storageDir="$HOME/.application"
@@ -43,7 +43,7 @@ _UTILDATE() {
 
 _PROFILE() {
     profile="$HOME/.bashrc"
-    if $(osCheck mac); then profile="$HOME/.bash_profile"; fi;
+    if $(os -c mac); then profile="$HOME/.bash_profile"; fi;
     echo $profile
 }
 
@@ -121,6 +121,11 @@ hasCmd() {
     if ! [[ -z "$(command -v $1)" ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
 }
 
+# (cmdName): bool
+hasCmdq() {
+    [[ ! -z "$(command -v "$1")" ]];
+}
+
 # (envName): bool
 hasEnv() {
     if ! [[ -z ${!1+set} ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
@@ -148,43 +153,93 @@ envGet() {
     if $(hasEnv $1); then _EC "${!1}"; else _EC "$2"; fi;
 }
 
-# (osTrait): bool
-osCheck() {
-    case $1 in
-        mac | darwin | macos | apple | osx | brew)
-            if $(hasCmd uname && uname | grep -q Darwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-        ;;
-        centos | yum)
-            if $(hasCmd yum); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-        ;;
-        alpine | apk)
-            if $(hasCmd apk); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-        ;;
-        debian | deb | dpkg)
-            if $(hasCmd dpkg); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-        ;;
-        ubuntu | apt)
-            if $(hasCmd apt-get); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-        ;;
-        arch | archlinux | pacman )
-            if $(hasCmd pacman); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-        ;;
-        redhat | dnf | rhel)
-            if $(hasCmd dnf); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-        ;;
-        linux)
-            if $(hasCmd uname) && uname | grep -q Linux; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-        ;;
-        win | windows)
-            if $(echo "$OSTYPE" | grep -q msys || echo "$OSTYPE" | grep -q cygwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-        ;;
-        *)
-            if [ "$OSTYPE" = "$1" ]; then return $(_RC 0 $@);
-            else return $(_ERC "Error: not listed, this is actual ostype: $OSTYPE");
-            fi;
-        ;;
-    esac
+
+# -c,--check,_ *_default
+# -p,--pkgmanager
+# -i,--info
+os() {
+    declare -A os_data; parseArg os_data $@;
+    check=$(parseGet os_data c check _);
+    pkgmanager=$(parseGet os_data p pkgmanager);
+    info=$(parseGet os_data i info);
+    help=$(parseGet os_data help);
+
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-c,--check,_ \t (string) \t check os trait fit current os\n'
+    helpmsg+='\t-p,--pkgmanager \t () \t get current package manager\n'
+    helpmsg+='\t-i,--info \t () \t get os info\n'
+
+    # (): string
+    pkgManager_os() {
+        if $(hasCmd yum); then _EC "yum";
+        elif $(hasCmd brew); then _EC "brew";
+        elif $(hasCmd apt); then _EC "apt";
+        elif $(hasCmd apk); then _EC "apk";
+        elif $(hasCmd pacman); then _EC "pacman";
+        elif $(hasCmd dnf); then _EC "dnf";
+        elif $(hasCmd choco); then _EC "choco";
+        elif $(hasCmd winget); then _EC "winget";
+        fi;
+    }
+
+    # (osTrait): bool
+    check_os() {
+        case $1 in
+            mac | darwin | macos | apple | osx | brew)
+                if $(hasCmd uname && uname | grep -q Darwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+            ;;
+            centos | yum)
+                if $(hasCmd yum); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+            ;;
+            alpine | apk)
+                if $(hasCmd apk); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+            ;;
+            debian | deb | dpkg)
+                if $(hasCmd dpkg); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+            ;;
+            ubuntu | apt)
+                if $(hasCmd apt-get); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+            ;;
+            arch | archlinux | pacman )
+                if $(hasCmd pacman); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+            ;;
+            redhat | dnf | rhel)
+                if $(hasCmd dnf); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+            ;;
+            linux)
+                if $(hasCmd uname) && uname | grep -q Linux; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+            ;;
+            win | windows)
+                if $(echo "$OSTYPE" | grep -q msys || echo "$OSTYPE" | grep -q cygwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+            ;;
+            *)
+                if [ "$OSTYPE" = "$1" ]; then return $(_RC 0 $@);
+                else return $(_ERC "Error: not listed, this is actual ostype: $OSTYPE");
+                fi;
+            ;;
+        esac
+    }
+
+    info_os(){
+        if $(hasCmdq uname); then uname -a; fi;
+        if $(hasCmdq sw_vers); then sw_vers; fi;
+        if $(hasCmdq lsb_release); then lsb_release -a; fi;
+        if $(hasCmdq hostname); then hostname; fi;
+        if [ -f "/etc/os-release" ]; then cat /etc/os-release; fi;
+        if $(hasCmdq systeminfo); then systeminfo; fi;
+        if $(hasCmdq wmic); then wmic os get Caption, Version, BuildNumber; fi;
+    }
+
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$check"); then check_os $check; 
+    elif $(hasValueq "$pkgmanager"); then pkgManager_os;
+    elif $(hasValueq "$info"); then info_os;
+    fi;
+
 }
+
+
 
 # (): string
 uuid() {
@@ -225,7 +280,7 @@ ip() {
     ipLocal() {
         local ethernet wifi
 
-        if $(osCheck linux); then
+        if $(os -c linux); then
             ips=$(which /sbin/ip || which /usr/sbin/ip);
             ethernet=$($ips addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
             wifi=$($ips addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
@@ -233,7 +288,7 @@ ip() {
             elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
             else _ED ip && _EC $($ips route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
             
-        elif $(osCheck mac);then
+        elif $(os -c mac);then
 
             ethernet=$(ipconfig getifaddr en1)
             wifi=$(ipconfig getifaddr en0)
@@ -271,24 +326,11 @@ ip() {
     fi;
 }
 
-# (): string
-pkgManager() {
-    if $(hasCmd yum); then _EC "yum";
-    elif $(hasCmd brew); then _EC "brew";
-    elif $(hasCmd apt); then _EC "apt";
-    elif $(hasCmd apk); then _EC "apk";
-    elif $(hasCmd pacman); then _EC "pacman";
-    elif $(hasCmd dnf); then _EC "dnf";
-    elif $(hasCmd choco); then _EC "choco";
-    elif $(hasCmd winget); then _EC "winget";
-    fi;
-}
-
 # (...?pkgname)
 ## package update, or general update
 upgrade() {
-    local prefix="" m=$(pkgManager)
-    if $(osCheck linux) && $(hasCmd sudo); then prefix="sudo"; fi;
+    local prefix="" m=$(os -p)
+    if $(os -c linux) && $(hasCmd sudo); then prefix="sudo"; fi;
 
     if $(stringEqual $m yum); then eval $(_EC "$prefix yum update -y $@");
     elif $(stringEqual $m brew); then eval $(_EC "brew install $@");
@@ -303,8 +345,8 @@ upgrade() {
 
 # (...pkgname): string
 install() {
-    local prefix="" m=$(pkgManager)
-    if $(osCheck linux) && $(hasCmd sudo); then prefix="sudo"; fi;
+    local prefix="" m=$(os -p)
+    if $(os -c linux) && $(hasCmd sudo); then prefix="sudo"; fi;
 
     if $(stringEqual $m yum); then eval $(_EC "$prefix yum install -y $@");
     elif $(stringEqual $m brew); then eval $(_EC "HOMEBREW_NO_AUTO_UPDATE=1 brew install $@");
@@ -551,7 +593,7 @@ setup() {
         printf 'export no_proxy=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\nexport NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\n\n' >> $HOME/.bash_mine 
         printf 'if [[ ! -z "$u_proxy" ]] && curl --output /dev/null --silent --head "$u_proxy"; then\n export https_proxy=$u_proxy\n export http_proxy=$u_proxy\n export HTTPS_PROXY=$u_proxy\n export HTTP_PROXY=$u_proxy\nfi;\n'  >> $HOME/.bash_mine
 
-        if $(osCheck mac); then printf 'export BASH_SILENCE_DEPRECATION_WARNING=1\n' >> $HOME/.bash_mine; fi;
+        if $(os -c mac); then printf 'export BASH_SILENCE_DEPRECATION_WARNING=1\n' >> $HOME/.bash_mine; fi;
     fi;
 
     mv $(_SCRIPTPATHFULL) $storageDirBin/u2
