@@ -165,9 +165,9 @@ os() {
     help=$(parseGet os_data help);
 
     helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-c,--check,_ \t (string) \t check os trait fit current os\n'
-    helpmsg+='\t-p,--pkgmanager \t () \t get current package manager\n'
-    helpmsg+='\t-i,--info \t () \t get os info\n'
+    helpmsg+='\t-c,--check,_ \t\t (string) \t check os trait fit current os\n'
+    helpmsg+='\t-p,--pkgmanager \t () \t\t get current package manager\n'
+    helpmsg+='\t-i,--info \t\t () \t\t get os info\n'
 
     # (): string
     pkgManager_os() {
@@ -258,7 +258,7 @@ uuid() {
     echo
 }
 
-# -p,--public (router_number) Public ip *_default
+# -p,--public (route_number) Public ip *_default
 # -4,--ipv4 () use ipv4 to connect to internet *_default
 # -6,--ipv6 () use ipv6 to connect to internet
 # -P,--private () private ip 
@@ -271,7 +271,7 @@ ip() {
     help=$(parseGet ip_data h help);
 
     helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-p,--public,_ \t (router_number) \t display public ip\n'
+    helpmsg+='\t-p,--public,_ \t (4/6) \t ipv4 / ipv6, display public ip\n'
     helpmsg+='\t-4,--ipv4 \t () \t use ipv4 to connect to internet\n'
     helpmsg+='\t-6,--ipv6 \t () \t use ipv6 to connect to internet\n'
     helpmsg+='\t-P,--private \t () \t display private ip\n'
@@ -332,14 +332,14 @@ upgrade() {
     local prefix="" m=$(os -p)
     if $(os -c linux) && $(hasCmd sudo); then prefix="sudo"; fi;
 
-    if $(stringEqual $m yum); then eval $(_EC "$prefix yum update -y $@");
-    elif $(stringEqual $m brew); then eval $(_EC "brew install $@");
-    elif $(stringEqual $m apt); then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get upgrade -y $@");
-    elif $(stringEqual $m apk); then eval $(_EC "$prefix apk upgrade $@");
-    elif $(stringEqual $m pacman); then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
-    elif $(stringEqual $m dnf); then eval $(_EC "$prefix dnf upgrade -y $@");
-    elif $(stringEqual $m choco); then eval $(_EC "choco upgrade -y $@");
-    elif $(stringEqual $m winget); then eval $(_EC "winget upgrade --accept-package-agreements --accept-source-agreements $@");
+    if [ "$m" = "yum" ]; then eval $(_EC "$prefix yum update -y $@");
+    elif [ "$m" = "brew" ]; then eval $(_EC "brew install $@");
+    elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get upgrade -y $@");
+    elif [ "$m" = "apk" ]; then eval $(_EC "$prefix apk upgrade $@");
+    elif [ "$m" = "pacman" ]; then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
+    elif [ "$m" = "dnf" ]; then eval $(_EC "$prefix dnf upgrade -y $@");
+    elif [ "$m" = "choco" ]; then eval $(_EC "choco upgrade -y $@");
+    elif [ "$m" = "winget" ]; then eval $(_EC "winget upgrade --accept-package-agreements --accept-source-agreements $@");
     fi;
 }
 
@@ -348,14 +348,14 @@ install() {
     local prefix="" m=$(os -p)
     if $(os -c linux) && $(hasCmd sudo); then prefix="sudo"; fi;
 
-    if $(stringEqual $m yum); then eval $(_EC "$prefix yum install -y $@");
-    elif $(stringEqual $m brew); then eval $(_EC "HOMEBREW_NO_AUTO_UPDATE=1 brew install $@");
-    elif $(stringEqual $m apt); then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get install -y $@");
-    elif $(stringEqual $m apk); then eval $(_EC "$prefix apk add $@");
-    elif $(stringEqual $m pacman); then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
-    elif $(stringEqual $m dnf); then eval $(_EC "$prefix dnf install -y $@");
-    elif $(stringEqual $m choco); then eval $(_EC "choco install -y $@");
-    elif $(stringEqual $m winget); then eval $(_EC "winget install --accept-package-agreements --accept-source-agreements $@");
+    if [ "$m" = "yum" ]; then eval $(_EC "$prefix yum install -y $@");
+    elif [ "$m" = "brew" ]; then eval $(_EC "HOMEBREW_NO_AUTO_UPDATE=1 brew install $@");
+    elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get install -y $@");
+    elif [ "$m" = "apk" ]; then eval $(_EC "$prefix apk add $@");
+    elif [ "$m" = "pacman" ]; then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
+    elif [ "$m" = "dnf" ]; then eval $(_EC "$prefix dnf install -y $@");
+    elif [ "$m" = "choco" ]; then eval $(_EC "choco install -y $@");
+    elif [ "$m" = "winget" ]; then eval $(_EC "winget install --accept-package-agreements --accept-source-agreements $@");
     fi;
 }
 
@@ -366,27 +366,40 @@ password() {
     LC_ALL=C tr -dc $range </dev/urandom | head -c $length ; echo
 }
 
-# (string): string
-## sanitize to cmdline
-sanitizeC() {
-    local string=$@
-    echo "'"${string//\'/\'\\\'\'}"'"
-}
+# -e,--equal (string, string)
+# -c,--contain (string, stringOrRegex)
+# -r,--replace (string, string, string)
+string() {
+    declare -A string_data; parseArg string_data $@;
+    equal=$(parseGet string_data e equal);
+    contain=$(parseGet string_data c contain);
+    replace=$(parseGet string_data r replace);
+    help=$(parseGet string_data help);
 
-# (string, segment): bool
-stringContains() {
-    if $(echo "$1" | grep -q $2); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-}
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-e,--equal \t (string,string) \t\t compare two strings\n'
+    helpmsg+='\t-c,--contain \t (string,stringOrRegex) \t check if string contains\n'
+    helpmsg+='\t-r,--replace \t (string,string,string) \t 1,original string; 2,search string, 3,replacement \n'
 
-# (string, search, replace): string
-stringReplace() {
-    local string=$1 search=$2 replace=$3
-    echo "${string//$search/$replace}"
-}
+    equal_string(){
+        if [ "$1" = "$2" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    }
 
-# (string, segment): bool
-stringEqual() {
-    if [ "$1" = "$2" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    contain_string(){
+        if $(echo "$1" | grep -q $2); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    }
+
+    replace_string(){
+        local string=$1 search=$2 replace=$3
+        echo "${string//$search/$replace}"
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$equal"); then equal_string $equal;
+    elif $(hasValueq "$contain"); then contain_string $contain;
+    elif $(hasValueq "$replace"); then replace_string $replace;
+    fi;
+
 }
 
 noproxy() {
@@ -488,27 +501,33 @@ retry() {
     command=$(parseGet retry_data c cmd command _);
     interval=$(parseGet retry_data i interval);
     retry=$(parseGet retry_data r retry)
-    help=$(parseGet quick_data h help);
+    help=$(parseGet retry_data h help);
 
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-c,--cmd,--command,_ \t (string) \t *_default, command to eval\n'
-    helpmsg+='\t-i,interval \t (string) \t interval, in seconds, default to 1 sec\n'
-    helpmsg+='\t-r,--retry \t (string) \t retry, default to 3 times\n'
+    helpmsg+='\t-i,interval \t\t (string) \t interval, in seconds, default to 1 sec\n'
+    helpmsg+='\t-r,--retry \t\t (string) \t retry, default to 3 times\n'
 
     if ! $(hasValueq $interval); then interval=1; fi;
     if ! $(hasValueq $retry); then retry=3; fi;
 
-    while [[ $retry -ne 0 ]]; do
-        _ED retry: $retry, remain
-        eval "$command"
-        if [[ $? -eq 0 ]]; then
-            return $(_RC 0)
-        else
-            retry=$((retry - 1))
-            sleep "$interval"
-        fi
-    done
-    return $(_RC 1)
+    action_retry(){
+        while [[ $retry -ne 0 ]]; do
+            _ED retry: $retry, remain
+            eval "$command"
+            if [[ $? -eq 0 ]]; then
+                return $(_RC 0)
+            else
+                retry=$((retry - 1))
+                sleep "$interval"
+            fi
+        done
+        return $(_RC 1)
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";  
+    elif $(hasValueq "$retry"); then action_retry;
+    fi;
 }
 
 # -n,--name,_ *_default
@@ -530,13 +549,13 @@ quick() {
     help=$(parseGet quick_data h help);
 
     helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-n,--name,_ \t (string) \t *_default, + -e,--edit,-r,--remove,--delete name of the quick data\n'
-    helpmsg+='\t-v,--variable \t (string) \t variable to use\n'
-    helpmsg+='\t-a,--add,--cmd \t () \t add command to name\n'
-    helpmsg+='\t-e,--edit \t () \t edit the target file\n'
-    helpmsg+='\t-c,--cat,--display,--show \t () \t display the content of file\n'
-    helpmsg+='\t-r,--remove,--delete \t () \t remove the target file\n'
-    helpmsg+='\t-l,--list \t () \t list total quick command\n'
+    helpmsg+='\t-n,--name,_ \t\t\t (string) \t *_default, + -e,--edit,-r,--remove,--delete name of the quick data\n'
+    helpmsg+='\t-v,--variable \t\t\t (string) \t variable to use\n'
+    helpmsg+='\t-a,--add,--cmd \t\t\t () \t\t add command to name\n'
+    helpmsg+='\t-e,--edit \t\t\t () \t\t edit the target file\n'
+    helpmsg+='\t-c,--cat,--display,--show \t () \t\t display the content of file\n'
+    helpmsg+='\t-r,--remove,--delete \t\t () \t\t remove the target file\n'
+    helpmsg+='\t-l,--list \t\t\t () \t\t list total quick command\n'
 
     name=$(echo $name | sed 's/ *//')
     targetFile="$storageDirQuick/$name"
@@ -617,10 +636,10 @@ help(){
     help=$(parseGet help_data h help);
 
     helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-n,--name,_ \t (string) \t grep functions with name\n'
-    helpmsg+='\t-u,--update,--upgrade \t () \t upgrade current script\n'
-    helpmsg+='\t-v,--version \t (string) \t display current version\n'
-    helpmsg+='\t-h,--help \t (string) \t display help message\n'
+    helpmsg+='\t-n,--name,_ \t\t (string) \t grep functions with name\n'
+    helpmsg+='\t-u,--update,--upgrade \t () \t\t upgrade current script\n'
+    helpmsg+='\t-v,--version \t\t (string) \t display current version\n'
+    helpmsg+='\t-h,--help \t\t (string) \t display help message\n'
 
     update_help() {
         _ED Current Version: $(version)
