@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.0.0
+    echo 3.0.1
 }
 
 storageDir="$HOME/.application"
@@ -138,7 +138,7 @@ hasContent() {
     if $(cat $1 | grep -q "$content"); then return $(_RC 0 "$@"); else return $(_RC 1 "$@"); fi;
 }
 
-# (value): bool
+# (value): bool, use "$data" to check for white space
 hasValue() {
     if ! [[ -z $1 ]]; then return $(_RC 0 "$@"); else return $(_RC 1 "$@"); fi;
 }
@@ -259,8 +259,8 @@ uuid() {
 }
 
 # -p,--public (route_number) Public ip *_default
-# -4,--ipv4 () use ipv4 to connect to internet *_default
-# -6,--ipv6 () use ipv6 to connect to internet
+# -4,--ipv4 () bool, use ipv4 to connect to internet *_default
+# -6,--ipv6 () bool, use ipv6 to connect to internet
 # -P,--private () private ip 
 ip() {
     declare -A ip_data; parseArg ip_data $@;
@@ -310,7 +310,7 @@ ip() {
     # (route_number):string
     ipPublic() {
         iv=4
-        if $(hasValueq $ipv6); then iv=6; fi;
+        if $(hasValueq "$ipv6"); then iv=6; fi;
         case $1 in
             2) _ED ipinfo.io/ip with ipv$iv && _EC $(get2 ipinfo.io/ip $iv) ;;
             3) _ED api.ipify.org with ipv$iv && _EC $(get2 api.ipify.org $iv) ;;
