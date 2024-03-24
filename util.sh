@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.0.1
+    echo 3.1.0
 }
 
 storageDir="$HOME/.application"
@@ -99,11 +99,6 @@ parseGet() {
     local -n parse_get=$1;
     for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then _EC "${parse_get[$i]}" && return $(_RC 0 $@); fi; done;
     return $(_RC 1 $@);
-}
-
-# (item1, item2): bool
-equal() {
-    if [ $1 = $2 ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
 }
 
 # (path): bool
@@ -300,7 +295,7 @@ ip() {
 
     get2() {
         local url=$1 version=$2 wgetArg="--inet4-only --prefer-family=IPv4" curlArg="--ipv4"
-        if $(u2 equal $version 6); then wgetArg="--inet6-only --prefer-family=IPv6" curlArg="--ipv6"; fi;
+        if $(string -e "$version" 6); then wgetArg="--inet6-only --prefer-family=IPv6" curlArg="--ipv6"; fi;
         if $(hasCmd wget); then wget -qO- $wgetArg "$url";
             elif $(hasCmd curl); then curl -s -X $curlArg GET "$url";
         fi;
