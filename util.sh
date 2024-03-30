@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.1.0
+    echo 3.1.1
 }
 
 storageDir="$HOME/.application"
@@ -174,6 +174,7 @@ os() {
         elif $(hasCmd dnf); then _EC "dnf";
         elif $(hasCmd choco); then _EC "choco";
         elif $(hasCmd winget); then _EC "winget";
+        else _EC "NONE";
         fi;
     }
 
@@ -216,15 +217,15 @@ os() {
     }
 
     info_os(){
+        echo $(pkgManager_os);
         if $(hasCmdq uname); then uname -a; fi;
         if $(hasCmdq sw_vers); then sw_vers; fi;
         if $(hasCmdq lsb_release); then lsb_release -a; fi;
-        if $(hasCmdq hostname); then hostname; fi;
+        if $(hasCmdq hostnamectl); then hostnamectl; elif $(hasCmdq hostname); then hostname; fi;
         if [ -f "/etc/os-release" ]; then cat /etc/os-release; fi;
         if $(hasCmdq systeminfo); then systeminfo; fi;
         if $(hasCmdq wmic); then wmic os get Caption, Version, BuildNumber; fi;
     }
-
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$check"); then check_os $check; 
@@ -233,8 +234,6 @@ os() {
     fi;
 
 }
-
-
 
 # (): string
 uuid() {
@@ -282,14 +281,11 @@ ip() {
             if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
             elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
             else _ED ip && _EC $($ips route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
-            
         elif $(os -c mac);then
-
             ethernet=$(ipconfig getifaddr en1)
             wifi=$(ipconfig getifaddr en0)
             if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet; 
             else _ED wifi && _EC $wifi; fi;
-
         fi;
     }
 
