@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.1.1
+    echo 3.2.1
 }
 
 storageDir="$HOME/.application"
@@ -89,7 +89,7 @@ parseArg() {
     _target="_"
     for i in ${@:2:$#}; do    
         if ! [[ "$i" =~ ^"-" ]]; then parse_result[$_target]="${parse_result[$_target]}$i ";
-        else _target=$(echo " $i" | sed 's/^ -*//'); ! $(hasValueq "${parse_result[$_target]}") && parse_result[$_target]=' ';
+        else _target=$(echo " $i" | sed 's/^ -*//'); [[ -z "${parse_result[$_target]}" ]] && parse_result[$_target]=' ';
         fi;
     done;
 }
@@ -98,7 +98,7 @@ parseArg() {
 parseGet() {
     local -n parse_get=$1;
     for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then _EC "${parse_get[$i]}" && return $(_RC 0 $@); fi; done;
-    return $(_RC 1 $@);
+    return 1;
 }
 
 # (path): bool
@@ -133,14 +133,106 @@ hasContent() {
     if $(cat $1 | grep -q "$content"); then return $(_RC 0 "$@"); else return $(_RC 1 "$@"); fi;
 }
 
-# (value): bool, use "$data" to check for white space
+# (value): bool
 hasValue() {
     if ! [[ -z $1 ]]; then return $(_RC 0 "$@"); else return $(_RC 1 "$@"); fi;
 }
 
 # hasValue quiet
 hasValueq() {
-    ! [[ -z "$1" ]]
+    ! [[ -z $1 ]]
+}
+
+# -v,--value; -V,--Value slient
+# -c,--cmd,--command; -C,--Cmd,--Command silent
+# -d,--dir; -D,--Dir silent
+# -f,--file; -F,--File silent
+# -e,--env; -E,--Env silent
+has() {
+    parseGetQ() {
+        local -n parse_get=$1;
+        for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then echo "${parse_get[$i]}" && return 0; fi; done;
+        return 1;
+    }
+    
+    declare -A has_data; parseArg has_data $@;
+    value=$(parseGet has_data v value);
+    valueQ=$(parseGetQ has_data V Value);
+    cmd=$(parseGet has_data c cmd command);
+    cmdQ=$(parseGetQ has_data C Cmd Command);
+    dir=$(parseGet has_data d dir);
+    dirQ=$(parseGetQ has_data D Dir);
+    file=$(parseGet has_data f file);
+    fileQ=$(parseGet has_data F File);
+    env=$(parseGet has_data e env);
+    envQ=$(parseGet has_data E Env);
+    help=$(parseGet has_data help);
+
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-v,--value \t (string) \t check if it has value\n'
+    helpmsg+='\t-V,--Value \t (string) \t check if it has value quietly\n'
+    helpmsg+='\t-c,--cmd \t (string) \t check if it has command\n'
+    helpmsg+='\t-C,--Cmd \t (string) \t check if it has command quietly\n'
+    helpmsg+='\t-d,--dir \t (string) \t check if it has directory\n'
+    helpmsg+='\t-D,--Dir \t (string) \t check if it has directory quietly\n'
+    helpmsg+='\t-f,--file \t (string) \t check if it has file\n'
+    helpmsg+='\t-F,--File \t (string) \t check if it has file quietly\n'
+    helpmsg+='\t-e,--env \t (string) \t check if it has environment\n'
+    helpmsg+='\t-E,--Env \t (string) \t check if it has environment quietly\n'
+
+    value_has() {
+        if ! [[ -z $1 ]]; then return $(_RC 0 "$@"); else return $(_RC 1 "$@"); fi;
+    }
+
+    value_Q_has() {
+        ! [[ -z $1 ]];
+    }
+
+    cmd_has() {
+        if ! [[ -z "$(command -v $1)" ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    }
+
+    cmd_Q_has() {
+        ! [[ -z "$(command -v "$1")" ]];
+    }
+
+    dir_has() {
+        if [ -d "$1" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    }
+
+    dir_Q_has() {
+        [ -d "$1" ];
+    }
+
+    file_has() {
+        if [ -f "$1" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    }
+
+    file_Q_has() {
+        [ -f "$1" ];
+    }
+
+    env_has() {
+        if ! [[ -z ${!1+set} ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    }
+
+    env_Q_has() {
+        ! [[ -z ${!1+set} ]]; 
+    }
+    
+    if $(value_Q_has "$help"); then printf "$helpmsg"; 
+    elif [ "$_target" == 'v' ] || [ "$_target" == 'value' ]; then value_has "$value"; 
+    elif [ "$_target" == 'V' ] || [ "$_target" == 'Value' ]; then value_Q_has "$valueQ"; 
+    elif $(value_Q_has "$cmd"); then cmd_has $cmd; 
+    elif $(value_Q_has "$cmdQ"); then cmd_Q_has $cmdQ; 
+    elif $(value_Q_has "$dir"); then dir_has $dir; 
+    elif $(value_Q_has "$dirQ"); then dir_Q_has $dirQ; 
+    elif $(value_Q_has "$file"); then file_has $file; 
+    elif $(value_Q_has "$fileQ"); then file_Q_has $fileQ; 
+    elif $(value_Q_has "$env"); then env_has $env; 
+    elif $(value_Q_has "$envQ"); then env_Q_has $envQ; 
+    fi;
+
 }
 
 # (envName, ?replacement): string | null
