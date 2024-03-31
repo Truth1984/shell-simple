@@ -163,9 +163,9 @@ has() {
     dir=$(parseGet has_data d dir);
     dirQ=$(parseGetQ has_data D Dir);
     file=$(parseGet has_data f file);
-    fileQ=$(parseGet has_data F File);
+    fileQ=$(parseGetQ has_data F File);
     env=$(parseGet has_data e env);
-    envQ=$(parseGet has_data E Env);
+    envQ=$(parseGetQ has_data E Env);
     help=$(parseGet has_data help);
 
     helpmsg="${FUNCNAME[0]}:\n"
