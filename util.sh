@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.2.1
+    echo 3.2.2
 }
 
 storageDir="$HOME/.application"
@@ -143,19 +143,24 @@ hasValueq() {
     ! [[ -z $1 ]]
 }
 
-# -v,--value; -V,--Value slient
+# -v,--value; -V,--Value, *_default slient
 # -c,--cmd,--command; -C,--Cmd,--Command silent
 # -d,--dir; -D,--Dir silent
 # -f,--file; -F,--File silent
 # -e,--env; -E,--Env silent
 has() {
+    declare -A has_data; parseArg has_data $@;
+
+    if [ "$_target" = "_" ]; then 
+        return $(! [[ -z $1 ]]);
+    fi;
+
     parseGetQ() {
         local -n parse_get=$1;
         for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then echo "${parse_get[$i]}" && return 0; fi; done;
         return 1;
     }
-    
-    declare -A has_data; parseArg has_data $@;
+
     value=$(parseGet has_data v value);
     valueQ=$(parseGetQ has_data V Value);
     cmd=$(parseGet has_data c cmd command);
@@ -170,7 +175,7 @@ has() {
 
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-v,--value \t (string) \t check if it has value\n'
-    helpmsg+='\t-V,--Value \t (string) \t check if it has value quietly\n'
+    helpmsg+='\t-V,--Value,*_ \t (string) \t check if it has value quietly. Can do $(has "$value")\n'
     helpmsg+='\t-c,--cmd \t (string) \t check if it has command\n'
     helpmsg+='\t-C,--Cmd \t (string) \t check if it has command quietly\n'
     helpmsg+='\t-d,--dir \t (string) \t check if it has directory\n'
@@ -219,7 +224,7 @@ has() {
     env_Q_has() {
         ! [[ -z ${!1+set} ]]; 
     }
-    
+
     if $(value_Q_has "$help"); then printf "$helpmsg"; 
     elif [ "$_target" == 'v' ] || [ "$_target" == 'value' ]; then value_has "$value"; 
     elif [ "$_target" == 'V' ] || [ "$_target" == 'Value' ]; then value_Q_has "$valueQ"; 
@@ -402,9 +407,9 @@ ip() {
         esac
     }
 
-    if $(hasValueq "$help"); then printf "$helpmsg"; 
-    elif $(hasValueq "$public"); then ipPublic $public; 
-    elif $(hasValueq "$private"); then ipLocal $private; 
+    if $(has "$help"); then printf "$helpmsg"; 
+    elif $(has "$public"); then ipPublic $public; 
+    elif $(has "$private"); then ipLocal $private; 
     else ipPublic $public; 
     fi;
 }
