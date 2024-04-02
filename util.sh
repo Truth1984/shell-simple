@@ -407,9 +407,9 @@ ip() {
         esac
     }
 
-    if $(has "$help"); then printf "$helpmsg"; 
-    elif $(has "$public"); then ipPublic $public; 
-    elif $(has "$private"); then ipLocal $private; 
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$public"); then ipPublic $public; 
+    elif $(hasValueq "$private"); then ipLocal $private; 
     else ipPublic $public; 
     fi;
 }
