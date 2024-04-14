@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.2.2
+    echo 3.3.0
 }
 
 storageDir="$HOME/.application"
