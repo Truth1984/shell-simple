@@ -11,6 +11,7 @@ storageDir="$HOME/.application"
 storageDirQuick="$storageDir/quick"
 storageDirBin="$storageDir/bin"
 storageDirBinExtra=$storageDirBin/extra
+storageDirTrash="$storageDir/.trash"
 
 # (): number
 # default verbose=1, set verbose to something else to suppress logging
@@ -279,28 +280,28 @@ os() {
     check_os() {
         case $1 in
             mac | darwin | macos | apple | osx | brew)
-                if $(hasCmd uname && uname | grep -q Darwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+                if $(hasCmdq uname && uname | grep -q Darwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
             ;;
             centos | yum)
-                if $(hasCmd yum); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+                if $(hasCmdq yum); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
             ;;
             alpine | apk)
-                if $(hasCmd apk); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+                if $(hasCmdq apk); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
             ;;
             debian | deb | dpkg)
-                if $(hasCmd dpkg); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+                if $(hasCmdq dpkg); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
             ;;
             ubuntu | apt)
-                if $(hasCmd apt-get); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+                if $(hasCmdq apt-get); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
             ;;
             arch | archlinux | pacman )
-                if $(hasCmd pacman); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+                if $(hasCmdq pacman); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
             ;;
             redhat | dnf | rhel)
-                if $(hasCmd dnf); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+                if $(hasCmdq dnf); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
             ;;
             linux)
-                if $(hasCmd uname) && uname | grep -q Linux; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+                if $(hasCmdq uname) && uname | grep -q Linux; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
             ;;
             win | windows)
                 if $(echo "$OSTYPE" | grep -q msys || echo "$OSTYPE" | grep -q cygwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
@@ -411,6 +412,71 @@ ip() {
     elif $(hasValueq "$public"); then ipPublic $public; 
     elif $(hasValueq "$private"); then ipLocal $private; 
     else ipPublic $public; 
+    fi;
+}
+
+# -D,--Datetime *_default date+time
+# -d,--date date only
+# -t,--time time only
+# -p,--plain plain format as 2000_12_31_23_59_59
+# -r,--reparse reparse the date format back
+dates() {
+    declare -A date_data; parseArg date_data $@;
+    dateTime=$(parseGet date_data D Datetime _);
+    dateOnly=$(parseGet date_data d date);
+    timeOnly=$(parseGet date_data t time);
+    plain=$(parseGet date_data p plain);
+    reparse=$(parseGet date_data r reparse);
+    help=$(parseGet date_data h help);
+
+    dateFormat='%Y-%m-%d'
+    timeFormat='%H:%M:%S'
+    dateTimeFormat='%Y-%m-%d %H:%M:%S'
+    plainFormat='%Y_%m_%d_%H_%M_%S'
+
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-D,--Datetime,_ \t () \t date+time format of date\n'
+    helpmsg+='\t-d,--date \t\t () \t date only format of date\n'
+    helpmsg+='\t-t,--time \t\t () \t time only format of date\n'
+    helpmsg+='\t-p,--plain \t\t () \t plain format of date\n'
+    helpmsg+='\t-r,--reparse \t\t () \t reparse string into date\n'
+
+    toFormat_dates() {
+        echo $(date +"$1")
+    }
+
+    reparse_dates() {
+
+        local input=$1
+
+        p1="[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+"
+        p2="[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+"
+        p3="[0-9]+-[0-9]+-[0-9]+"
+        p4="[0-9]+:[0-9]+:[0-9]+"
+        target=""
+
+        if [[ $1 =~ $p1 ]]; then target=$dateTimeFormat; 
+        elif [[ $1 =~ $p2 ]]; then target=$plainFormat; 
+        elif [[ $1 =~ $p3 ]]; then target=$dateFormat; 
+        elif [[ $1 =~ $p4 ]]; then target=$timeFormat; fi;
+
+        if ! $(hasValueq $target); then return $(_ERC "Error: no pattern found"); 
+        else _ED datetime format found, using $target; fi;
+
+        if $(os -c mac); then
+            echo $(date -j -f " $target " "$1")
+        else
+            echo $(date -d "$1" +"$target")
+        fi;
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$dateTime"); then toFormat_dates "$dateTimeFormat"; 
+    elif $(hasValueq "$dateOnly"); then toFormat_dates "$dateFormat"; 
+    elif $(hasValueq "$timeOnly"); then toFormat_dates "$timeFormat"; 
+    elif $(hasValueq "$plain"); then toFormat_dates "$plainFormat"; 
+    elif $(hasValueq "$reparse"); then reparse_dates "$reparse"; 
+    else toFormat_dates "$dateTimeFormat"; 
     fi;
 }
 
@@ -685,7 +751,7 @@ quick() {
 # call setup bash beforehand
 setup() {
     profile="$(_PROFILE)"
-    mkdir -p $storageDirBin && mkdir -p $storageDirBinExtra && mkdir -p $storageDirQuick
+    mkdir -p $storageDirBin && mkdir -p $storageDirBinExtra && mkdir -p $storageDirQuick && mkdir -p $storageDirTrash
 
     if ! $(hasFile "$HOME/.bash_mine"); then
         touch $HOME/.bash_mine && touch $HOME/.bash_env
