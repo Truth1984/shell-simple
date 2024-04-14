@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.3.0
+    echo 3.3.1
 }
 
 storageDir="$HOME/.application"
@@ -419,6 +419,7 @@ ip() {
 # -d,--date date only
 # -t,--time time only
 # -p,--plain plain format as 2000_12_31_23_59_59
+# -i,--iso iso8601 format
 # -r,--reparse reparse the date format back
 dates() {
     declare -A date_data; parseArg date_data $@;
@@ -426,6 +427,7 @@ dates() {
     dateOnly=$(parseGet date_data d date);
     timeOnly=$(parseGet date_data t time);
     plain=$(parseGet date_data p plain);
+    iso=$(parseGet date_data i iso);
     reparse=$(parseGet date_data r reparse);
     help=$(parseGet date_data h help);
 
@@ -433,6 +435,7 @@ dates() {
     timeFormat='%H:%M:%S'
     dateTimeFormat='%Y-%m-%d %H:%M:%S'
     plainFormat='%Y_%m_%d_%H_%M_%S'
+    iso8601="%Y-%m-%dT%H:%M:%S%z"
 
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-D,--Datetime,_ \t () \t date+time format of date\n'
@@ -446,19 +449,20 @@ dates() {
     }
 
     reparse_dates() {
-
         local input=$1
 
         p1="[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+"
         p2="[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+"
-        p3="[0-9]+-[0-9]+-[0-9]+"
-        p4="[0-9]+:[0-9]+:[0-9]+"
+        p3="[0-9]+-[0-9]+-[0-9]+T"
+        p4="[0-9]+-[0-9]+-[0-9]+"
+        p5="[0-9]+:[0-9]+:[0-9]+"
         target=""
 
         if [[ $1 =~ $p1 ]]; then target=$dateTimeFormat; 
         elif [[ $1 =~ $p2 ]]; then target=$plainFormat; 
-        elif [[ $1 =~ $p3 ]]; then target=$dateFormat; 
-        elif [[ $1 =~ $p4 ]]; then target=$timeFormat; fi;
+        elif [[ $1 =~ $p3 ]]; then target=$iso8601; 
+        elif [[ $1 =~ $p4 ]]; then target=$dateFormat; 
+        elif [[ $1 =~ $p5 ]]; then target=$timeFormat; fi;
 
         if ! $(hasValueq $target); then return $(_ERC "Error: no pattern found"); 
         else _ED datetime format found, using $target; fi;
@@ -475,10 +479,13 @@ dates() {
     elif $(hasValueq "$dateOnly"); then toFormat_dates "$dateFormat"; 
     elif $(hasValueq "$timeOnly"); then toFormat_dates "$timeFormat"; 
     elif $(hasValueq "$plain"); then toFormat_dates "$plainFormat"; 
+    elif $(hasValueq "$iso"); then toFormat_dates "$iso8601"; 
     elif $(hasValueq "$reparse"); then reparse_dates "$reparse"; 
     else toFormat_dates "$dateTimeFormat"; 
     fi;
 }
+
+
 
 # (...?pkgname)
 ## package update, or general update
