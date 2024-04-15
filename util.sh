@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.5.1
+    echo 3.7.1
 }
 
 storageDir="$HOME/.application"
@@ -453,6 +453,8 @@ ip() {
 # -p,--plain plain format as 2000_12_31_23_59_59
 # -i,--iso iso8601 format
 # -r,--reparse reparse the date format back
+# -o,--older current time minus $2 in sec > $1 time
+# -s,--second older than seconds, 
 dates() {
     declare -A date_data; parseArg date_data $@;
     dateTime=$(parseGet date_data D Datetime _);
@@ -461,6 +463,8 @@ dates() {
     plain=$(parseGet date_data p plain);
     iso=$(parseGet date_data i iso);
     reparse=$(parseGet date_data r reparse);
+    older=$(parseGet date_data o older);
+    second=$(parseGet date_data s second);
     help=$(parseGet date_data h help);
 
     dateFormat='%Y-%m-%d'
@@ -475,13 +479,29 @@ dates() {
     helpmsg+='\t-t,--time \t\t () \t time only format of date\n'
     helpmsg+='\t-p,--plain \t\t () \t plain format of date\n'
     helpmsg+='\t-r,--reparse \t\t (string) \t reparse string into date\n'
+    helpmsg+='\t-o,--older \t\t (string) \t current time minus (-s in sec) > $1 time\n'
+    helpmsg+='\t-s,--second \t\t (number) \t older than x second\n'
 
     toFormat_dates() {
         echo $(date +"$1")
     }
 
+    parseDateOS() {
+        timeString=$(echo $1 | xargs)
+        format=$2
+        additional=$3
+
+        # os -c mac quiet
+        if $(hasCmdq uname && uname | grep -q Darwin); then
+            echo $(date -j -f "$format" "$timeString" $additional)
+        else
+            echo $(date -d "$timeString" +"$format" $additional)
+        fi;
+    }
+
     reparse_dates() {
         local input=$1
+        additional=$2
 
         p1="[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+"
         p2="[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+"
@@ -499,11 +519,19 @@ dates() {
         if ! $(hasValueq $target); then return $(_ERC "Error: no pattern found"); 
         else _ED datetime format found, using $target; fi;
 
-        if $(os -c mac); then
-            echo $(date -j -f " $target " "$1")
-        else
-            echo $(date -d "$1" +"$target")
-        fi;
+        parseDateOS "$1" "$target" $additional
+    }
+
+    older_dates() {
+        if ! $(hasValueq $second); then return $(_ERC '$second value undefined'); fi;
+        
+        inputDate=$(echo $@ | xargs)
+        target=$(reparse_dates "$inputDate" "+%s")
+        current_timestamp=$(date +%s)
+        difference=$((current_timestamp - target))
+
+        if [ "$difference" -gt $second ]; then _RC 0 difference:$difference '>' $second;
+        else _RC 1 difference:$difference '<' $second; fi;
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
@@ -512,6 +540,7 @@ dates() {
     elif $(hasValueq "$timeOnly"); then toFormat_dates "$timeFormat"; 
     elif $(hasValueq "$plain"); then toFormat_dates "$plainFormat"; 
     elif $(hasValueq "$iso"); then toFormat_dates "$iso8601"; 
+    elif $(hasValueq "$older"); then older_dates $older; 
     elif $(hasValueq "$reparse"); then reparse_dates "$reparse"; 
     else toFormat_dates "$dateTimeFormat"; 
     fi;
@@ -521,6 +550,7 @@ dates() {
 # -p,--path path to trash, *_default
 # -l,--list list trash 
 # -r,--restore restore file
+# -c,--clean clean trash older than 3 month
 # -P,--Purge rm all files from trash dir
 trash() {
     declare -A trash_data; parseArg trash_data $@;
@@ -528,15 +558,15 @@ trash() {
     path=$(parseGet trash_data p path _);
     list=$(parseGet trash_data l list);
     restore=$(parseGet trash_data r restore);
+    clean=$(parseGet trash_data c clean);
     Purge=$(parseGet trash_data P Purge);
 
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--path,_ \t (string) \t move target path to trash path\n'
     helpmsg+='\t-l,--list \t (string) \t list infos on current path, default to list all\n'
     helpmsg+='\t-r,--restore \t (string) \t restore folder depends on current path\n'
+    helpmsg+='\t-c,--clean \t (number) \t clean trash older than 3 month, default 7890000 \n'
     helpmsg+='\t-P,--Purge \t () \t remove all trash from trash path\n'
-
-    # restore: use mv -i;  prompt which to select and restore target file
 
     TP="$storageDirTrash"
     trashInfoName="_u_trash_info"
@@ -580,7 +610,7 @@ trash() {
         evalStr=$2
         
         length=${folder_data[length]}
-         for ((i=0; i<$length; i++)); do     
+        for ((i=0; i<$length; i++)); do     
             target=${folder_data[${i}_${indexStr}]}
             if ! $(eval "$evalStr $target"); then
                 unset folder_data[${i}_index]
@@ -589,47 +619,36 @@ trash() {
                 unset folder_data[${i}_dtime]
                 unset folder_data[${i}_size]
             fi;
-         done
+        done
     }
 
     # $1 eval if condition
     printTrashList(){
         printf 'index:\tOriginal Directory:\t\t\t\t\tDeletetime:\t\tSize:\tDIR:\n'
+        length=${folder_data[length]}
 
-        if ! $(hasValueq "$1"); then
-            for ((i=0; i<$length; i++)); do     
+        for ((i=0; i<$length; i++)); do     
+            if $(hasValueq ${folder_data[${i}_uuid]}); then
                 index=${folder_data[${i}_index]}
                 uuid=${folder_data[${i}_uuid]}
                 original_dir=${folder_data[${i}_original_dir]}
                 dtime=${folder_data[${i}_dtime]}
                 size=${folder_data[${i}_size]}
                 printf  "$index\t$original_dir\t\t$dtime\t$size\t$TP/$uuid\n"
-            done
-        else 
-            for ((i=0; i<$length; i++)); do     
-                if $(eval "$1"); then
-                    index=${folder_data[${i}_index]}
-                    uuid=${folder_data[${i}_uuid]}
-                    original_dir=${folder_data[${i}_original_dir]}
-                    dtime=${folder_data[${i}_dtime]}
-                    size=${folder_data[${i}_size]}
-                    printf  "$index\t$original_dir\t\t$dtime\t$size\t$TP/$uuid\n"
-                fi;
-            done
-        fi;
+            fi;
+        done
     }
 
     list_trash() {
         local dir=$1
         loadArray   
-        length=${folder_data[length]}
         
         if ! $(hasValueq $dir); then
             printTrashList
         else
             dir=$(pathGetFull $dir)
             trashFilter "original_dir" 'a(){ if $(echo $1 | grep -q'" $dir); then return 0; else return 1; fi; }; a"
-            printTrashList '$(hasValueq ${folder_data[${i}_uuid]})'
+            printTrashList 
         fi;
     }
 
@@ -637,12 +656,11 @@ trash() {
         local dir=$1
         if ! $(hasValueq $dir); then dir="."; fi;
         loadArray   
-        length=${folder_data[length]}
 
         dir=$(pathGetFull $dir)
 
         trashFilter "original_dir" 'a(){ if $(echo $1 | grep -q'" $dir); then return 0; else return 1; fi; }; a"
-        printTrashList '$(hasValueq ${folder_data[${i}_uuid]})'
+        printTrashList 
 
         if [ ${#folder_data[@]} -lt 2 ]; then
             return $(_ERC "Error: empty, nothing to restore in $dir");
@@ -657,6 +675,32 @@ trash() {
         targetTrashDir=$(echo "$TP/$uuid" | xargs) 
         mv $targetTrashDir/$trashInfoName /tmp
         mv -i $targetTrashDir/* "$(dirname "$original_dir")"
+    }
+
+    clean_trash() {
+        seconds=7890000
+        if (hasValueq $1); then seconds=$1; fi;
+        loadArray
+        trashFilter "dtime" 'a(){ if $(dates -o $@ -s'" $seconds); then return 0; else return 1; fi; }; a "
+        printTrashList 
+
+        if [ ${#folder_data[@]} -lt 2 ]; then
+            _ED No available file found
+        else
+            response=$(prompt "clean these content in $TP ? (no) ")
+            if [ $response -eq 1 ]; then
+                length=${folder_data[length]}
+                for ((i=0; i<$length; i++)); do     
+                    if $(hasValueq ${folder_data[${i}_uuid]}); then
+                        _ED removing $TP/$uuid
+                        rm -rf $TP/$uuid;
+                    fi;
+                done
+                _ED clean complete
+            else 
+                _ED clean not performed, exit clean
+            fi;
+        fi;
     }
 
     purge_trash() {
@@ -674,6 +718,7 @@ trash() {
     elif $(hasValueq "$path"); then put_trash $path; 
     elif $(hasValueq "$list"); then list_trash $list; 
     elif $(hasValueq "$restore"); then restore_trash $restore; 
+    elif $(hasValueq "$clean"); then clean_trash $clean; 
     elif $(hasValueq "$Purge"); then purge_trash $Purge; 
     fi;
 }
