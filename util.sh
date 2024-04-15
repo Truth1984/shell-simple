@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.3.1
+    echo 3.5.1
 }
 
 storageDir="$HOME/.application"
@@ -100,6 +100,38 @@ parseGet() {
     local -n parse_get=$1;
     for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then _EC "${parse_get[$i]}" && return $(_RC 0 $@); fi; done;
     return 1;
+}
+
+pathGetFull() {
+    path=$(cd "$(dirname "$1")" || exit; pwd)
+    file=$(basename "$1")
+
+    if [ "$file" = ".." ]; then
+        _EC "$(dirname "$path")"
+    else
+        _EC  "$path/$file"
+    fi
+}
+
+# takes in question, and return 1 as yes, 2 as no, default as original response
+prompt() {
+    read -p "$1" response
+
+    if [[ "$response" =~ [0-9]+ ]]; then
+        echo $response
+    else
+        case "$response" in
+            [yY]|[yY][eE][sS])
+                echo 1
+            ;;
+            [nN]|[nN][oO])
+                echo 2
+            ;;
+            *)
+                echo 0 
+            ;;
+        esac
+    fi;
 }
 
 # (path): bool
@@ -442,7 +474,7 @@ dates() {
     helpmsg+='\t-d,--date \t\t () \t date only format of date\n'
     helpmsg+='\t-t,--time \t\t () \t time only format of date\n'
     helpmsg+='\t-p,--plain \t\t () \t plain format of date\n'
-    helpmsg+='\t-r,--reparse \t\t () \t reparse string into date\n'
+    helpmsg+='\t-r,--reparse \t\t (string) \t reparse string into date\n'
 
     toFormat_dates() {
         echo $(date +"$1")
@@ -482,6 +514,166 @@ dates() {
     elif $(hasValueq "$iso"); then toFormat_dates "$iso8601"; 
     elif $(hasValueq "$reparse"); then reparse_dates "$reparse"; 
     else toFormat_dates "$dateTimeFormat"; 
+    fi;
+}
+
+
+# -p,--path path to trash, *_default
+# -l,--list list trash 
+# -r,--restore restore file
+# -P,--Purge rm all files from trash dir
+trash() {
+    declare -A trash_data; parseArg trash_data $@;
+    declare -A folder_data;
+    path=$(parseGet trash_data p path _);
+    list=$(parseGet trash_data l list);
+    restore=$(parseGet trash_data r restore);
+    Purge=$(parseGet trash_data P Purge);
+
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-p,--path,_ \t (string) \t move target path to trash path\n'
+    helpmsg+='\t-l,--list \t (string) \t list infos on current path, default to list all\n'
+    helpmsg+='\t-r,--restore \t (string) \t restore folder depends on current path\n'
+
+    # restore: use mv -i;  prompt which to select and restore target file
+
+    TP="$storageDirTrash"
+    trashInfoName="_u_trash_info"
+
+    put_trash() {
+        local input=$1 
+        inputPath=$(pathGetFull $input)
+        uid="$(uuid)"
+        trashDir="$TP/$uid"
+        size=$(du -sh $inputPath | awk '{print $1}')
+        mkdir -p $trashDir
+        mv -fv $inputPath $trashDir
+        printf "uuid=$uid \noriginalDir=$inputPath \ndtime=$(date +'%Y-%m-%d %H:%M:%S')\nsize=$size\n" > $trashDir/$trashInfoName
+    }
+
+    loadArray() {
+        readarray -t folders < <(ls -lt "$TP" | tail -n +2 | awk '{print $9}')
+        folder_data[length]=${#folders[@]}
+        
+        for ((i=0; i<${#folders[@]}; i++)); do
+            folder=${folders[i]}
+            info_file="$TP/$folder/$trashInfoName"  
+            while IFS= read -r line; do
+                folder_data["${i}_index"]=$i
+            if [[ $line == "uuid="* ]]; then
+                folder_data[${i}_uuid]=${line#"uuid="}
+            elif [[ $line == "originalDir="* ]]; then
+                folder_data[${i}_original_dir]=${line#"originalDir="}
+            elif [[ $line == "dtime="* ]]; then
+                folder_data[${i}_dtime]=${line#"dtime="}
+            elif [[ $line == "size="* ]]; then
+                folder_data[${i}_size]=${line#"size="}
+            fi
+            done < "$info_file"
+        done
+    }
+
+    # call loadArray() beforehand, $1:index, $2: eval condition
+    trashFilter() {
+        indexStr=$1
+        evalStr=$2
+        
+        length=${folder_data[length]}
+         for ((i=0; i<$length; i++)); do     
+            target=${folder_data[${i}_${indexStr}]}
+            if ! $(eval "$evalStr $target"); then
+                unset folder_data[${i}_index]
+                unset folder_data[${i}_uuid]
+                unset folder_data[${i}_original_dir]
+                unset folder_data[${i}_dtime]
+                unset folder_data[${i}_size]
+            fi;
+         done
+    }
+
+    # $1 eval if condition
+    printTrashList(){
+        printf 'index:\tOriginal Directory:\t\t\t\t\tDeletetime:\t\tSize:\tDIR:\n'
+
+        if ! $(hasValueq "$1"); then
+            for ((i=0; i<$length; i++)); do     
+                index=${folder_data[${i}_index]}
+                uuid=${folder_data[${i}_uuid]}
+                original_dir=${folder_data[${i}_original_dir]}
+                dtime=${folder_data[${i}_dtime]}
+                size=${folder_data[${i}_size]}
+                printf  "$index\t$original_dir\t\t$dtime\t$size\t$TP/$uuid\n"
+            done
+        else 
+            for ((i=0; i<$length; i++)); do     
+                if $(eval "$1"); then
+                    index=${folder_data[${i}_index]}
+                    uuid=${folder_data[${i}_uuid]}
+                    original_dir=${folder_data[${i}_original_dir]}
+                    dtime=${folder_data[${i}_dtime]}
+                    size=${folder_data[${i}_size]}
+                    printf  "$index\t$original_dir\t\t$dtime\t$size\t$TP/$uuid\n"
+                fi;
+            done
+        fi;
+    }
+
+    list_trash() {
+        local dir=$1
+        loadArray   
+        length=${folder_data[length]}
+        
+        if ! $(hasValueq $dir); then
+            printTrashList
+        else
+            dir=$(pathGetFull $dir)
+            trashFilter "original_dir" 'a(){ if $(echo $1 | grep -q'" $dir); then return 0; else return 1; fi; }; a"
+            printTrashList '$(hasValueq ${folder_data[${i}_uuid]})'
+        fi;
+    }
+
+    restore_trash() {
+        local dir=$1
+        if ! $(hasValueq $dir); then dir="."; fi;
+        loadArray   
+        length=${folder_data[length]}
+
+        dir=$(pathGetFull $dir)
+
+        trashFilter "original_dir" 'a(){ if $(echo $1 | grep -q'" $dir); then return 0; else return 1; fi; }; a"
+        printTrashList '$(hasValueq ${folder_data[${i}_uuid]})'
+
+        if [ ${#folder_data[@]} -lt 2 ]; then
+            return $(_ERC "Error: empty, nothing to restore in $dir");
+        fi;
+
+        response=$(prompt "which one to restore ? [index:0]")
+
+        if ! $(hasValueq ${folder_data[${response}_uuid]}); then return $(_ERC "index:$response does not exit"); fi;
+        uuid=${folder_data[${response}_uuid]}
+        original_dir=${folder_data[${response}_original_dir]}
+
+        targetTrashDir=$(echo "$TP/$uuid" | xargs) 
+        mv $targetTrashDir/$trashInfoName /tmp
+        mv -i $targetTrashDir/* "$(dirname "$original_dir")"
+    }
+
+    purge_trash() {
+        response=$(prompt "purge all content in $TP ? (no) ")
+        if [ $response -eq 1 ]; then
+            rm -rf $TP;
+            mkdir -p $TP;
+            _ED purge complete
+        else 
+            _ED purge not performed, exit purge
+        fi;
+    }
+    
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$path"); then put_trash $path; 
+    elif $(hasValueq "$list"); then list_trash $list; 
+    elif $(hasValueq "$restore"); then restore_trash $restore; 
+    elif $(hasValueq "$Purge"); then purge_trash $Purge; 
     fi;
 }
 
