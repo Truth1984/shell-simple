@@ -534,6 +534,7 @@ trash() {
     helpmsg+='\t-p,--path,_ \t (string) \t move target path to trash path\n'
     helpmsg+='\t-l,--list \t (string) \t list infos on current path, default to list all\n'
     helpmsg+='\t-r,--restore \t (string) \t restore folder depends on current path\n'
+    helpmsg+='\t-P,--Purge \t () \t remove all trash from trash path\n'
 
     # restore: use mv -i;  prompt which to select and restore target file
 
