@@ -683,12 +683,12 @@ trash() {
 
         targetTrashDir=$(trimArgs $TP / $uuid) 
         mv $(trimArgs $targetTrashDir / $trashInfoName) /tmp
-        mv -i $(trimArgs $targetTrashDir /*)"$(dirname "$original_dir")"
+        mv -i $(trimArgs $targetTrashDir /*) "$(dirname "$original_dir")"
     }
 
     clean_trash() {
         seconds=7890000
-        if (hasValueq $1); then seconds=$1; fi;
+        if $(hasValueq $1); then seconds=$1; fi;
         loadArray
         trashFilter "dtime" 'a(){ if $(dates -o $@ -s'" $seconds); then return 0; else return 1; fi; }; a "
         printTrashList 
