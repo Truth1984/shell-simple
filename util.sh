@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.7.1
+    echo 3.7.3
 }
 
 storageDir="$HOME/.application"
@@ -111,6 +111,14 @@ pathGetFull() {
     else
         _EC  "$path/$file"
     fi
+}
+
+trimArgs() {
+    joined=""
+    for str in "$@"; do
+        joined="$joined$(echo "$str" | xargs)"
+    done
+    _EC "$joined"
 }
 
 # takes in question, and return 1 as yes, 2 as no, default as original response
@@ -575,11 +583,12 @@ trash() {
         local input=$1 
         inputPath=$(pathGetFull $input)
         uid="$(uuid)"
-        trashDir="$TP/$uid"
+        trashDir=$(trimArgs $TP / $uid)
         size=$(du -sh $inputPath | awk '{print $1}')
-        mkdir -p $trashDir
-        mv -fv $inputPath $trashDir
-        printf "uuid=$uid \noriginalDir=$inputPath \ndtime=$(date +'%Y-%m-%d %H:%M:%S')\nsize=$size\n" > $trashDir/$trashInfoName
+        infoDir=$(trimArgs $trashDir / $trashInfoName)
+        # mkdir -p $trashDir
+        # mv -fv $inputPath $trashDir
+        # printf "uuid=$uid \noriginalDir=$inputPath \ndtime=$(date +'%Y-%m-%d %H:%M:%S')\nsize=$size\n" > $infoDir
     }
 
     loadArray() {
@@ -588,7 +597,7 @@ trash() {
         
         for ((i=0; i<${#folders[@]}; i++)); do
             folder=${folders[i]}
-            info_file="$TP/$folder/$trashInfoName"  
+            info_file=$(trimArgs $TP / $folder / $trashInfoName)
             while IFS= read -r line; do
                 folder_data["${i}_index"]=$i
             if [[ $line == "uuid="* ]]; then
@@ -634,7 +643,7 @@ trash() {
                 original_dir=${folder_data[${i}_original_dir]}
                 dtime=${folder_data[${i}_dtime]}
                 size=${folder_data[${i}_size]}
-                printf  "$index\t$original_dir\t\t$dtime\t$size\t$TP/$uuid\n"
+                printf  "$index\t$original_dir\t\t$dtime\t$size\t$(trimArgs $TP/$uuid)\n"
             fi;
         done
     }
@@ -672,9 +681,9 @@ trash() {
         uuid=${folder_data[${response}_uuid]}
         original_dir=${folder_data[${response}_original_dir]}
 
-        targetTrashDir=$(echo "$TP/$uuid" | xargs) 
-        mv $targetTrashDir/$trashInfoName /tmp
-        mv -i $targetTrashDir/* "$(dirname "$original_dir")"
+        targetTrashDir=$(trimArgs $TP / $uuid) 
+        mv $(trimArgs $targetTrashDir / $trashInfoName) /tmp
+        mv -i $(trimArgs $targetTrashDir /*)"$(dirname "$original_dir")"
     }
 
     clean_trash() {
@@ -684,34 +693,40 @@ trash() {
         trashFilter "dtime" 'a(){ if $(dates -o $@ -s'" $seconds); then return 0; else return 1; fi; }; a "
         printTrashList 
 
-        if [ ${#folder_data[@]} -lt 2 ]; then
-            _ED No available file found
-        else
-            response=$(prompt "clean these content in $TP ? (no) ")
-            if [ $response -eq 1 ]; then
-                length=${folder_data[length]}
-                for ((i=0; i<$length; i++)); do     
-                    if $(hasValueq ${folder_data[${i}_uuid]}); then
-                        _ED removing $TP/$uuid
-                        rm -rf $TP/$uuid;
-                    fi;
-                done
-                _ED clean complete
-            else 
-                _ED clean not performed, exit clean
-            fi;
+        if [ "${#folder_data[@]}" -lt 2 ]; then
+            return $(_RC 0 "Info: No available file found")
+        fi
+        
+        response=$(prompt "clean these content in $TP ? (no) ")
+
+        if [ $response -ne 1 ]; then
+            return $(_RC 0 "clean not performed, exit clean")
         fi;
+
+        length=${folder_data[length]}
+
+        for ((i=0; i<$length; i++)); do     
+            if $(hasValueq ${folder_data[${i}_uuid]}); then
+                rmTarget=$(trimArgs $TP / $uuid)
+                _ED removing $rmTarget
+                rm -rf $rmTarget
+            fi;
+        done
+
+        _ED clean complete
     }
 
     purge_trash() {
         response=$(prompt "purge all content in $TP ? (no) ")
-        if [ $response -eq 1 ]; then
-            rm -rf $TP;
-            mkdir -p $TP;
-            _ED purge complete
-        else 
-            _ED purge not performed, exit purge
+
+        if [ $response -ne 1 ]; then
+            return $(_RC 0 "purge not performed, exit purge")
         fi;
+
+        rm -rf $TP;
+        mkdir -p $TP;
+        _ED purge complete
+        
     }
     
     if $(hasValueq "$help"); then printf "$helpmsg"; 
