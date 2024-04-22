@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.7.3
+    echo 3.7.4
 }
 
 storageDir="$HOME/.application"
@@ -586,9 +586,9 @@ trash() {
         trashDir=$(trimArgs $TP / $uid)
         size=$(du -sh $inputPath | awk '{print $1}')
         infoDir=$(trimArgs $trashDir / $trashInfoName)
-        # mkdir -p $trashDir
-        # mv -fv $inputPath $trashDir
-        # printf "uuid=$uid \noriginalDir=$inputPath \ndtime=$(date +'%Y-%m-%d %H:%M:%S')\nsize=$size\n" > $infoDir
+        mkdir -p $trashDir
+        mv -fv $inputPath $trashDir
+        printf "uuid=$uid \noriginalDir=$inputPath \ndtime=$(date +'%Y-%m-%d %H:%M:%S')\nsize=$size\n" > $infoDir
     }
 
     loadArray() {
@@ -993,7 +993,7 @@ quick() {
     }
 
     remove_quick(){
-        if $(hasFile $targetFile); then if $(hasCmd trash); then trash $targetFile; else rm -r $targetFile; fi; fi;
+        if $(hasFile $targetFile); then trash $targetFile; fi;
     }
     
     if $(hasValueq "$help"); then printf "$helpmsg";  
