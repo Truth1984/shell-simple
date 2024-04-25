@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.7.4
+    echo 3.7.6
 }
 
 storageDir="$HOME/.application"
@@ -557,6 +557,7 @@ dates() {
 
 # -p,--path path to trash, *_default
 # -l,--list list trash 
+# -i,--index get path from index
 # -r,--restore restore file
 # -c,--clean clean trash older than 3 month
 # -P,--Purge rm all files from trash dir
@@ -565,6 +566,7 @@ trash() {
     declare -A folder_data;
     path=$(parseGet trash_data p path _);
     list=$(parseGet trash_data l list);
+    indexDir=$(parseGet trash_data i index);
     restore=$(parseGet trash_data r restore);
     clean=$(parseGet trash_data c clean);
     Purge=$(parseGet trash_data P Purge);
@@ -572,6 +574,7 @@ trash() {
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--path,_ \t (string) \t move target path to trash path\n'
     helpmsg+='\t-l,--list \t (string) \t list infos on current path, default to list all\n'
+    helpmsg+='\t-i,--index \t (number) \t input index number and get target trash dir\n'
     helpmsg+='\t-r,--restore \t (string) \t restore folder depends on current path\n'
     helpmsg+='\t-c,--clean \t (number) \t clean trash older than 3 month, default 7890000 \n'
     helpmsg+='\t-P,--Purge \t () \t remove all trash from trash path\n'
@@ -637,14 +640,12 @@ trash() {
         length=${folder_data[length]}
 
         for ((i=0; i<$length; i++)); do     
-            if $(hasValueq ${folder_data[${i}_uuid]}); then
-                index=${folder_data[${i}_index]}
-                uuid=${folder_data[${i}_uuid]}
-                original_dir=${folder_data[${i}_original_dir]}
-                dtime=${folder_data[${i}_dtime]}
-                size=${folder_data[${i}_size]}
-                printf  "$index\t$original_dir\t\t$dtime\t$size\t$(trimArgs $TP/$uuid)\n"
-            fi;
+            index=${folder_data[${i}_index]}
+            uuid=${folder_data[${i}_uuid]}
+            original_dir=${folder_data[${i}_original_dir]}
+            dtime=${folder_data[${i}_dtime]}
+            size=${folder_data[${i}_size]}
+            printf  "$index\t$original_dir\t\t$dtime\t$size\t$(trimArgs $TP/$uuid)\n"
         done
     }
 
@@ -684,6 +685,19 @@ trash() {
         targetTrashDir=$(trimArgs $TP / $uuid) 
         mv $(trimArgs $targetTrashDir / $trashInfoName) /tmp
         mv -i $(trimArgs $targetTrashDir /*) "$(dirname "$original_dir")"
+    }
+
+    index_trash() {
+        loadArray
+        length=${folder_data[length]}
+        if [ $1 -gt $length ]; then echo "."; return $(_ERC "index [$1] larger than total length [$length]"); fi;
+
+        for ((i=0; i<$length; i++)); do     
+            if [ "${folder_data[${i}_index]}" = "$1" ]; then
+                _EC $(trimArgs $TP / ${folder_data[${i}_uuid]});
+                return 
+            fi;
+        done
     }
 
     clean_trash() {
@@ -733,6 +747,7 @@ trash() {
     elif $(hasValueq "$path"); then put_trash $path; 
     elif $(hasValueq "$list"); then list_trash $list; 
     elif $(hasValueq "$restore"); then restore_trash $restore; 
+    elif $(hasValueq "$indexDir"); then index_trash $indexDir; 
     elif $(hasValueq "$clean"); then clean_trash $clean; 
     elif $(hasValueq "$Purge"); then purge_trash $Purge; 
     fi;
