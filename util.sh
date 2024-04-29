@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.7.6
+    echo 3.7.8
 }
 
 storageDir="$HOME/.application"
@@ -456,20 +456,24 @@ ip() {
 }
 
 # -D,--Datetime *_default date+time
+# -l,--long long date
 # -d,--date date only
 # -t,--time time only
 # -p,--plain plain format as 2000_12_31_23_59_59
 # -i,--iso iso8601 format
+# -f,--full full display of dates
 # -r,--reparse reparse the date format back
 # -o,--older current time minus $2 in sec > $1 time
-# -s,--second older than seconds, 
+# -s,--second older than seconds
 dates() {
     declare -A date_data; parseArg date_data $@;
     dateTime=$(parseGet date_data D Datetime _);
+    dateLong=$(parseGet date_data l long);
     dateOnly=$(parseGet date_data d date);
     timeOnly=$(parseGet date_data t time);
     plain=$(parseGet date_data p plain);
     iso=$(parseGet date_data i iso);
+    full=$(parseGet date_data f full)
     reparse=$(parseGet date_data r reparse);
     older=$(parseGet date_data o older);
     second=$(parseGet date_data s second);
@@ -478,14 +482,17 @@ dates() {
     dateFormat='%Y-%m-%d'
     timeFormat='%H:%M:%S'
     dateTimeFormat='%Y-%m-%d %H:%M:%S'
+    dateLongFormat='%s'
     plainFormat='%Y_%m_%d_%H_%M_%S'
     iso8601="%Y-%m-%dT%H:%M:%S%z"
 
     helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-D,--Datetime,_ \t () \t date+time format of date\n'
-    helpmsg+='\t-d,--date \t\t () \t date only format of date\n'
-    helpmsg+='\t-t,--time \t\t () \t time only format of date\n'
-    helpmsg+='\t-p,--plain \t\t () \t plain format of date\n'
+    helpmsg+='\t-D,--Datetime,_ \t () \t\t date as datetime format\n'
+    helpmsg+='\t-l,--long \t\t () \t\t date as long format\n'
+    helpmsg+='\t-d,--date \t\t () \t\t date only format of date\n'
+    helpmsg+='\t-t,--time \t\t () \t\t time only format of date\n'
+    helpmsg+='\t-p,--plain \t\t () \t\t plain format of date\n'
+    helpmsg+='\t-f,--full \t\t () \t\t full display format of date\n'
     helpmsg+='\t-r,--reparse \t\t (string) \t reparse string into date\n'
     helpmsg+='\t-o,--older \t\t (string) \t current time minus (-s in sec) > $1 time\n'
     helpmsg+='\t-s,--second \t\t (number) \t older than x second\n'
@@ -509,8 +516,10 @@ dates() {
 
     reparse_dates() {
         local input=$1
+        input=$(trimArgs $1)
         additional=$2
 
+        p0="^[0-9]+$"
         p1="[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+"
         p2="[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+"
         p3="[0-9]+-[0-9]+-[0-9]+T"
@@ -518,16 +527,18 @@ dates() {
         p5="[0-9]+:[0-9]+:[0-9]+"
         target=""
 
-        if [[ $1 =~ $p1 ]]; then target=$dateTimeFormat; 
-        elif [[ $1 =~ $p2 ]]; then target=$plainFormat; 
-        elif [[ $1 =~ $p3 ]]; then target=$iso8601; 
-        elif [[ $1 =~ $p4 ]]; then target=$dateFormat; 
-        elif [[ $1 =~ $p5 ]]; then target=$timeFormat; fi;
+        if [[ $input =~ $p0 ]]; then target=$dateLongFormat; 
+        elif [[ $input =~ $p1 ]]; then target=$dateTimeFormat; 
+        elif [[ $input =~ $p2 ]]; then target=$plainFormat; 
+        elif [[ $input =~ $p3 ]]; then target=$iso8601; 
+        elif [[ $input =~ $p4 ]]; then target=$dateFormat; 
+        elif [[ $input =~ $p5 ]]; then target=$timeFormat; 
+        fi;
 
         if ! $(hasValueq $target); then return $(_ERC "Error: no pattern found"); 
         else _ED datetime format found, using $target; fi;
 
-        parseDateOS "$1" "$target" $additional
+        parseDateOS "$input" "$target" $additional
     }
 
     older_dates() {
@@ -542,13 +553,30 @@ dates() {
         else _RC 1 difference:$difference '<' $second; fi;
     }
 
+    full_dates() {
+        _ED "-D,Datetime" "$dateTimeFormat" 
+        toFormat_dates "$dateTimeFormat"; 
+        _ED "-l,long" "$dateLongFormat" 
+        toFormat_dates "$dateLongFormat"; 
+        _ED "-d,date" "$dateFormat"
+        toFormat_dates "$dateFormat"; 
+        _ED "-t,time" "$timeFormat"
+        toFormat_dates "$timeFormat"; 
+        _ED "-p,plain" "$plainFormat"
+        toFormat_dates "$plainFormat"; 
+        _ED "-i,iso" "$iso8601"
+        toFormat_dates "$iso8601";
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$dateTime"); then toFormat_dates "$dateTimeFormat"; 
+    elif $(hasValueq "$dateLong"); then toFormat_dates "$dateLongFormat"; 
     elif $(hasValueq "$dateOnly"); then toFormat_dates "$dateFormat"; 
     elif $(hasValueq "$timeOnly"); then toFormat_dates "$timeFormat"; 
     elif $(hasValueq "$plain"); then toFormat_dates "$plainFormat"; 
     elif $(hasValueq "$iso"); then toFormat_dates "$iso8601"; 
     elif $(hasValueq "$older"); then older_dates $older; 
+    elif $(hasValueq "$full"); then full_dates $full; 
     elif $(hasValueq "$reparse"); then reparse_dates "$reparse"; 
     else toFormat_dates "$dateTimeFormat"; 
     fi;
@@ -560,7 +588,7 @@ dates() {
 # -i,--index get path from index
 # -r,--restore restore file
 # -c,--clean clean trash older than 3 month
-# -P,--Purge rm all files from trash dir
+# -P,--purge rm all files from trash dir
 trash() {
     declare -A trash_data; parseArg trash_data $@;
     declare -A folder_data;
@@ -569,7 +597,7 @@ trash() {
     indexDir=$(parseGet trash_data i index);
     restore=$(parseGet trash_data r restore);
     clean=$(parseGet trash_data c clean);
-    Purge=$(parseGet trash_data P Purge);
+    purge=$(parseGet trash_data P purge);
 
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--path,_ \t (string) \t move target path to trash path\n'
@@ -577,7 +605,7 @@ trash() {
     helpmsg+='\t-i,--index \t (number) \t input index number and get target trash dir\n'
     helpmsg+='\t-r,--restore \t (string) \t restore folder depends on current path\n'
     helpmsg+='\t-c,--clean \t (number) \t clean trash older than 3 month, default 7890000 \n'
-    helpmsg+='\t-P,--Purge \t () \t remove all trash from trash path\n'
+    helpmsg+='\t-P,--purge \t () \t remove all trash from trash path\n'
 
     TP="$storageDirTrash"
     trashInfoName="_u_trash_info"
@@ -749,7 +777,7 @@ trash() {
     elif $(hasValueq "$restore"); then restore_trash $restore; 
     elif $(hasValueq "$indexDir"); then index_trash $indexDir; 
     elif $(hasValueq "$clean"); then clean_trash $clean; 
-    elif $(hasValueq "$Purge"); then purge_trash $Purge; 
+    elif $(hasValueq "$purge"); then purge_trash $purge; 
     fi;
 }
 
