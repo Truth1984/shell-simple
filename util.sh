@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.7.9
+    echo 3.8.1
 }
 
 storageDir="$HOME/.application"
@@ -286,6 +286,57 @@ envGet() {
     if $(hasEnv $1); then _EC "${!1}"; else _EC "$2"; fi;
 }
 
+# -s,--size,_ *_default
+# -m,--modify modify date
+# -M,--modifyQ modify date quiet output long
+# -f,--full full info
+stats() {
+    declare -A stats_data; parseArg stats_data $@;
+    size=$(parseGet stats_data s size _);
+    modify=$(parseGet stats_data m modify);
+    modifyQ=$(parseGet stats_data M modifyQ)
+    full=$(parseGet stats_data f full);
+    help=$(parseGet stats_data help);
+
+    helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-s,--size,_ \t (string) \t size of the path\n'
+    helpmsg+='\t-m,--modify \t (string) \t modify date of the path\n'
+    helpmsg+='\t-M,--modifyQ \t (string) \t modify date of the path as long, quiet\n'
+    helpmsg+='\t-f,--full \t (string) \t full stats info\n'
+
+    size_stats() {
+        _EC $(du -sh $1 | cut -f1)
+    }
+
+    modify_stats() {
+        if $(os -c mac); then _EC $(stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" $1); 
+        else _EC $(stat --printf="%y\n" $1 | awk -F'[ .]' '{print $1, $2}'); fi;
+    }
+
+    modifyQ_stats() {
+         # os -c mac quiet
+        if $(hasCmdq uname && uname | grep -q Darwin); then
+            stat -f "%Sm" -t "%s" $1
+        else
+            formatDate=$(stat --printf="%y\n" "$1" | awk -F'[ .]' '{print $1, $2}')
+            date -d "$formatDate" +%s
+        fi;
+    }
+
+    full_stats() {
+        size_stats $1
+        modify_stats $1
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$size"); then size_stats $size; 
+    elif $(hasValueq "$modify"); then modify_stats $modify; 
+    elif $(hasValueq "$modifyQ"); then modifyQ_stats $modifyQ; 
+    elif $(hasValueq "$full"); then full_stats $full;
+    fi;
+}
+
+
 
 # -c,--check,_ *_default
 # -p,--pkgmanager
@@ -367,8 +418,8 @@ os() {
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$check"); then check_os $check; 
-    elif $(hasValueq "$pkgmanager"); then pkgManager_os;
-    elif $(hasValueq "$info"); then info_os;
+    elif $(hasValueq "$pkgmanager"); then pkgManager_os $pkgmanager; 
+    elif $(hasValueq "$info"); then info_os $info;
     fi;
 
 }
