@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.7.8
+    echo 3.7.9
 }
 
 storageDir="$HOME/.application"
@@ -598,14 +598,15 @@ trash() {
     restore=$(parseGet trash_data r restore);
     clean=$(parseGet trash_data c clean);
     purge=$(parseGet trash_data P purge);
+    help=$(parseGet trash_data h help);
 
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--path,_ \t (string) \t move target path to trash path\n'
-    helpmsg+='\t-l,--list \t (string) \t list infos on current path, default to list all\n'
+    helpmsg+='\t-l,--list \t (string) \t list infos on current input path, default to list all\n'
     helpmsg+='\t-i,--index \t (number) \t input index number and get target trash dir\n'
     helpmsg+='\t-r,--restore \t (string) \t restore folder depends on current path\n'
     helpmsg+='\t-c,--clean \t (number) \t clean trash older than 3 month, default 7890000 \n'
-    helpmsg+='\t-P,--purge \t () \t remove all trash from trash path\n'
+    helpmsg+='\t-P,--purge \t () \t\t remove all trash from trash path\n'
 
     TP="$storageDirTrash"
     trashInfoName="_u_trash_info"
@@ -673,7 +674,7 @@ trash() {
             original_dir=${folder_data[${i}_original_dir]}
             dtime=${folder_data[${i}_dtime]}
             size=${folder_data[${i}_size]}
-            printf  "$index\t$original_dir\t\t$dtime\t$size\t$(trimArgs $TP/$uuid)\n"
+            printf  "$index\t$original_dir\t\t$dtime\t$size\t$(echo $TP/$uuid | xargs)\n"
         done
     }
 
