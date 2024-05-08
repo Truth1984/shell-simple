@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.8.2
+    echo 3.8.3
 }
 
 storageDir="$HOME/.application"
@@ -1010,7 +1010,7 @@ retry() {
         _ED retry: $retry, remain
         output=$("$@");
         if [[ $? -eq 0 ]]; then
-            echo $output
+            if [ -n "$output" ]; then echo $output; fi;
             return $(_RC 0)
         else
             retry=$((retry - 1))
