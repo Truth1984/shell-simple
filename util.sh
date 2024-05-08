@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.8.1
+    echo 3.8.2
 }
 
 storageDir="$HOME/.application"
@@ -335,8 +335,6 @@ stats() {
     elif $(hasValueq "$full"); then full_stats $full;
     fi;
 }
-
-
 
 # -c,--check,_ *_default
 # -p,--pkgmanager
@@ -1002,41 +1000,25 @@ download() {
     fi;
 }
 
-# -c,--cmd,--command,_ *_default
-# -i,--interval
-# -r,--retry
+# (string)
+# retry command if failed for 3 times
 retry() {
-    declare -A retry_data; parseArg retry_data $@;
-    command=$(parseGet retry_data c cmd command _);
-    interval=$(parseGet retry_data i interval);
-    retry=$(parseGet retry_data r retry)
-    help=$(parseGet retry_data h help);
+    local interval=1
+    local retry=3
 
-    helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-c,--cmd,--command,_ \t (string) \t *_default, command to eval\n'
-    helpmsg+='\t-i,interval \t\t (string) \t interval, in seconds, default to 1 sec\n'
-    helpmsg+='\t-r,--retry \t\t (string) \t retry, default to 3 times\n'
-
-    if ! $(hasValueq $interval); then interval=1; fi;
-    if ! $(hasValueq $retry); then retry=3; fi;
-
-    action_retry(){
-        while [[ $retry -ne 0 ]]; do
-            _ED retry: $retry, remain
-            eval "$command"
-            if [[ $? -eq 0 ]]; then
-                return $(_RC 0)
-            else
-                retry=$((retry - 1))
-                sleep "$interval"
-            fi
-        done
-        return $(_RC 1)
-    }
-
-    if $(hasValueq "$help"); then printf "$helpmsg";  
-    elif $(hasValueq "$retry"); then action_retry;
-    fi;
+    while [[ $retry -ne 0 ]]; do
+        _ED retry: $retry, remain
+        output=$("$@");
+        if [[ $? -eq 0 ]]; then
+            echo $output
+            return $(_RC 0)
+        else
+            retry=$((retry - 1))
+            sleep "$interval"
+        fi
+        
+    done
+    return $(_RC 1)
 }
 
 # -n,--name,_ *_default
