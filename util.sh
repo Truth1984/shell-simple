@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.8.3
+    echo 3.9.0
 }
 
 storageDir="$HOME/.application"
@@ -919,37 +919,68 @@ searchFile() {
     find $base -name $1
 }
 
+# Request helper
+# Need to specify $CURL:bool, $WGET:bool, curlCmd():func, wgetCmd():func
+_REQHelper() {
+    if [[ -z $CURL ]] && [[ -z $WGET ]]; then
+        if $(hasCmd curl); then curlCmd; elif $(hasCmd wget); then wgetCmd; fi;
+    else
+        if ! [[ -z $CURL ]]; then _ED "curl command specified" && curlCmd;
+        else _ED "wget command specified" && wgetCmd; fi;
+    fi;
+    echo ""
+}
+
 # -u,--url,_ *_default
 # -j,--json, *_2
 # -s,--string post string
+# -C,--curl use curl
+# -W,--wget use wget
+# -q,--quiet disable verbose
 post() {
     declare -A post_data; parseArg post_data $@;
     url=$(parseGet post_data u url _);
     json=$(parseGet post_data j json);
     string=$(parseGet post_data s string);
+    CURL=$(parseGet post_data C curl);
+    WGET=$(parseGet post_data W wget);
+    quiet=$(parseGet post_data q quiet);
     help=$(parseGet post_data help);
 
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
     helpmsg+='\t-j,--json \t (string) \t json data to post\n'
+    helpmsg+='\t-C,--curl \t () \t\t use curl\n'
+    helpmsg+='\t-W,--wget \t () \t\t use wget\n'
+    helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
     helpmsg+='\t-s,--string \t (string) \t string data to post\n'
+
+    local curlEx=" -s"
+    local wgetEx=" -q"
+    if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; fi;
 
     # (url, data)
     json_post(){
         local url=$1 data=$2
-        if $(hasCmd wget); then wget -qO- --header "Content-Type: application/json" --post-data "$data" $url;
-            elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: application/json" -d "$data" "$url";
-        fi;
-        echo "" 
+        curlCmd(){
+            curl $curlEx -H "Content-Type: application/json" -d "$data" "$url"
+        }
+        wgetCmd(){
+            wget $wgetEx -O- --header "Content-Type: application/json" --post-data "$data" "$url"
+        }
+        _REQHelper
     }
 
     # (url, data)
     string_post() {
         local url=$1 data=$2
-        if $(hasCmd wget); then wget -qO- --header "Content-Type: text/plain" --post-data "$data" $url;
-            elif $(hasCmd curl); then curl -s -X POST -H "Content-Type: text/plain" -d "$data" "$url";
-        fi;
-        echo ""
+        curlCmd(){
+            curl $curlEx -H "Content-Type: text/plain" -d "$data" "$url"
+        }
+        wgetCmd(){
+            wget $wgetEx -O- --header "Content-Type: text/plain" --post-data "$data" "$url"
+        }
+        _REQHelper
     }
     
     if $(hasValueq "$help"); then printf "$helpmsg"; 
@@ -961,27 +992,49 @@ post() {
 
 # -u,--url,_ *_default
 # -r,--run
+# -C,--curl use curl
+# -W,--wget use wget
+# -q,--quiet disable verbose
 get() {
     declare -A get_data; parseArg get_data $@;
     url=$(parseGet get_data u url _);
     run=$(parseGet get_data r run);
+    CURL=$(parseGet get_data C curl);
+    WGET=$(parseGet get_data W wget);
+    quiet=$(parseGet get_data q quiet);
     help=$(parseGet get_data help);
 
     helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
     helpmsg+='\t-r,--run \t (string) \t run the script from url\n'
+    helpmsg+='\t-C,--curl \t () \t\t use curl\n'
+    helpmsg+='\t-W,--wget \t () \t\t use wget\n'
+    helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
+
+    local curlEx=" -s"
+    local wgetEx=" -q"
+    if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; fi;
 
     script_get() {
-        if $(hasCmd curl); then bash <(curl -s $1); 
-        elif $(hasCmd wget); then bash <(wget -O - $1); 
-        fi;
+        local url=$1
+        curlCmd(){
+            bash <(curl -s $url);
+        }
+        wgetCmd(){
+            bash <(wget -O - $url); 
+        }
+        _REQHelper
     }
 
     url_get(){
-        if $(hasCmd wget); then wget -qO- "$1";
-        elif $(hasCmd curl); then curl -s -X GET "$1";
-        fi;
-        echo ""
+        local url=$1
+        curlCmd(){
+            curl $curlEx -X GET $url
+        }
+        wgetCmd(){
+            wget $wgetEx -O- $url
+        }
+        _REQHelper
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
@@ -994,9 +1047,9 @@ get() {
 download() {
     local url=$1 filename=$2
     if $(hasCmd wget); then
-        if $(hasValue $filename); then wget -O $filename $url; else wget $url; fi;
+        if $(hasValue $filename); then wget -d -O $filename $url; else wget -d $url; fi;
     elif $(hasCmd curl); then
-        if $(hasValue $filename); then curl $url --output $filename; else curl -O $url; fi;
+        if $(hasValue $filename); then curl $url -v --output $filename; else curl -v -O $url; fi;
     fi;
 }
 
