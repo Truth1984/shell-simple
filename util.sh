@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.9.0
+    echo 3.9.1
 }
 
 storageDir="$HOME/.application"
@@ -1054,13 +1054,13 @@ download() {
 }
 
 # (string)
-# retry command if failed for 3 times
+# retry command if failed; 3 times, can define "interval" or "retry" as env
 retry() {
-    local interval=1
-    local retry=3
+    if [ -z "$interval" ]; then interval=1; fi;
+    if [ -z "$retry" ]; then retry=3; fi;
 
     while [[ $retry -ne 0 ]]; do
-        _ED retry: $retry, remain
+        _ED { retry: $retry remain, interval: $interval }
         output=$("$@");
         if [[ $? -eq 0 ]]; then
             if [ -n "$output" ]; then echo $output; fi;
@@ -1069,7 +1069,6 @@ retry() {
             retry=$((retry - 1))
             sleep "$interval"
         fi
-        
     done
     return $(_RC 1)
 }
