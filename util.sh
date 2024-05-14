@@ -955,9 +955,8 @@ post() {
     helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
     helpmsg+='\t-s,--string \t (string) \t string data to post\n'
 
-    local curlEx=" -s"
-    local wgetEx=" -q"
     if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; fi;
+    else curlEx=" -s"; wgetEx=" -q"; fi;
 
     # (url, data)
     json_post(){
@@ -1011,9 +1010,8 @@ get() {
     helpmsg+='\t-W,--wget \t () \t\t use wget\n'
     helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
 
-    local curlEx=" -s"
-    local wgetEx=" -q"
     if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; fi;
+    else curlEx=" -s"; wgetEx=" -q"; fi;
 
     script_get() {
         local url=$1
