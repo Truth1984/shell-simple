@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 3.9.1
+    echo 4.0.1
 }
 
 storageDir="$HOME/.application"
@@ -43,7 +43,7 @@ _UTILDATE() {
 }
 
 _PROFILE() {
-    profile="$HOME/.bashrc"
+    local profile="$HOME/.bashrc"
     if $(os -c mac); then profile="$HOME/.bash_profile"; fi;
     echo $profile
 }
@@ -87,7 +87,7 @@ _ED() {
 # example: declare -A data; parseArg data $@; parseGet data _;
 parseArg() {
     local -n parse_result=$1;
-    _target="_"
+    local _target="_"
     for i in ${@:2:$#}; do    
         if ! [[ "$i" =~ ^"-" ]]; then parse_result[$_target]="${parse_result[$_target]}$i ";
         else _target=$(echo " $i" | sed 's/^ -*//'); [[ -z "${parse_result[$_target]}" ]] && parse_result[$_target]=' ';
@@ -103,8 +103,8 @@ parseGet() {
 }
 
 pathGetFull() {
-    path=$(cd "$(dirname "$1")" || exit; pwd)
-    file=$(basename "$1")
+    local path=$(cd "$(dirname "$1")" || exit; pwd)
+    local file=$(basename "$1")
 
     if [ "$file" = ".." ]; then
         _EC "$(dirname "$path")"
@@ -114,7 +114,7 @@ pathGetFull() {
 }
 
 trimArgs() {
-    joined=""
+    local joined=""
     for str in "$@"; do
         joined="$joined$(echo "$str" | xargs)"
     done
@@ -202,19 +202,19 @@ has() {
         return 1;
     }
 
-    value=$(parseGet has_data v value);
-    valueQ=$(parseGetQ has_data V Value);
-    cmd=$(parseGet has_data c cmd command);
-    cmdQ=$(parseGetQ has_data C Cmd Command);
-    dir=$(parseGet has_data d dir);
-    dirQ=$(parseGetQ has_data D Dir);
-    file=$(parseGet has_data f file);
-    fileQ=$(parseGetQ has_data F File);
-    env=$(parseGet has_data e env);
-    envQ=$(parseGetQ has_data E Env);
-    help=$(parseGet has_data help);
+    local value=$(parseGet has_data v value);
+    local valueQ=$(parseGetQ has_data V Value);
+    local cmd=$(parseGet has_data c cmd command);
+    local cmdQ=$(parseGetQ has_data C Cmd Command);
+    local dir=$(parseGet has_data d dir);
+    local dirQ=$(parseGetQ has_data D Dir);
+    local file=$(parseGet has_data f file);
+    local fileQ=$(parseGetQ has_data F File);
+    local env=$(parseGet has_data e env);
+    local envQ=$(parseGetQ has_data E Env);
+    local help=$(parseGet has_data help);
 
-    helpmsg="${FUNCNAME[0]}:\n"
+    local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-v,--value \t (string) \t check if it has value\n'
     helpmsg+='\t-V,--Value,*_ \t (string) \t check if it has value quietly. Can do $(has "$value")\n'
     helpmsg+='\t-c,--cmd \t (string) \t check if it has command\n'
@@ -292,13 +292,13 @@ envGet() {
 # -f,--full full info
 stats() {
     declare -A stats_data; parseArg stats_data $@;
-    size=$(parseGet stats_data s size _);
-    modify=$(parseGet stats_data m modify);
-    modifyQ=$(parseGet stats_data M modifyQ)
-    full=$(parseGet stats_data f full);
-    help=$(parseGet stats_data help);
+    local size=$(parseGet stats_data s size _);
+    local modify=$(parseGet stats_data m modify);
+    local modifyQ=$(parseGet stats_data M modifyQ)
+    local full=$(parseGet stats_data f full);
+    local help=$(parseGet stats_data help);
 
-    helpmsg="${FUNCNAME[0]}:\n"
+    local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-s,--size,_ \t (string) \t size of the path\n'
     helpmsg+='\t-m,--modify \t (string) \t modify date of the path\n'
     helpmsg+='\t-M,--modifyQ \t (string) \t modify date of the path as long, quiet\n'
@@ -341,12 +341,12 @@ stats() {
 # -i,--info
 os() {
     declare -A os_data; parseArg os_data $@;
-    check=$(parseGet os_data c check _);
-    pkgmanager=$(parseGet os_data p pkgmanager);
-    info=$(parseGet os_data i info);
-    help=$(parseGet os_data help);
+    local check=$(parseGet os_data c check _);
+    local pkgmanager=$(parseGet os_data p pkgmanager);
+    local info=$(parseGet os_data i info);
+    local help=$(parseGet os_data help);
 
-    helpmsg="${FUNCNAME[0]}:\n"
+    local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-c,--check,_ \t\t (string) \t check os trait fit current os\n'
     helpmsg+='\t-p,--pkgmanager \t () \t\t get current package manager\n'
     helpmsg+='\t-i,--info \t\t () \t\t get os info\n'
@@ -445,13 +445,13 @@ uuid() {
 # -P,--private () private ip 
 ip() {
     declare -A ip_data; parseArg ip_data $@;
-    public=$(parseGet ip_data p public _);
-    private=$(parseGet ip_data P private);
-    ipv4=$(parseGet ip_data 4 ipv4);
-    ipv6=$(parseGet ip_data 6 ipv6);
-    help=$(parseGet ip_data h help);
+    local public=$(parseGet ip_data p public _);
+    local private=$(parseGet ip_data P private);
+    local ipv4=$(parseGet ip_data 4 ipv4);
+    local ipv6=$(parseGet ip_data 6 ipv6);
+    local help=$(parseGet ip_data h help);
 
-    helpmsg="${FUNCNAME[0]}:\n"
+    local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--public,_ \t (4/6) \t ipv4 / ipv6, display public ip\n'
     helpmsg+='\t-4,--ipv4 \t () \t use ipv4 to connect to internet\n'
     helpmsg+='\t-6,--ipv6 \t () \t use ipv6 to connect to internet\n'
@@ -516,26 +516,26 @@ ip() {
 # -s,--second older than seconds
 dates() {
     declare -A date_data; parseArg date_data $@;
-    dateTime=$(parseGet date_data D Datetime _);
-    dateLong=$(parseGet date_data l long);
-    dateOnly=$(parseGet date_data d date);
-    timeOnly=$(parseGet date_data t time);
-    plain=$(parseGet date_data p plain);
-    iso=$(parseGet date_data i iso);
-    full=$(parseGet date_data f full)
-    reparse=$(parseGet date_data r reparse);
-    older=$(parseGet date_data o older);
-    second=$(parseGet date_data s second);
-    help=$(parseGet date_data h help);
+    local dateTime=$(parseGet date_data D Datetime _);
+    local dateLong=$(parseGet date_data l long);
+    local dateOnly=$(parseGet date_data d date);
+    local timeOnly=$(parseGet date_data t time);
+    local plain=$(parseGet date_data p plain);
+    local iso=$(parseGet date_data i iso);
+    local full=$(parseGet date_data f full)
+    local reparse=$(parseGet date_data r reparse);
+    local older=$(parseGet date_data o older);
+    local second=$(parseGet date_data s second);
+    local help=$(parseGet date_data h help);
 
-    dateFormat='%Y-%m-%d'
-    timeFormat='%H:%M:%S'
-    dateTimeFormat='%Y-%m-%d %H:%M:%S'
-    dateLongFormat='%s'
-    plainFormat='%Y_%m_%d_%H_%M_%S'
-    iso8601="%Y-%m-%dT%H:%M:%S%z"
+    local dateFormat='%Y-%m-%d'
+    local timeFormat='%H:%M:%S'
+    local dateTimeFormat='%Y-%m-%d %H:%M:%S'
+    local dateLongFormat='%s'
+    local plainFormat='%Y_%m_%d_%H_%M_%S'
+    local iso8601="%Y-%m-%dT%H:%M:%S%z"
 
-    helpmsg="${FUNCNAME[0]}:\n"
+    local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-D,--Datetime,_ \t () \t\t date as datetime format\n'
     helpmsg+='\t-l,--long \t\t () \t\t date as long format\n'
     helpmsg+='\t-d,--date \t\t () \t\t date only format of date\n'
@@ -641,15 +641,15 @@ dates() {
 trash() {
     declare -A trash_data; parseArg trash_data $@;
     declare -A folder_data;
-    path=$(parseGet trash_data p path _);
-    list=$(parseGet trash_data l list);
-    indexDir=$(parseGet trash_data i index);
-    restore=$(parseGet trash_data r restore);
-    clean=$(parseGet trash_data c clean);
-    purge=$(parseGet trash_data P purge);
-    help=$(parseGet trash_data h help);
+    local path=$(parseGet trash_data p path _);
+    local list=$(parseGet trash_data l list);
+    local indexDir=$(parseGet trash_data i index);
+    local restore=$(parseGet trash_data r restore);
+    local clean=$(parseGet trash_data c clean);
+    local purge=$(parseGet trash_data P purge);
+    local help=$(parseGet trash_data h help);
 
-    helpmsg="${FUNCNAME[0]}:\n"
+    local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--path,_ \t (string) \t move target path to trash path\n'
     helpmsg+='\t-l,--list \t (string) \t list infos on current input path, default to list all\n'
     helpmsg+='\t-i,--index \t (number) \t input index number and get target trash dir\n'
@@ -657,16 +657,16 @@ trash() {
     helpmsg+='\t-c,--clean \t (number) \t clean trash older than 3 month, default 7890000 \n'
     helpmsg+='\t-P,--purge \t () \t\t remove all trash from trash path\n'
 
-    TP="$storageDirTrash"
-    trashInfoName="_u_trash_info"
+    local TP="$storageDirTrash"
+    local trashInfoName="_u_trash_info"
 
     put_trash() {
         local input=$1 
-        inputPath=$(pathGetFull $input)
-        uid="$(uuid)"
-        trashDir=$(trimArgs $TP / $uid)
-        size=$(du -sh $inputPath | awk '{print $1}')
-        infoDir=$(trimArgs $trashDir / $trashInfoName)
+        local inputPath=$(pathGetFull $input)
+        local uid="$(uuid)"
+        local trashDir=$(trimArgs $TP / $uid)
+        local size=$(du -sh $inputPath | awk '{print $1}')
+        local infoDir=$(trimArgs $trashDir / $trashInfoName)
         mkdir -p $trashDir
         mv -fv $inputPath $trashDir
         printf "uuid=$uid \noriginalDir=$inputPath \ndtime=$(date +'%Y-%m-%d %H:%M:%S')\nsize=$size\n" > $infoDir
@@ -696,10 +696,10 @@ trash() {
 
     # call loadArray() beforehand, $1:index, $2: eval condition
     trashFilter() {
-        indexStr=$1
-        evalStr=$2
+        local indexStr=$1
+        local evalStr=$2
         
-        length=${folder_data[length]}
+        local length=${folder_data[length]}
         for ((i=0; i<$length; i++)); do     
             target=${folder_data[${i}_${indexStr}]}
             if ! $(eval "$evalStr $target"); then
@@ -715,7 +715,7 @@ trash() {
     # $1 eval if condition
     printTrashList(){
         printf 'index:\tOriginal Directory:\t\t\t\t\tDeletetime:\t\tSize:\tDIR:\n'
-        length=${folder_data[length]}
+        local length=${folder_data[length]}
 
         for ((i=0; i<$length; i++)); do     
             index=${folder_data[${i}_index]}
@@ -779,7 +779,7 @@ trash() {
     }
 
     clean_trash() {
-        seconds=7890000
+        local seconds=7890000
         if $(hasValueq $1); then seconds=$1; fi;
         loadArray
         trashFilter "dtime" 'a(){ if $(dates -o $@ -s'" $seconds); then return 0; else return 1; fi; }; a "
@@ -809,7 +809,7 @@ trash() {
     }
 
     purge_trash() {
-        response=$(prompt "purge all content in $TP ? (no) ")
+        local response=$(prompt "purge all content in $TP ? (no) ")
 
         if [ $response -ne 1 ]; then
             return $(_RC 0 "purge not performed, exit purge")
@@ -878,12 +878,12 @@ password() {
 # -r,--replace (string, string, string)
 string() {
     declare -A string_data; parseArg string_data $@;
-    equal=$(parseGet string_data e equal);
-    contain=$(parseGet string_data c contain);
-    replace=$(parseGet string_data r replace);
-    help=$(parseGet string_data help);
+    local equal=$(parseGet string_data e equal);
+    local contain=$(parseGet string_data c contain);
+    local replace=$(parseGet string_data r replace);
+    local help=$(parseGet string_data help);
 
-    helpmsg="${FUNCNAME[0]}:\n"
+    local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-e,--equal \t (string,string) \t\t compare two strings\n'
     helpmsg+='\t-c,--contain \t (string,stringOrRegex) \t check if string contains\n'
     helpmsg+='\t-r,--replace \t (string,string,string) \t 1,original string; 2,search string, 3,replacement \n'
@@ -939,15 +939,15 @@ _REQHelper() {
 # -q,--quiet disable verbose
 post() {
     declare -A post_data; parseArg post_data $@;
-    url=$(parseGet post_data u url _);
-    json=$(parseGet post_data j json);
-    string=$(parseGet post_data s string);
-    CURL=$(parseGet post_data C curl);
-    WGET=$(parseGet post_data W wget);
-    quiet=$(parseGet post_data q quiet);
-    help=$(parseGet post_data help);
+    local url=$(parseGet post_data u url _);
+    local json=$(parseGet post_data j json);
+    local string=$(parseGet post_data s string);
+    local CURL=$(parseGet post_data C curl);
+    local WGET=$(parseGet post_data W wget);
+    local quiet=$(parseGet post_data q quiet);
+    local help=$(parseGet post_data help);
 
-    helpmsg="${FUNCNAME[0]}:\n"
+    local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
     helpmsg+='\t-j,--json \t (string) \t json data to post\n'
     helpmsg+='\t-C,--curl \t () \t\t use curl\n'
@@ -955,7 +955,7 @@ post() {
     helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
     helpmsg+='\t-s,--string \t (string) \t string data to post\n'
 
-    if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; fi;
+    if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; 
     else curlEx=" -s"; wgetEx=" -q"; fi;
 
     # (url, data)
@@ -996,21 +996,21 @@ post() {
 # -q,--quiet disable verbose
 get() {
     declare -A get_data; parseArg get_data $@;
-    url=$(parseGet get_data u url _);
-    run=$(parseGet get_data r run);
-    CURL=$(parseGet get_data C curl);
-    WGET=$(parseGet get_data W wget);
-    quiet=$(parseGet get_data q quiet);
-    help=$(parseGet get_data help);
+    local url=$(parseGet get_data u url _);
+    local run=$(parseGet get_data r run);
+    local CURL=$(parseGet get_data C curl);
+    local WGET=$(parseGet get_data W wget);
+    local quiet=$(parseGet get_data q quiet);
+    local help=$(parseGet get_data help);
 
-    helpmsg="${FUNCNAME[0]}:\n"
+    local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
     helpmsg+='\t-r,--run \t (string) \t run the script from url\n'
     helpmsg+='\t-C,--curl \t () \t\t use curl\n'
     helpmsg+='\t-W,--wget \t () \t\t use wget\n'
     helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
 
-    if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; fi;
+    if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; 
     else curlEx=" -s"; wgetEx=" -q"; fi;
 
     script_get() {
@@ -1080,18 +1080,18 @@ retry() {
 # -l,--list
 quick() {
     declare -A quick_data; parseArg quick_data $@;
-    name=$(parseGet quick_data n name _ e edit r remove delete c cat display show);
-    variable=$(parseGet quick_data v variable);
-    add=$(parseGet quick_data a add cmd)
-    edit=$(parseGet quick_data e edit);
-    display=$(parseGet quick_data c cat display show)
-    remove=$(parseGet quick_data r remove delete);
-    list=$(parseGet quick_data l list);
-    help=$(parseGet quick_data h help);
+    local name=$(parseGet quick_data n name _ e edit r remove delete c cat display show);
+    local variable=$(parseGet quick_data v variable);
+    local add=$(parseGet quick_data a add cmd)
+    local edit=$(parseGet quick_data e edit);
+    local display=$(parseGet quick_data c cat display show)
+    local remove=$(parseGet quick_data r remove delete);
+    local list=$(parseGet quick_data l list);
+    local help=$(parseGet quick_data h help);
 
-    helpmsg="${FUNCNAME[0]}:\n"
+    local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,_ \t\t\t (string) \t *_default, + -e,--edit,-r,--remove,--delete name of the quick data\n'
-    helpmsg+='\t-v,--variable \t\t\t (string) \t variable to use\n'
+    helpmsg+='\t-v,--variable \t\t\t (string) \t variable or args to use\n'
     helpmsg+='\t-a,--add,--cmd \t\t\t () \t\t add command to name\n'
     helpmsg+='\t-e,--edit \t\t\t () \t\t edit the target file\n'
     helpmsg+='\t-c,--cat,--display,--show \t () \t\t display the content of file\n'
@@ -1137,7 +1137,7 @@ quick() {
 
 # call setup bash beforehand
 setup() {
-    profile="$(_PROFILE)"
+    local profile="$(_PROFILE)"
     mkdir -p $storageDirBin && mkdir -p $storageDirBinExtra && mkdir -p $storageDirQuick && mkdir -p $storageDirTrash
 
     if ! $(hasFile "$HOME/.bash_mine"); then
@@ -1171,12 +1171,12 @@ edit(){
 # -h,--help
 help(){    
     declare -A help_data; parseArg help_data $@;
-    name=$(parseGet help_data n name _);
-    update=$(parseGet help_data u update upgrade);
-    version=$(parseGet help_data v version);
-    help=$(parseGet help_data h help);
+    local name=$(parseGet help_data n name _);
+    local update=$(parseGet help_data u update upgrade);
+    local version=$(parseGet help_data v version);
+    local help=$(parseGet help_data h help);
 
-    helpmsg="${FUNCNAME[0]}:\n"
+    local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,_ \t\t (string) \t grep functions with name\n'
     helpmsg+='\t-u,--update,--upgrade \t () \t\t upgrade current script\n'
     helpmsg+='\t-v,--version \t\t (string) \t display current version\n'
@@ -1207,7 +1207,28 @@ help(){
     
 }
 
-if [ -d $storageDirBinExtra ]; then for i in $(ls $storageDirBinExtra); do source $storageDirBinExtra/$i; done; fi;
+# --- EXTRA ---
+
+# (string)
+open() {
+    if $(os mac); then /usr/bin/open $@; elif $(os win); then start $@; else xdg-open $@; fi;
+}
+
+# portscan
+# (string, int?) as ip, port
+scan() {
+    local scanIp=$1 scanPort=$2
+
+    if ! $(hasValue $scanIp); then return $(_ERC "ip not defined"); fi;
+    if ! $(hasValue $scanPort); then 
+        _ED "port not present, scanning from 1 to 65535"
+        echo "--- OPEN ---"
+        for scanPort in {1..65535}; do nc -z -w1 $scanIp $scanPort && echo "$scanPort"; done;
+    else nc -z -w1 $scanIp $scanPort; fi;
+}
+
+
+# --- EXTRA END ---
 
 # put this at the end of the file
 $@;
