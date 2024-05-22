@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 4.0.1
+    echo 4.1.1
 }
 
 storageDir="$HOME/.application"
@@ -1225,6 +1225,26 @@ scan() {
         echo "--- OPEN ---"
         for scanPort in {1..65535}; do nc -z -w1 $scanIp $scanPort && echo "$scanPort"; done;
     else nc -z -w1 $scanIp $scanPort; fi;
+}
+
+# open web for test
+# (port, keeplisten=false / true)
+_web() {
+    local webPort=$1 webListen=$2
+    local webcmd=""
+    
+    if ! $(hasValue $webPort); then webPort=$(_EC 8000); fi;
+    if ! $(hasValue $webListen); then 
+        _ED Starting to open test web on port:$webPort with SINGLE connection
+        if $(os mac); then webcmd="nc -l $webPort";
+        else webcmd="nc -l -p $webPort"; fi;
+    else
+        _ED Starting to open test web on port:$webPort, define '$2' to keep listening
+        if $(os mac); then webcmd="nc -l $webPort -k";
+        else webcmd="nc -l -p $webPort -k"; fi;
+    fi;
+
+    echo -e "HTTP/1.1 200 OK\r\n\r\nHello, world!" | $webcmd
 }
 
 
