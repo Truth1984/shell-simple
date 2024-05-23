@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 4.2.7
+    echo 4.3.8
 }
 
 storageDir="$HOME/.application"
@@ -121,9 +121,10 @@ trimArgs() {
     _EC "$joined"
 }
 
-# takes in question, and return 1 as yes, 2 as no, default as original response
+# takes in question, and return 1 as yes, 2 as no, default as 0
 prompt() {
-    read -p "$1" response
+    echo -e "$@"
+    read -r response
 
     if [[ "$response" =~ [0-9]+ ]]; then
         echo $response
@@ -136,10 +137,17 @@ prompt() {
                 echo 2
             ;;
             *)
-                echo 0 
+                echo 0 ;
             ;;
         esac
     fi;
+}
+
+# just read input
+promptString() {
+    echo -e "$@"
+    read -r responseString
+    echo $responseString
 }
 
 # (path): bool
