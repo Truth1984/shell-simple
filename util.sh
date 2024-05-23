@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 4.2.4
+    echo 4.2.7
 }
 
 storageDir="$HOME/.application"
@@ -950,13 +950,13 @@ post() {
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
     helpmsg+='\t-j,--json \t (string) \t json data to post\n'
+    helpmsg+='\t-s,--string \t (string) \t string data to post\n'
     helpmsg+='\t-C,--curl \t () \t\t use curl\n'
     helpmsg+='\t-W,--wget \t () \t\t use wget\n'
     helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
-    helpmsg+='\t-s,--string \t (string) \t string data to post\n'
 
     if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; 
-    else curlEx=" -s"; wgetEx=" -q"; fi;
+    else curlEx=""; wgetEx=" -q"; fi;
 
     # (url, data)
     json_post(){
@@ -1011,7 +1011,7 @@ get() {
     helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
 
     if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; 
-    else curlEx=" -s"; wgetEx=" -q"; fi;
+    else curlEx=""; wgetEx=" -q"; fi;
 
     script_get() {
         local url=$1
@@ -1268,7 +1268,7 @@ port() {
         if ! $(hasValue $checkOpen); then return $(_ERC "port closed"); fi;
 
         local infoResult="---netstat---\n$(process_port $portNum)\n"
-        if $(hasCmd docker); then infoResult="$infoResult\n---Docker---\n$(docker ps | grep $portNum)\n"; fi;
+        if $(hasCmd docker); then infoResult="$infoResult\n---docker---\n$(docker_port $portNum)\n"; fi;
         if $(hasCmd lsof); then infoResult="$infoResult\n---lsof---\n$(lsof -i :$portNum)\n"; fi;
         echo -e "$infoResult"
     }
