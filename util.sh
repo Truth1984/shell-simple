@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 4.1.1
+    echo 4.2.4
 }
 
 storageDir="$HOME/.application"
@@ -1092,7 +1092,7 @@ quick() {
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,_ \t\t\t (string) \t *_default, + -e,--edit,-r,--remove,--delete name of the quick data\n'
     helpmsg+='\t-v,--variable \t\t\t (string) \t variable or args to use\n'
-    helpmsg+='\t-a,--add,--cmd \t\t\t () \t\t add command to name\n'
+    helpmsg+='\t-a,--add,--cmd \t\t\t () \t\t add command to name, can use $1 and args in script, and use quick -v to add to script call\n'
     helpmsg+='\t-e,--edit \t\t\t () \t\t edit the target file\n'
     helpmsg+='\t-c,--cat,--display,--show \t () \t\t display the content of file\n'
     helpmsg+='\t-r,--remove,--delete \t\t () \t\t remove the target file\n'
@@ -1161,7 +1161,8 @@ setup() {
 }
 
 edit(){
-    if $(hasCmd nano); then nano $(_SCRIPTPATHFULL);
+    if $(hasCmd code); then code $(_SCRIPTPATHFULL);
+    elif $(hasCmd nano); then nano $(_SCRIPTPATHFULL);
     elif $(hasCmd vi); then vi $(_SCRIPTPATHFULL); fi;
 }
 
@@ -1224,7 +1225,63 @@ scan() {
         _ED "port not present, scanning from 1 to 65535"
         echo "--- OPEN ---"
         for scanPort in {1..65535}; do nc -z -w1 $scanIp $scanPort && echo "$scanPort"; done;
-    else nc -z -w1 $scanIp $scanPort; fi;
+    else nc -z -w1 $scanIp $scanPort && echo "$scanPort OPEN"; fi;
+}
+
+# portinfo on current machine
+port() {
+
+    declare -A port_data; parseArg port_data $@;
+    local processPort=$(parseGet port_data p port process _);
+    local dockerPort=$(parseGet port_data d docker);
+    local infoPort=$(parseGet port_data i info);
+    local help=$(parseGet port_data h help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-p,--port,--process,_ \t (string) \t use port number or process name to grep port info\n'
+    helpmsg+='\t-d,--docker \t\t (string) \t use port number or process name to grep docker port info\n'
+    
+
+    process_port() {
+        local grepTarget="$1"
+        if ! $(hasValue $grepTarget); then
+            if $(os linux); then netstat -plntu;
+            elif $(os mac); then netstat -Watnlv | grep LISTEN | awk '{"ps -o comm= -p " $9 | getline procname; print cred "proto: " $1 " | addr.port: "$4 " | pid: "$9 " | name: " procname;  }' | column -t -s "|";
+            elif $(os win); then netstat -bn; fi;
+        else 
+            if $(os linux); then netstat -plntu | grep $grepTarget; 
+            elif $(os mac); then netstat -Watnlv | grep LISTEN | awk '{"ps -o comm= -p " $9 | getline procname; print cred "proto: " $1 " | addr.port: "$4 " | pid: "$9 " | name: " procname;  }' | column -t -s "|" | grep $grepTarget;
+            elif $(os win); then netstat -bn | grep $grepTarget; fi; 
+        fi;
+    }
+
+    docker_port() {
+        local grepTarget="$1"
+        if ! $(hasValue $grepTarget); then docker ps --format "{{.Ports}}\t:\t{{.Image}}";
+        else docker ps | grep $grepTarget; fi;
+    }
+
+    info_port() {
+        local portNum="$1"
+        if ! $(hasValue $portNum); then return $(_ERC "port number not specified"); fi;
+        
+        local checkOpen=$(nc -z -w1 0.0.0.0 $portNum 2>/dev/null && echo "OPEN" || echo "")
+        if ! $(hasValue $checkOpen); then return $(_ERC "port closed"); fi;
+
+        local infoResult="---netstat---\n$(process_port $portNum)\n"
+        if $(hasCmd docker); then infoResult="$infoResult\n---Docker---\n$(docker ps | grep $portNum)\n"; fi;
+        if $(hasCmd lsof); then infoResult="$infoResult\n---lsof---\n$(lsof -i :$portNum)\n"; fi;
+        echo -e "$infoResult"
+    }
+    
+
+    if $(hasValueq "$help"); then printf "$helpmsg";  
+    elif $(hasValueq "$processPort"); then process_port $processPort;
+    elif $(hasValueq "$dockerPort"); then docker_port $dockerPort;
+    elif $(hasValueq "$infoPort"); then info_port $infoPort;
+    else process_port;
+    fi;
+
 }
 
 # open web for test
