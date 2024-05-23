@@ -1229,8 +1229,7 @@ scan() {
 }
 
 # portinfo on current machine
-port() {
-
+port() { 
     declare -A port_data; parseArg port_data $@;
     local processPort=$(parseGet port_data p port process _);
     local dockerPort=$(parseGet port_data d docker);
@@ -1281,7 +1280,6 @@ port() {
     elif $(hasValueq "$infoPort"); then info_port $infoPort;
     else process_port;
     fi;
-
 }
 
 # open web for test
