@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 4.3.8
+    echo 4.3.9
 }
 
 storageDir="$HOME/.application"
@@ -123,8 +123,8 @@ trimArgs() {
 
 # takes in question, and return 1 as yes, 2 as no, default as 0
 prompt() {
-    echo -e "$@"
-    read -r response
+    local prompter="$@"
+    read -p "$prompter"$'\n' response
 
     if [[ "$response" =~ [0-9]+ ]]; then
         echo $response
@@ -145,8 +145,8 @@ prompt() {
 
 # just read input
 promptString() {
-    echo -e "$@"
-    read -r responseString
+    local prompter="$@"
+    read -p "$prompter"$'\n' responseString
     echo $responseString
 }
 
