@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 4.3.10
+    echo 4.4.0
 }
 
 storageDir="$HOME/.application"
@@ -347,17 +347,20 @@ stats() {
 # -c,--check,_ *_default
 # -p,--pkgmanager
 # -i,--info
+# -s,--sys
 os() {
     declare -A os_data; parseArg os_data $@;
     local check=$(parseGet os_data c check _);
     local pkgmanager=$(parseGet os_data p pkgmanager);
     local info=$(parseGet os_data i info);
+    local sysinfo=$(parseGet os_data s sys);
     local help=$(parseGet os_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-c,--check,_ \t\t (string) \t check os trait fit current os\n'
     helpmsg+='\t-p,--pkgmanager \t () \t\t get current package manager\n'
-    helpmsg+='\t-i,--info \t\t () \t\t get os info\n'
+    helpmsg+='\t-i,--info \t\t () \t\t get os info, including hardware\n'
+    helpmsg+='\t-s,--sys \t\t () \t\t get system info, with cpu, mem and disk info\n'
 
     # (): string
     pkgManager_os() {
@@ -411,20 +414,36 @@ os() {
         esac
     }
 
-    info_os(){
-        echo $(pkgManager_os);
+    info_os() {
+        echo Package Manager: $(pkgManager_os);
         if $(hasCmdq uname); then uname -a; fi;
-        if $(hasCmdq sw_vers); then sw_vers; fi;
-        if $(hasCmdq lsb_release); then lsb_release -a; fi;
-        if $(hasCmdq hostnamectl); then hostnamectl; elif $(hasCmdq hostname); then hostname; fi;
         if [ -f "/etc/os-release" ]; then cat /etc/os-release; fi;
-        if $(hasCmdq systeminfo); then systeminfo; fi;
         if $(hasCmdq wmic); then wmic os get Caption, Version, BuildNumber; fi;
+
+        # hardware, CPU, GPU, MEM, DISK
+        if $(hasCmdq systeminfo); then systeminfo; return; fi;
+        if $(hasCmdq system_profiler); then system_profiler SPSoftwareDataType SPHardwareDataType SPDisplaysDataType SPSerialATADataType; return; fi;
+        if $(hasCmdq lshw); then lshw -short | cat; fi;
+    }
+
+    sys_os() {
+        if $(u os mac); then 
+            df -hP;
+            top -l 1 | head -n 10
+        elif $(u os linux); then 
+            df -Th --exclude-type=overlay;
+            top -bn1 | head -n 6
+        elif $(u os win); then 
+            wmic logicaldisk get name,size,freespace
+            wmic cpu get LoadPercentage
+            wmic memorychip get Capacity,Speed,Manufacturer,ConfiguredClockSpeed
+        fi;
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$check"); then check_os $check; 
     elif $(hasValueq "$pkgmanager"); then pkgManager_os $pkgmanager; 
+    elif $(hasValueq "$sysinfo"); then sys_os $sysinfo;
     elif $(hasValueq "$info"); then info_os $info;
     fi;
 
@@ -1168,10 +1187,15 @@ setup() {
     . $storageDirBin/u2 _ED Current Version: $(version)
 }
 
+# (string)
+# edit path, else edit current script
 edit(){
-    if $(hasCmd code); then code $(_SCRIPTPATHFULL);
-    elif $(hasCmd nano); then nano $(_SCRIPTPATHFULL);
-    elif $(hasCmd vi); then vi $(_SCRIPTPATHFULL); fi;
+    local editPath=$(_SCRIPTPATHFULL)
+    if $(hasValue "$@"); then editPath="$@"; fi;
+
+    if $(hasCmd code); then code $editPath;
+    elif $(hasCmd nano); then nano $editPath;
+    elif $(hasCmd vi); then vi $editPath; fi;
 }
 
 # -n,--name,_ *_default
@@ -1218,7 +1242,7 @@ help(){
 
 # --- EXTRA ---
 
-# (string)
+# (string) as path
 open() {
     if $(os mac); then /usr/bin/open $@; elif $(os win); then start $@; else xdg-open $@; fi;
 }
@@ -1276,7 +1300,7 @@ port() {
         if ! $(hasValue $portNum); then return $(_ERC "port number not specified"); fi;
         
         local checkOpen=$(nc -z -w1 0.0.0.0 $portNum 2>/dev/null && echo "OPEN" || echo "")
-        if ! $(hasValue $checkOpen); then return $(_ERC "port closed"); fi;
+        if ! $(hasValue $checkOpen); then return $(_ERC "port: $portNum closed"); fi;
 
         local infoResult="---netstat---\n$(process_port $portNum)\n"
         if $(hasCmd docker); then infoResult="$infoResult\n---docker---\n$(docker_port $portNum)\n"; fi;
@@ -1321,6 +1345,16 @@ _web() {
     if $(hasValueq "$help"); then printf "$helpmsg";  
     else server_web;
     fi;
+}
+
+# (string) base64 encode
+b64e() {
+    echo $@ | base64
+}
+
+#(string) base64 decode
+b64d() {
+    echo $@ | base64 -d
 }
 
 

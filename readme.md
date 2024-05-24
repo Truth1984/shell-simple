@@ -4,7 +4,7 @@ personalized shell sciprt
 
 ## setup
 
-`verbose=3 ./util setup`
+`./util setup`
 
 ## upgrade
 
