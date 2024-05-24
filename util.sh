@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 4.3.9
+    echo 4.3.10
 }
 
 storageDir="$HOME/.application"
@@ -1237,6 +1237,9 @@ scan() {
 }
 
 # portinfo on current machine
+# -p,--port,--process,_ *_default
+# -d,--docker
+# -i,--info
 port() { 
     declare -A port_data; parseArg port_data $@;
     local processPort=$(parseGet port_data p port process _);
@@ -1291,23 +1294,33 @@ port() {
 }
 
 # open web for test
-# (port, keeplisten=false / true)
+# -p,--port,_ *_default
+# -m,--message
 _web() {
-    local webPort=$1 webListen=$2
-    local webcmd=""
-    
-    if ! $(hasValue $webPort); then webPort=$(_EC 8000); fi;
-    if ! $(hasValue $webListen); then 
-        _ED Starting to open test web on port:$webPort with SINGLE connection
-        if $(os mac); then webcmd="nc -l $webPort";
-        else webcmd="nc -l -p $webPort"; fi;
-    else
-        _ED Starting to open test web on port:$webPort, define '$2' to keep listening
+    declare -A _web_data; parseArg _web_data $@;
+    local webPort=$(parseGet _web_data p port _);
+    local webMessage=$(parseGet _web_data m message);
+    local help=$(parseGet _web_data h help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-p,--port,_ \t (int) \t open server port, default port 3000\n'
+    helpmsg+='\t-m,--message \t (string) \t message to display \n'
+
+    if ! $(hasValue $webPort); then webPort=3000; fi;
+    if ! $(hasValue $webMessage); then webMessage="web message"; fi;
+
+    server_web() {
+        local webcmd=""
         if $(os mac); then webcmd="nc -l $webPort -k";
         else webcmd="nc -l -p $webPort -k"; fi;
-    fi;
 
-    echo -e "HTTP/1.1 200 OK\r\n\r\nHello, world!" | $webcmd
+        _ED Starting to open test web on port:$webPort
+        echo -e "HTTP/1.1 200 OK\r\n\r\n$webMessage" | $webcmd
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";  
+    else server_web;
+    fi;
 }
 
 
