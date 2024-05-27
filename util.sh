@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 4.4.0
+    echo 4.4.1
 }
 
 storageDir="$HOME/.application"
@@ -941,9 +941,11 @@ noproxy() {
 }
 
 # (name, directory="."): string[]
+# may use regex for the name
 searchFile() {
-    local base=${!2:="."}
-    find $base -name $1
+    local base="."
+    if $(hasValueq "$2"); then base="$2"; fi;
+    find "$base" -name $1
 }
 
 # Request helper
@@ -1320,15 +1322,18 @@ port() {
 # open web for test
 # -p,--port,_ *_default
 # -m,--message
+# -r,--redirect
 _web() {
     declare -A _web_data; parseArg _web_data $@;
     local webPort=$(parseGet _web_data p port _);
     local webMessage=$(parseGet _web_data m message);
+    local webRedirect=$(parseGet _web_data r redirect)
     local help=$(parseGet _web_data h help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--port,_ \t (int) \t open server port, default port 3000\n'
     helpmsg+='\t-m,--message \t (string) \t message to display \n'
+    helpmsg+='\t-r,--redirect \t (string) \t redirect to target URL \n'
 
     if ! $(hasValue $webPort); then webPort=3000; fi;
     if ! $(hasValue $webMessage); then webMessage="web message"; fi;
@@ -1342,7 +1347,24 @@ _web() {
         echo -e "HTTP/1.1 200 OK\r\n\r\n$webMessage" | $webcmd
     }
 
-    if $(hasValueq "$help"); then printf "$helpmsg";  
+    redirect_web() {
+        local webcmd="" weblocation=$@
+        if $(os mac); then webcmd="nc -l $webPort -k";
+        else webcmd="nc -l -p $webPort -k"; fi;
+
+        if ! $(hasValueq $weblocation); then return $(_ERC "web redirect url not defined"); fi;
+        
+        local reHost=$(echo "$weblocation" | sed -E 's#^(https?://)?([^:/]+).*#\1\2#')
+        local rePort=$(echo "$weblocation" | sed -E 's#^.*:([0-9]+)$#\1#')
+
+        if [[ $weblocation != http://* && $weblocation != https://* ]]; then weblocation="http://$weblocation"; fi;
+        
+        _ED Starting to redirect on port:$webPort to location: $weblocation, as \' nc $reHost $rePort \'
+        echo -e "HTTP/1.1 301 Moved Permanently\r\nLocation: $weblocation\r\n\r\n" | $webcmd > >(nc $reHost $rePort)
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";
+    elif $(hasValueq "$webRedirect"); then redirect_web $webRedirect;
     else server_web;
     fi;
 }
