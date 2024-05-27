@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 4.5.5
+    echo 4.6.0
 }
 
 storageDir="$HOME/.application"
@@ -1377,6 +1377,24 @@ git() {
     fi;
 
     adog_git
+}
+
+# (string)
+# read from .bash_env and clone to defined location
+gitclone() {
+    source $HOME/.bash_env
+    if ! $(hasValue $_U_GIT_USER); then 
+        _U_GIT_USER=$(promptString enter default git username);
+        echo '_U_GIT_USER='$_U_GIT_USER >> $HOME/.bash_env
+    fi;
+    if ! $(hasValue $_U_GIT_CLONE_TO_DIR); then 
+        _ED _U_GIT_CLONE_TO_DIR not defined, defaut to ~/Documents, edit in bash_env
+        _U_GIT_CLONE_TO_DIR=~/Documents
+        echo '_U_GIT_CLONE_TO_DIR=~/Documents' >> $HOME/.bash_env
+    fi;
+    
+    local GIT=$(which git);
+    $GIT clone "https://github.com/$_U_GIT_USER/$@.git" "$_U_GIT_CLONE_TO_DIR/$@"
 }
 
 # open web for test
