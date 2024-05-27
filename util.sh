@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.0.0
+    echo 5.0.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -44,6 +44,7 @@ _UTILDATE() {
 _PROFILE() {
     local profile="$HOME/.bashrc"
     if $(os -c mac); then profile="$HOME/.bash_profile"; fi;
+    if $(os -c alpine); then profile="/etc/profile"; fi;
     echo $profile
 }
 
@@ -1177,6 +1178,7 @@ quick() {
 # call setup bash beforehand
 setup() {
     local profile="$(_PROFILE)"
+    mkdir -p ~/Documents
     mkdir -p $_U2_Storage_Dir_Bin && mkdir -p $_U2_Storage_Dir_Quick && mkdir -p $_U2_Storage_Dir_Trash
 
     if ! $(hasFile "$HOME/.bash_mine"); then
