@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 4.4.4
+    echo 4.5.5
 }
 
 storageDir="$HOME/.application"
@@ -476,7 +476,7 @@ ip() {
     local private=$(parseGet ip_data P private);
     local ipv4=$(parseGet ip_data 4 ipv4);
     local ipv6=$(parseGet ip_data 6 ipv6);
-    local help=$(parseGet ip_data h help);
+    local help=$(parseGet ip_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--public,_ \t (4/6) \t ipv4 / ipv6, display public ip\n'
@@ -553,7 +553,7 @@ dates() {
     local reparse=$(parseGet date_data r reparse);
     local older=$(parseGet date_data o older);
     local second=$(parseGet date_data s second);
-    local help=$(parseGet date_data h help);
+    local help=$(parseGet date_data help);
 
     local dateFormat='%Y-%m-%d'
     local timeFormat='%H:%M:%S'
@@ -674,7 +674,7 @@ trash() {
     local restore=$(parseGet trash_data r restore);
     local clean=$(parseGet trash_data c clean);
     local purge=$(parseGet trash_data P purge);
-    local help=$(parseGet trash_data h help);
+    local help=$(parseGet trash_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--path,_ \t (string) \t move target path to trash path\n'
@@ -916,7 +916,7 @@ string() {
     helpmsg+='\t-e,--equal \t (string,string) \t\t compare two strings\n'
     helpmsg+='\t-c,--contain \t (string,stringOrRegex) \t check if string contains\n'
     helpmsg+='\t-r,--replace \t (string,string,string) \t 1,original string; 2,search string, 3,replacement \n'
-    helpmsg+='\t-r,--replace \t (...string,int) \t\t\t treat string as array, get index of it \n'
+    helpmsg+='\t-r,--replace \t (...string,int) \t\t treat string as array, get index of it \n'
     
     equal_string(){
         if [ "$1" = "$2" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
@@ -933,8 +933,7 @@ string() {
 
     index_string() {
         local index="${@: -1}"
-        if [[ $index =~ ^[0-9]+$ ]]; then index=$(($index+1)); 
-        else return $(_ERC index $index is not a number); fi;
+        if [[ $index =~ ^[0-9]+$ ]]; then index=$(($index+1)); else return $(_ERC index $index is not a number); fi;
 
         echo "${@:$index:1}"
     }
@@ -1128,7 +1127,7 @@ quick() {
     local display=$(parseGet quick_data c cat display show)
     local remove=$(parseGet quick_data r remove delete);
     local list=$(parseGet quick_data l list);
-    local help=$(parseGet quick_data h help);
+    local help=$(parseGet quick_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,_ \t\t\t (string) \t *_default, + -e,--edit,-r,--remove,--delete name of the quick data\n'
@@ -1283,7 +1282,7 @@ port() {
     local processPort=$(parseGet port_data p port process _);
     local dockerPort=$(parseGet port_data d docker);
     local infoPort=$(parseGet port_data i info);
-    local help=$(parseGet port_data h help);
+    local help=$(parseGet port_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--port,--process,_ \t (string) \t use port number or process name to grep port info\n'
@@ -1331,6 +1330,55 @@ port() {
     fi;
 }
 
+git() {
+    declare -A git_data; parseArg git_data $@;
+    local head=$(parseGet git_data h head _);
+    local moveLocal=$(parseGet git_data m moveLocal);
+    local moveCloud=$(parseGet git_data M moveCloud)
+    local help=$(parseGet git_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-h,--head,_ \t (string) \t\t transfer head to target location\n'
+    helpmsg+='\t-m,--moveLocal \t (string,string) \t move local branch to target id, require: [ name, commitID ] \n'
+    helpmsg+='\t-M,--moveCloud \t (string) \t move cloud Reference to target id, require: [ name, commitID ] \n'
+
+    local GIT=$(which git);
+
+    adog_git() {
+        $GIT log --all --decorate --oneline --graph
+    }
+
+    head_git() {
+        $GIT restore . && $GIT checkout $@;
+    }
+
+    moveLocal_git() {
+        local name=$(string -i $@ 0); commitID=$(string -i $@ 1);
+        if ! $(hasValue $name); then return $(_ERC name undefined, \'$@\'); fi;
+        if ! $(hasValue $commitID); then return $(_ERC commitID undefined, \'$@\'); fi;
+
+        _ED move local: $name to $commitID 
+        $GIT checkout $name && $GIT reset --hard $commitID
+    }
+
+    moveCloud_git() {
+        local name=$(string -i $@ 0); commitID=$(string -i $@ 1);
+        if ! $(hasValue $name); then return $(_ERC name undefined, \'$@\'); fi;
+        if ! $(hasValue $commitID); then return $(_ERC commitID undefined, \'$@\'); fi;
+
+        _ED move cloud: $name to $commitID 
+        $GIT push --force origin $commitID:refs/heads/$name
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";
+    elif $(hasValueq "$head"); then head_git $head;
+    elif $(hasValueq "$moveLocal"); then moveLocal_git $moveLocal;
+    elif $(hasValueq "$moveCloud"); then moveCloud_git $moveCloud;
+    fi;
+
+    adog_git
+}
+
 # open web for test
 # -p,--port,_ *_default
 # -m,--message
@@ -1340,7 +1388,7 @@ _web() {
     local webPort=$(parseGet _web_data p port _);
     local webMessage=$(parseGet _web_data m message);
     local webRedirect=$(parseGet _web_data r redirect)
-    local help=$(parseGet _web_data h help);
+    local help=$(parseGet _web_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--port,_ \t (int) \t open server port, default port 3000\n'
