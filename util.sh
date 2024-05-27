@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 4.4.1
+    echo 4.4.4
 }
 
 storageDir="$HOME/.application"
@@ -903,18 +903,21 @@ password() {
 # -e,--equal (string, string)
 # -c,--contain (string, stringOrRegex)
 # -r,--replace (string, string, string)
+# -i,--index (...string, int)
 string() {
     declare -A string_data; parseArg string_data $@;
     local equal=$(parseGet string_data e equal);
     local contain=$(parseGet string_data c contain);
     local replace=$(parseGet string_data r replace);
+    local index=$(parseGet string_data i index);
     local help=$(parseGet string_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-e,--equal \t (string,string) \t\t compare two strings\n'
     helpmsg+='\t-c,--contain \t (string,stringOrRegex) \t check if string contains\n'
     helpmsg+='\t-r,--replace \t (string,string,string) \t 1,original string; 2,search string, 3,replacement \n'
-
+    helpmsg+='\t-r,--replace \t (...string,int) \t\t\t treat string as array, get index of it \n'
+    
     equal_string(){
         if [ "$1" = "$2" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
     }
@@ -928,10 +931,19 @@ string() {
         echo "${string//$search/$replace}"
     }
 
+    index_string() {
+        local index="${@: -1}"
+        if [[ $index =~ ^[0-9]+$ ]]; then index=$(($index+1)); 
+        else return $(_ERC index $index is not a number); fi;
+
+        echo "${@:$index:1}"
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$equal"); then equal_string $equal;
     elif $(hasValueq "$contain"); then contain_string $contain;
     elif $(hasValueq "$replace"); then replace_string $replace;
+    elif $(hasValueq "$index"); then index_string $index;
     fi;
 
 }
