@@ -4,14 +4,13 @@
 
 # (): string
 version() {
-    echo 4.6.0
+    echo 5.0.0
 }
 
-storageDir="$HOME/.application"
-storageDirQuick="$storageDir/quick"
-storageDirBin="$storageDir/bin"
-storageDirBinExtra=$storageDirBin/extra
-storageDirTrash="$storageDir/.trash"
+_U2_Storage_Dir="$HOME/.application"
+_U2_Storage_Dir_Quick="$_U2_Storage_Dir/quick"
+_U2_Storage_Dir_Bin="$_U2_Storage_Dir/bin"
+_U2_Storage_Dir_Trash="$_U2_Storage_Dir/.trash"
 
 # (): number
 # default verbose=1, set verbose to something else to suppress logging
@@ -684,8 +683,8 @@ trash() {
     helpmsg+='\t-c,--clean \t (number) \t clean trash older than 3 month, default 7890000 \n'
     helpmsg+='\t-P,--purge \t () \t\t remove all trash from trash path\n'
 
-    local TP="$storageDirTrash"
-    local trashInfoName="_u_trash_info"
+    local TP="$_U2_Storage_Dir_Trash"
+    local trashInfoName="_U2_TRASH_INFO"
 
     put_trash() {
         local input=$1 
@@ -1139,7 +1138,7 @@ quick() {
     helpmsg+='\t-l,--list \t\t\t () \t\t list total quick command\n'
 
     name=$(echo $name | sed 's/ *//')
-    targetFile="$storageDirQuick/$name"
+    targetFile="$_U2_Storage_Dir_Quick/$name"
 
     edit_quick(){
         if $(hasCmd nano); then nano $targetFile; elif $(hasCmd vi); then vi $targetFile; fi;
@@ -1164,7 +1163,7 @@ quick() {
     }
     
     if $(hasValueq "$help"); then printf "$helpmsg";  
-    elif $(hasValueq "$list"); then ls -a $storageDirQuick;
+    elif $(hasValueq "$list"); then ls -a $_U2_Storage_Dir_Quick;
     elif ! $(hasValueq "$name"); then return $(_ERC "name not specified"); 
     elif $(hasValueq "$add"); then add_quick;
     elif $(hasValueq "$edit"); then edit_quick;
@@ -1178,7 +1177,7 @@ quick() {
 # call setup bash beforehand
 setup() {
     local profile="$(_PROFILE)"
-    mkdir -p $storageDirBin && mkdir -p $storageDirBinExtra && mkdir -p $storageDirQuick && mkdir -p $storageDirTrash
+    mkdir -p $_U2_Storage_Dir_Bin && mkdir -p $_U2_Storage_Dir_Quick && mkdir -p $_U2_Storage_Dir_Trash
 
     if ! $(hasFile "$HOME/.bash_mine"); then
         touch $HOME/.bash_mine && touch $HOME/.bash_env
@@ -1186,7 +1185,7 @@ setup() {
         echo 'source $HOME/.bash_env' >> $HOME/.bash_mine
         
         echo 'if [ "$PWD" = "$HOME" ]; then cd Documents; fi;' >> $HOME/.bash_mine
-        echo 'PATH=$HOME/.npm_global/bin:'$storageDirBin':$PATH' >> $HOME/.bash_mine
+        echo 'PATH=$HOME/.npm_global/bin:'$_U2_Storage_Dir_Bin':$PATH' >> $HOME/.bash_mine
         echo 'function cdd { _back=$(pwd) && cd $@ && ls -a; }' >> $HOME/.bash_mine
         echo 'function cdb { _oldback=$_back && _back=$(pwd) && cd $_oldback && ls -a; }' >> $HOME/.bash_mine
 
@@ -1196,8 +1195,8 @@ setup() {
         if $(os -c mac); then printf 'export BASH_SILENCE_DEPRECATION_WARNING=1\n' >> $HOME/.bash_mine; fi;
     fi;
 
-    mv $(_SCRIPTPATHFULL) $storageDirBin/u2
-    . $storageDirBin/u2 _ED Current Version: $(version)
+    mv $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
+    . $_U2_Storage_Dir_Bin/u2 _ED Current Version: $(version)
 }
 
 # (string)
@@ -1230,7 +1229,7 @@ help(){
 
     update_help() {
         _ED Current Version: $(version)
-        local scriptLoc="$storageDirBin/u2"
+        local scriptLoc="$_U2_Storage_Dir_Bin/u2"
         local updateUrl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"
         local tmpfile=/tmp/$(password).sh
         if $(hasCmd curl); then curl $updateUrl --output $tmpfile
@@ -1383,18 +1382,18 @@ git() {
 # read from .bash_env and clone to defined location
 gitclone() {
     source $HOME/.bash_env
-    if ! $(hasValue $_U_GIT_USER); then 
-        _U_GIT_USER=$(promptString enter default git username);
-        echo '_U_GIT_USER='$_U_GIT_USER >> $HOME/.bash_env
+    if ! $(hasValue $_U2_GIT_USER); then 
+        _U2_GIT_USER=$(promptString enter default git username);
+        echo '_U2_GIT_USER='$_U2_GIT_USER >> $HOME/.bash_env
     fi;
-    if ! $(hasValue $_U_GIT_CLONE_TO_DIR); then 
-        _ED _U_GIT_CLONE_TO_DIR not defined, defaut to ~/Documents, edit in bash_env
-        _U_GIT_CLONE_TO_DIR=~/Documents
-        echo '_U_GIT_CLONE_TO_DIR=~/Documents' >> $HOME/.bash_env
+    if ! $(hasValue $_U2_GIT_CLONE_TO_DIR); then 
+        _ED _U2_GIT_CLONE_TO_DIR not defined, defaut to ~/Documents, edit in bash_env
+        _U2_GIT_CLONE_TO_DIR=~/Documents
+        echo '_U2_GIT_CLONE_TO_DIR=~/Documents' >> $HOME/.bash_env
     fi;
     
     local GIT=$(which git);
-    $GIT clone "https://github.com/$_U_GIT_USER/$@.git" "$_U_GIT_CLONE_TO_DIR/$@"
+    $GIT clone "https://github.com/$_U2_GIT_USER/$@.git" "$_U2_GIT_CLONE_TO_DIR/$@"
 }
 
 # open web for test
