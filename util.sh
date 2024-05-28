@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.0.2
+    echo 5.1.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1456,6 +1456,28 @@ b64e() {
 #(string) base64 decode
 b64d() {
     echo $@ | base64 -d
+}
+
+# --large (string, int) large file finder, define [ path, length ]
+extra() {
+    declare -A extra_data; parseArg extra_data $@;
+    local large=$(parseGet extra_data large);
+
+    local help=$(parseGet extra_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t--large \t (string, int) \t large file finder, define [ path=".", length=20 ]\n'
+    
+    large_extra() {
+        local largeDir=$1 largeLength=$2
+        if ! $(hasValueq $largeDir); then largeDir="."; fi;
+        if ! $(hasValueq $largeLength); then largeLength=20; fi;
+        du -ahx $largeDir | sort -rh | head -n $largeLength
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";
+    elif $(hasValueq "$large"); then large_extra $large;
+    fi;
 }
 
 
