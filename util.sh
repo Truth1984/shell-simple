@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.1.0
+    echo 5.2.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -51,7 +51,7 @@ _PROFILE() {
 # return callback, set verbose value to enable
 _RC() {
     if [ -n "$verbose" ]; then
-        echo RC, $1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\) >&2
+        echo RC, $1, $(basename "$0"), $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\) >&2
     fi;
     return $1
 }
@@ -60,7 +60,7 @@ _RC() {
 # error callback, set verbose value to enable
 _ERC() {
     if [ -n "$verbose" ]; then
-        echo ERC, 1, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), "<x "$1" x>" >&2
+        echo ERC, 1, $(basename "$0"), $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), "<x "$1" x>" >&2
     fi;
     return 1
 }
@@ -69,7 +69,7 @@ _ERC() {
 # echo callback
 _EC() {
     if [ -n "$verbose" ]; then
-        echo EC, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), \"\["$1"\]\" >&2
+        echo EC, 0, $(basename "$0"), $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), \"\["$1"\]\" >&2
     fi;
     echo "$@"
 }
@@ -78,7 +78,7 @@ _EC() {
 # echo debug
 _ED() {
     if [ -n "$verbose" ]; then
-        echo ED, 0, $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \""$@"\" >&2
+        echo ED, 0, $(basename "$0"), $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \""$@"\" >&2
     fi;
 }
 
@@ -922,6 +922,7 @@ string() {
     }
 
     contain_string(){
+        if [ "$#" -lt 2 ]; then return $(_RC 1 $@); fi;
         if $(echo "$1" | grep -q $2); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
     }
 
@@ -1044,7 +1045,7 @@ get() {
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
-    helpmsg+='\t-r,--run \t (string) \t run the script from url\n'
+    helpmsg+='\t-r,--run \t (string) \t run the script from url, can pass extra command, but no "-" allowed\n'
     helpmsg+='\t-C,--curl \t () \t\t use curl\n'
     helpmsg+='\t-W,--wget \t () \t\t use wget\n'
     helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
@@ -1053,12 +1054,12 @@ get() {
     else curlEx=""; wgetEx=" -q"; fi;
 
     script_get() {
-        local url=$1
+        local url=$1 exArgs="${@:2}"
         curlCmd(){
-            bash <(curl -s $url);
+            bash <(curl -s $url) $exArgs;
         }
         wgetCmd(){
-            bash <(wget -O - $url); 
+            bash <(wget -O - $url) $exArgs; 
         }
         _REQHelper
     }
@@ -1199,6 +1200,34 @@ setup() {
 
     mv $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
     . $_U2_Storage_Dir_Bin/u2 _ED Current Version: $(version)
+}
+
+# setup dependency
+setupEX() {
+    declare -A setupex_data; parseArg setupex_data $@;
+    local basic=$(parseGet setupex_data b basic _);
+    local nodeAdd=$(parseGet setupex_data n node);
+    local dockerAdd=$(parseGet setupex_data d docker);
+    local help=$(parseGet setupex_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-b,--basic,_ \t () \t basic dependency setup\n'
+    helpmsg+='\t-n,--node \t () \t add node to setup\n'
+    helpmsg+='\t-d,--docker \t () \t add docker to setup\n'
+  
+    install_setupEx() {
+        local extraArgs=""
+        if $(hasValueq "$nodeAdd"); then extraArgs="$extraArgs node"; fi;
+        if $(hasValueq "$dockerAdd"); then extraArgs="$extraArgs docker"; fi;
+        _ED extraArgs: "$extraArgs"
+
+        setupURL="https://raw.gitmirror.com/Truth1984/shell-simple/main/setup.sh" 
+        get -r $setupURL $extraArgs
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";  
+    else install_setupEx;
+    fi;
 }
 
 # (string)
