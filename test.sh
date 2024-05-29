@@ -2,4 +2,4 @@
 
 source ./util.sh 
 
-version
+_ED running from test with version: $(version)

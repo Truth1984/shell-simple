@@ -1203,6 +1203,8 @@ setup() {
 }
 
 # setup dependency
+# -d,--docker add docker to setup
+# -n,--node add node/bun to setup
 setupEX() {
     declare -A setupex_data; parseArg setupex_data $@;
     local basic=$(parseGet setupex_data b basic _);

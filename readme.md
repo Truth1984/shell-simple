@@ -10,6 +10,14 @@ personalized shell sciprt
 
 `u2 help --upgrade`
 
+## quick setup with dep
+
+add `-d -n` to the end to add docker & node
+
+```sh
+ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setupEX
+```
+
 ## quick setup
 
 ```sh
