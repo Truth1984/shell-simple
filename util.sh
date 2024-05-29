@@ -1483,7 +1483,7 @@ _web() {
         if ! $(hasValueq $servePath); then servePath="."; fi;
 
         _ED Starting bun file server on port:$webPort with directory: \'$servePath\'
-        bun -e "import { serve } from \"bun\"; serve( {port:$webPort, hostname:\"0.0.0.0\", fetch(req){ return new Response(Bun.file(\"$servePath\" + new URL(req.url).pathname))}})"
+        bun -e "Bun.serve({port:$webPort, fetch(req){ return new Response(Bun.file(\"$servePath\" + new URL(req.url).pathname))}})"
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";
