@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.3.1
+    echo 5.3.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1362,6 +1362,9 @@ port() {
     fi;
 }
 
+# -h,--head,_
+# -m,--moveLocal
+# -M,--moveCloud 
 git() {
     declare -A git_data; parseArg git_data $@;
     local head=$(parseGet git_data h head _);
@@ -1430,20 +1433,22 @@ gitclone() {
 }
 
 # open web for test
-# -p,--port,_ *_default
-# -m,--message
-# -r,--redirect
+# -p,--port,_ *_default (int)
+# -m,--message (string)
+# -r,--redirect (URL)
 _web() {
     declare -A _web_data; parseArg _web_data $@;
     local webPort=$(parseGet _web_data p port _);
     local webMessage=$(parseGet _web_data m message);
     local webRedirect=$(parseGet _web_data r redirect)
+    local webDirectory=$(parseGet _web_data d dir);
     local help=$(parseGet _web_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--port,_ \t (int) \t open server port, default port 3000\n'
     helpmsg+='\t-m,--message \t (string) \t message to display \n'
     helpmsg+='\t-r,--redirect \t (string) \t redirect to target URL \n'
+    helpmsg+='\t-d,--dir \t (string) \t directory server with bun default "." \n'
 
     if ! $(hasValue $webPort); then webPort=3000; fi;
     if ! $(hasValue $webMessage); then webMessage="web message"; fi;
@@ -1473,8 +1478,17 @@ _web() {
         echo -e "HTTP/1.1 301 Moved Permanently\r\nLocation: $weblocation\r\n\r\n" | $webcmd > >(nc $reHost $rePort)
     }
 
+    directory_web() {
+        local servePath=$@
+        if ! $(hasValueq $servePath); then servePath="."; fi;
+
+        _ED Starting bun file server on port:$webPort with directory: \'$servePath\'
+        bun -e "import { serve } from \"bun\"; serve( {port:$webPort, hostname:\"0.0.0.0\", fetch(req){ return new Response(Bun.file(\"$servePath\" + new URL(req.url).pathname))}})"
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$webRedirect"); then redirect_web $webRedirect;
+    elif $(hasValueq "$webDirectory"); then directory_web $webDirectory;
     else server_web;
     fi;
 }
@@ -1511,7 +1525,12 @@ extra() {
     fi;
 }
 
-
+# -c,--content,_
+# -p,--path (bool) search path only
+# -b,--base "."
+# -s,--show (int) show surrounding lines
+# -i,--ignore (string) a;b;c
+# -D,--Depth (int)
 search() {
     declare -A search_data; parseArg search_data $@;
     local content=$(parseGet search_data c content _);
@@ -1526,7 +1545,7 @@ search() {
     helpmsg+='\t-c,--content,_ \t (string) \t content to search \n'
     helpmsg+='\t-p,--path \t (string) \t search for file or folder name only\n'
     helpmsg+='\t-b,--base \t (string) \t base directory to search in, default "."\n'
-    helpmsg+='\t-s,--show \t (int) \t\t show n(*_2) lines of context after search\n'
+    helpmsg+='\t-s,--show \t (int) \t\t show n(*_2) lines of surrounding context\n'
     helpmsg+='\t-i,--ignore \t (string) \t ignore list, use ";" as delimiter \n'
     helpmsg+='\t-D,--depth \t (int) \t\t search depth, default 7\n'
 
