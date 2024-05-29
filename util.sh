@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.3.3
+    echo 5.3.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1204,22 +1204,26 @@ setup() {
 
 # setup dependency
 # -d,--docker add docker to setup
-# -n,--node add node/bun to setup
+# -n,--node add node to setup
+# -b,--bun add bun to setup
 setupEX() {
     declare -A setupex_data; parseArg setupex_data $@;
-    local basic=$(parseGet setupex_data b basic _);
+    local basic=$(parseGet setupex_data B basic _);
     local nodeAdd=$(parseGet setupex_data n node);
+    local bunAdd=$(parseGet setupex_data b bun);
     local dockerAdd=$(parseGet setupex_data d docker);
     local help=$(parseGet setupex_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-b,--basic,_ \t () \t basic dependency setup\n'
+    helpmsg+='\t-B,--basic,_ \t () \t basic dependency setup\n'
     helpmsg+='\t-n,--node \t () \t add node to setup\n'
+    helpmsg+='\t-b,--bun \t () \t add bun to setup\n'
     helpmsg+='\t-d,--docker \t () \t add docker to setup\n'
   
     install_setupEx() {
         local extraArgs=""
         if $(hasValueq "$nodeAdd"); then extraArgs="$extraArgs node"; fi;
+        if $(hasValueq "$bunAdd"); then extraArgs="$extraArgs bun"; fi;
         if $(hasValueq "$dockerAdd"); then extraArgs="$extraArgs docker"; fi;
         _ED extraArgs: "$extraArgs"
 

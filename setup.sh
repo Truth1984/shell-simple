@@ -31,6 +31,10 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
             u2 install redhat-lsb-core epel-release the_silver_searcher udisks2
         fi;
 
+        if $(u2 os -c apk); then
+            u2 install the_silver_searcher
+        fi;
+        
         if $(u2 os -c apt); then
             u2 install software-properties-common silversearcher-ag udisks2
         fi;
@@ -76,8 +80,14 @@ if $(u2 string -c "$@" "node"); then
     if ! $(u2 hasCmd node); then 
         curl -L https://bit.ly/n-install | bash -s -- -y 
     fi; 
-    if ! $(u2 hasCmd bun); then 
-        curl -fsSL https://bun.sh/install | bash
-    fi; 
 fi;
 
+if $(u2 string -c "$@" "bun"); then 
+    if ! $(u2 hasCmd bun); then 
+        curl -fsSL https://bun.sh/install | bash
+        if ! $(u2 hasContent $HOME/.bash_env BUN_INSTALL); then
+            echo 'export BUN_INSTALL="$HOME/.bun"' >> $HOME/.bash_env 
+            echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> $HOME/.bash_env 
+        fi;
+    fi; 
+fi;
