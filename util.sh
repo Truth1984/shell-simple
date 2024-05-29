@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.2.1
+    echo 5.3.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1508,6 +1508,62 @@ extra() {
 
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$large"); then large_extra $large;
+    fi;
+}
+
+
+search() {
+    declare -A search_data; parseArg search_data $@;
+    local content=$(parseGet search_data c content _);
+    local path=$(parseGet search_data p path);
+    local base=$(parseGet search_data b base);
+    local show=$(parseGet search_data s show);
+    local ignore=$(parseGet search_data i ignore);
+    local depth=$(parseGet search_data D depth);
+    local help=$(parseGet search_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-c,--content,_ \t (string) \t content to search \n'
+    helpmsg+='\t-p,--path \t (string) \t search for file or folder name only\n'
+    helpmsg+='\t-b,--base \t (string) \t base directory to search in, default "."\n'
+    helpmsg+='\t-s,--show \t (int) \t\t show n(*_2) lines of context after search\n'
+    helpmsg+='\t-i,--ignore \t (string) \t ignore list, use ";" as delimiter \n'
+    helpmsg+='\t-D,--depth \t (int) \t\t search depth, default 7\n'
+
+    _load_args() {
+        AG_ARGS=""
+        # ignore
+        local preIgnoreList="$ignore;node_modules;.git;package-lock.json;"
+        IFS=';' read -ra elements <<< "$preIgnoreList"
+        
+        for element in "${elements[@]}"; do
+            element="${element#"${element%%[![:space:]]*}"}"
+            element="${element%"${element##*[![:space:]]}"}"
+            if $(hasValueq $element); then AG_ARGS="$AG_ARGS --ignore $element"; fi;
+        done
+        # depth
+        if ! $(hasValueq $depth); then depth=7; fi;
+        AG_ARGS="$AG_ARGS --depth=$depth"
+        # show with line
+        if ! $(hasValueq "$show"); then AG_ARGS="$AG_ARGS --files-with-matches";
+        else AG_ARGS="$AG_ARGS --context $show"; fi;
+        # extra
+        AG_ARGS="$AG_ARGS --follow --noheading --column"
+    }
+
+    content_search() {
+        _load_args
+        eval $(_EC ag $AG_ARGS "$@" $base)
+    }
+
+    path_search() {
+        _load_args
+        eval $(_EC ag $AG_ARGS -g "$@" $base)
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";
+    elif $(hasValueq $path); then path_search "$path";
+    else content_search "$content";
     fi;
 }
 
