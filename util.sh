@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.3.4
+    echo 5.3.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -426,13 +426,13 @@ os() {
     }
 
     sys_os() {
-        if $(u os mac); then 
+        if $(os -c mac); then 
             df -hP;
             top -l 1 | head -n 10
-        elif $(u os linux); then 
+        elif $(os -c linux); then 
             df -Th --exclude-type=overlay;
             top -bn1 | head -n 6
-        elif $(u os win); then 
+        elif $(os -c win); then 
             wmic logicaldisk get name,size,freespace
             wmic cpu get LoadPercentage
             wmic memorychip get Capacity,Speed,Manufacturer,ConfiguredClockSpeed
