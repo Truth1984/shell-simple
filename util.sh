@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.3.5
+    echo 5.3.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -488,12 +488,12 @@ ip() {
         local ethernet wifi
 
         if $(os -c linux); then
-            ips=$(which /sbin/ip || which /usr/sbin/ip);
-            ethernet=$($ips addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
-            wifi=$($ips addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+            IP=$(which /sbin/ip || which /usr/sbin/ip);
+            ethernet=$($IP addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+            wifi=$($IP addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
             if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
             elif $(hasValue $wifi); then _ED wifi && _EC $wifi; 
-            else _ED ip && _EC $($ips route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
+            else _ED ip && _EC $($IP route get 1.2.3.4 | awk '{print $7}' | head -1); fi;
         elif $(os -c mac);then
             ethernet=$(ipconfig getifaddr en1)
             wifi=$(ipconfig getifaddr en0)
@@ -663,6 +663,7 @@ dates() {
 # -i,--index get path from index
 # -r,--restore restore file
 # -c,--clean clean trash older than 3 month
+# -d,--delete delete one
 # -P,--purge rm all files from trash dir
 trash() {
     declare -A trash_data; parseArg trash_data $@;
@@ -672,6 +673,7 @@ trash() {
     local indexDir=$(parseGet trash_data i index);
     local restore=$(parseGet trash_data r restore);
     local clean=$(parseGet trash_data c clean);
+    local delete=$(parseGet trash_data d delete);
     local purge=$(parseGet trash_data P purge);
     local help=$(parseGet trash_data help);
 
@@ -681,6 +683,7 @@ trash() {
     helpmsg+='\t-i,--index \t (number) \t input index number and get target trash dir\n'
     helpmsg+='\t-r,--restore \t (string) \t restore folder depends on current path\n'
     helpmsg+='\t-c,--clean \t (number) \t clean trash older than 3 month, default 7890000 \n'
+    helpmsg+='\t-d,--delete \t () \t choose a trash and delete it \n'
     helpmsg+='\t-P,--purge \t () \t\t remove all trash from trash path\n'
 
     local TP="$_U2_Storage_Dir_Trash"
@@ -791,9 +794,33 @@ trash() {
         mv -i $(trimArgs $targetTrashDir /*) "$(dirname "$original_dir")"
     }
 
+    delete_trash() {
+        local dir=$1
+        if ! $(hasValueq $dir); then dir="."; fi;
+        loadArray   
+
+        dir=$(pathGetFull $dir)
+
+        trashFilter "original_dir" 'a(){ if $(echo $1 | grep -q'" $dir); then return 0; else return 1; fi; }; a"
+        printTrashList 
+
+        if [ ${#folder_data[@]} -lt 2 ]; then
+            return $(_ERC "Error: empty, nothing to restore in $dir");
+        fi;
+
+        response=$(prompt "which one to delete ? [index:0]")
+
+        if ! $(hasValueq ${folder_data[${response}_uuid]}); then return $(_ERC "index:$response does not exit"); fi;
+        uuid=${folder_data[${response}_uuid]}
+
+        targetTrashDir=$(trimArgs $TP / $uuid);
+        rm -rf $targetTrashDir
+    }
+
     index_trash() {
         loadArray
         length=${folder_data[length]}
+        if ! $(hasValueq $1); then return $(_ERC "need target index")
         if [ $1 -gt $length ]; then echo "."; return $(_ERC "index [$1] larger than total length [$length]"); fi;
 
         for ((i=0; i<$length; i++)); do     
@@ -853,6 +880,7 @@ trash() {
     elif $(hasValueq "$restore"); then restore_trash $restore; 
     elif $(hasValueq "$indexDir"); then index_trash $indexDir; 
     elif $(hasValueq "$clean"); then clean_trash $clean; 
+    elif $(hasValueq "$delete"); then delete_trash $delete;
     elif $(hasValueq "$purge"); then purge_trash $purge; 
     fi;
 }
