@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.3.8
+    echo 5.5.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -488,7 +488,7 @@ ip() {
         local ethernet wifi
 
         if $(os -c linux); then
-            IP=$(which /sbin/ip || which /usr/sbin/ip);
+            IP=$(which ip);
             ethernet=$($IP addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
             wifi=$($IP addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
             if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
@@ -791,7 +791,7 @@ trash() {
 
         targetTrashDir=$(trimArgs $TP / $uuid) 
         mv $(trimArgs $targetTrashDir / $trashInfoName) /tmp
-        mv -i $(trimArgs $targetTrashDir /*) "$(dirname "$original_dir")"
+        mv -i $(trimArgs $targetTrashDir "/*") "$(dirname "$original_dir")"
     }
 
     delete_trash() {
@@ -968,7 +968,7 @@ string() {
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$equal"); then equal_string $equal;
-    elif $(hasValueq "$contain"); then contain_string $contain;
+    elif $(hasValueq "$contain"); then contain_string "$contain";
     elif $(hasValueq "$replace"); then replace_string $replace;
     elif $(hasValueq "$index"); then index_string $index;
     fi;
@@ -1533,6 +1533,41 @@ b64e() {
 #(string) base64 decode
 b64d() {
     echo $@ | base64 -d
+}
+
+tar() {
+    declare -A tar_data; parseArg tar_data $@;
+    local target=$(parseGet tar_data t target _);
+    local dest=$(parseGet tar_data d dest);
+    local help=$(parseGet tar_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-t,--target,_ \t () \t target to perform operation\n'
+    helpmsg+='\t-d,--dest \t () \t unzip to, default will be plaintime.tar \n'
+
+    action_tar() {
+        if ! $(hasValueq "$target"); then return $(_ERC "target undefined"); fi;
+
+        TAR=$(which tar);
+        FILE=$(which file);
+    
+        local toZip=false;
+        if $(trimArgs "$target" | grep -q " "); then toZip=true; 
+        elif ! $($FILE "$target" | grep -q "tar"); then toZip=true; fi;
+
+        if $toZip; then 
+            if ! $(hasValueq $dest); then dest="$(dates -p).tar"; fi;
+            $TAR -cf $dest $target;
+        else 
+            if $(hasValueq $dest); then $TAR -xzf $target -C $dest;
+            else $TAR -xvf $target; 
+            fi; 
+        fi;
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    else action_tar;
+    fi;
 }
 
 # --large (string, int) large file finder, define [ path, length ]
