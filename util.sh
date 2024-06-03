@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.3.7
+    echo 5.3.8
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -820,7 +820,7 @@ trash() {
     index_trash() {
         loadArray
         length=${folder_data[length]}
-        if ! $(hasValueq $1); then return $(_ERC "need target index")
+        if ! $(hasValueq $1); then return $(_ERC "need target index"); fi;
         if [ $1 -gt $length ]; then echo "."; return $(_ERC "index [$1] larger than total length [$length]"); fi;
 
         for ((i=0; i<$length; i++)); do     
