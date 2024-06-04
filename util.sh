@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.6.0
+    echo 5.6.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1339,8 +1339,8 @@ scan() {
 
 # portinfo on current machine
 # -p,--port,--process,_ *_default
-# -d,--docker
-# -i,--info
+# -d,--docker (string)
+# -i,--info (int)
 port() { 
     declare -A port_data; parseArg port_data $@;
     local processPort=$(parseGet port_data p port process _);
@@ -1351,7 +1351,7 @@ port() {
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--port,--process,_ \t (string) \t use port number or process name to grep port info\n'
     helpmsg+='\t-d,--docker \t\t (string) \t use port number or process name to grep docker port info\n'
-    
+    helpmsg+='\t-i,--info \t\t (int) \t find info with target port number \n'
 
     process_port() {
         local grepTarget="$1"
@@ -1395,8 +1395,8 @@ port() {
 }
 
 # -h,--head,_
-# -m,--moveLocal
-# -M,--moveCloud 
+# -m,--moveLocal (name, commitID)
+# -M,--moveCloud (name, commitID)
 git() {
     declare -A git_data; parseArg git_data $@;
     local head=$(parseGet git_data h head _);
@@ -1535,23 +1535,34 @@ b64d() {
     echo $@ | base64 -d
 }
 
+# --info, _ (string)
+# -s,--cpu
+# -S,--mem
+# -p,--parent (int)
+# -l,--line (10)
 process() {
     declare -A process_data; parseArg process_data $@;
+    local grepInfo=$(parseGet process_data info _);
     local sortCPU=$(parseGet process_data s cpu);
     local sortMEM=$(parseGet process_data S mem);
     local parent=$(parseGet process_data p parent);
-    local tree=$(parseGet process_data t tree);
     local line=$(parseGet process_data l line);
     local help=$(parseGet process_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-s,--cpu \t () \t sort process by cpu and mem\n'
-    helpmsg+='\t-S,--mem \t () \t sort process by mem and cpu \n'
-    helpmsg+='\t-p,--parent \t () \t find parent process until reach 1 \n'
-    helpmsg+='\t-t,--tree \t () \t display tree lists \n'
-    helpmsg+='\t-l,--line \t (int) \t sort process line to output, default to 10 \n'
+    helpmsg+='\t--info,_ \t (string) \t grep process based on info given\n'
+    helpmsg+='\t-s,--cpu \t () \t\t sort process by cpu and mem\n'
+    helpmsg+='\t-S,--mem \t () \t\t sort process by mem and cpu \n'
+    helpmsg+='\t-p,--parent \t (int) \t\t find parent process until reach 1 \n'
+    helpmsg+='\t-l,--line \t (int) \t\t sort process line to output, default to 10 \n'
 
     if ! $(hasValueq "$line"); then line=10; fi;
+
+    info_process() {
+        local info="$@"
+         if ! $(hasValueq "$info"); then ps aux;
+         else ps aux | grep $info; fi;
+    }
 
     sortcpu_process() {
         ps aux | head -n 1 && ps aux | awk 'NR>1 {print $0, $11}' | sort -k 3nr,3 -k 4nr,4 | head -n $line   
@@ -1559,11 +1570,6 @@ process() {
     
     sortmem_process() {
         ps aux | head -n 1 && ps aux | awk 'NR>1 {print $0, $11}' | sort -k 4nr,4 -k 3nr,3 | head -n $line   
-    }
-
-    tree_process() {
-        if $(os -c mac); then pstree; 
-        else ps auxwwf; fi;
     }
 
     parent_process() {
@@ -1583,11 +1589,12 @@ process() {
     elif $(hasValueq "$sortCPU"); then sortcpu_process $sortcpu_process;
     elif $(hasValueq "$sortMEM"); then sortmem_process $sortMEM; 
     elif $(hasValueq "$parent"); then parent_process $parent;
-    elif $(hasValueq "$tree"); then tree_process $tree; 
-    else ps aux;
+    else info_process $grepInfo;
     fi;
 }
 
+# -t,--target,_ (string)
+# -d,--dest (string)
 tar() {
     declare -A tar_data; parseArg tar_data $@;
     local target=$(parseGet tar_data t target _);
@@ -1596,7 +1603,7 @@ tar() {
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-t,--target,_ \t () \t target to perform operation\n'
-    helpmsg+='\t-d,--dest \t () \t unzip to, default will be plaintime.tar \n'
+    helpmsg+='\t-d,--dest \t () \t when zip, dest loc: default to plaintime.tar; when unzip, dest loc: unzip to target dir \n'
 
     action_tar() {
         if ! $(hasValueq "$target"); then return $(_ERC "target undefined"); fi;
@@ -1624,14 +1631,16 @@ tar() {
 }
 
 # --large (string, int) large file finder, define [ path, length ]
+# --tree,--pstree display pstree
 extra() {
     declare -A extra_data; parseArg extra_data $@;
     local large=$(parseGet extra_data large);
-
+    local tree=$(parseGet extra_data tree pstree);
     local help=$(parseGet extra_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t--large \t (string, int) \t large file finder, define [ path=".", length=20 ]\n'
+    helpmsg+='\t--large \t\t (string, int) \t large file finder, define [ path=".", length=20 ]\n'
+    helpmsg+='\t--tree,--pstree \t () \t\t display pstree\n'
     
     large_extra() {
         local largeDir=$1 largeLength=$2
@@ -1640,8 +1649,14 @@ extra() {
         du -ahx $largeDir | sort -rh | head -n $largeLength
     }
 
+    tree_extra() {
+        if $(os -c mac); then pstree; 
+        else ps auxwwf; fi;
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$large"); then large_extra $large;
+    elif $(hasValueq "$tree"); then tree_extra $tree;
     fi;
 }
 
