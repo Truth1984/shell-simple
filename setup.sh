@@ -44,7 +44,7 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
                 sudo mkdir /usr/local/sbin && sudo chmod 777 /usr/local/sbin
                 echo 'export PATH=/usr/local/sbin:$PATH' >> $HOME/.bashrc
             fi;
-            u2 install the_silver_searcher
+            u2 install the_silver_searcher pstree
         fi;
 
     fi;
