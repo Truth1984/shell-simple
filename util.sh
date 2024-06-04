@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.6.3
+    echo 5.7.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -930,12 +930,14 @@ password() {
 # -e,--equal (string, string)
 # -c,--contain (string, stringOrRegex)
 # -r,--replace (string, string, string)
+# -n,--number (string)
 # -i,--index (...string, int)
 string() {
     declare -A string_data; parseArg string_data $@;
     local equal=$(parseGet string_data e equal);
     local contain=$(parseGet string_data c contain);
     local replace=$(parseGet string_data r replace);
+    local number=$(parseGet string_data n number);
     local index=$(parseGet string_data i index);
     local help=$(parseGet string_data help);
 
@@ -943,7 +945,8 @@ string() {
     helpmsg+='\t-e,--equal \t (string,string) \t\t compare two strings\n'
     helpmsg+='\t-c,--contain \t (string,stringOrRegex) \t check if string contains\n'
     helpmsg+='\t-r,--replace \t (string,string,string) \t 1,original string; 2,search string, 3,replacement \n'
-    helpmsg+='\t-r,--replace \t (...string,int) \t\t treat string as array, get index of it \n'
+    helpmsg+='\t-n,--number \t (string) \t\t check if string is number \n'
+    helpmsg+='\t-i,--index \t (...string,int) \t\t treat string as array, get index of it \n'
     
     equal_string(){
         if [ "$1" = "$2" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
@@ -959,6 +962,11 @@ string() {
         echo "${string//$search/$replace}"
     }
 
+    number_string() {
+        local string=$1
+        if [[ $string =~ ^[0-9]+$ ]]; then return $(_RC 0); else return $(_RC 1); fi;
+    }
+
     index_string() {
         local index="${@: -1}"
         if [[ $index =~ ^[0-9]+$ ]]; then index=$(($index+1)); else return $(_ERC index $index is not a number); fi;
@@ -970,6 +978,7 @@ string() {
     elif $(hasValueq "$equal"); then equal_string $equal;
     elif $(hasValueq "$contain"); then contain_string "$contain";
     elif $(hasValueq "$replace"); then replace_string $replace;
+    elif $(hasValueq "$number"); then number_string $number;
     elif $(hasValueq "$index"); then index_string $index;
     fi;
 
@@ -1535,6 +1544,44 @@ b64d() {
     echo $@ | base64 -d
 }
 
+pid() {
+    declare -A pid_data; parseArg pid_data $@;
+    local target=$(parseGet pid_data t target _);
+    local port=$(parseGet pid_data p port);
+    local help=$(parseGet pid_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-t,--target,_ \t (string) \t target to perform operation\n'
+    helpmsg+='\t-p,--port \t (string) \t find pid using port info \n'
+
+    target_pid() {
+        if $(hasValueq $@); then
+            if $(os -c mac); then 
+                if $(string -n $@); then pstree -p $@;
+                else pstree | grep $@; 
+                fi;
+            else 
+                if $(string -n $@); then pstree -laps $@;
+                else pstree -spa | grep $@; 
+                fi; 
+            fi; 
+        else
+            if $(os -c mac); then pstree -w;
+            else pstree -spa; 
+            fi; 
+        fi; 
+    }
+
+    port_pid() {
+        port $@
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$target"); then target_pid $target;
+    elif $(hasValueq "$port"); then port_pid $port;
+    fi;
+}
+
 # --info, _ (string)
 # -s,--cpu
 # -S,--mem
@@ -1602,8 +1649,8 @@ tar() {
     local help=$(parseGet tar_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-t,--target,_ \t () \t target to perform operation\n'
-    helpmsg+='\t-d,--dest \t () \t when zip, dest loc: default to plaintime.tar; when unzip, dest loc: unzip to target dir \n'
+    helpmsg+='\t-t,--target,_ \t (string) \t target to perform operation\n'
+    helpmsg+='\t-d,--dest \t (string) \t when zip, dest loc: default to plaintime.tar; when unzip, dest loc: unzip to target dir \n'
 
     action_tar() {
         if ! $(hasValueq "$target"); then return $(_ERC "target undefined"); fi;
