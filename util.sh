@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.5.0
+    echo 5.6.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1533,6 +1533,59 @@ b64e() {
 #(string) base64 decode
 b64d() {
     echo $@ | base64 -d
+}
+
+process() {
+    declare -A process_data; parseArg process_data $@;
+    local sortCPU=$(parseGet process_data s cpu);
+    local sortMEM=$(parseGet process_data S mem);
+    local parent=$(parseGet process_data p parent);
+    local tree=$(parseGet process_data t tree);
+    local line=$(parseGet process_data l line);
+    local help=$(parseGet process_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-s,--cpu \t () \t sort process by cpu and mem\n'
+    helpmsg+='\t-S,--mem \t () \t sort process by mem and cpu \n'
+    helpmsg+='\t-p,--parent \t () \t find parent process until reach 1 \n'
+    helpmsg+='\t-t,--tree \t () \t display tree lists \n'
+    helpmsg+='\t-l,--line \t (int) \t sort process line to output, default to 10 \n'
+
+    if ! $(hasValueq "$line"); then line=10; fi;
+
+    sortcpu_process() {
+        ps aux | head -n 1 && ps aux | awk 'NR>1 {print $0, $11}' | sort -k 3nr,3 -k 4nr,4 | head -n $line   
+    }
+    
+    sortmem_process() {
+        ps aux | head -n 1 && ps aux | awk 'NR>1 {print $0, $11}' | sort -k 4nr,4 -k 3nr,3 | head -n $line   
+    }
+
+    tree_process() {
+        if $(os -c mac); then pstree; 
+        else ps auxwwf; fi;
+    }
+
+    parent_process() {
+        local PID=$1
+        if ! $(hasValueq "$PID"); then return $(_ERC "PID undefined"); fi;
+        
+        while [ $PID != "1" ] 
+        do
+            if ! ps -p $PID > /dev/null; then return $(_ERC "PID not found: $PID"); fi;
+            echo "---PARENT---"
+            ps u -p $PID
+            PID=$(ps -o ppid= -p "$PID")
+        done
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";
+    elif $(hasValueq "$sortCPU"); then sortcpu_process $sortcpu_process;
+    elif $(hasValueq "$sortMEM"); then sortmem_process $sortMEM; 
+    elif $(hasValueq "$parent"); then parent_process $parent;
+    elif $(hasValueq "$tree"); then tree_process $tree; 
+    else ps aux;
+    fi;
 }
 
 tar() {
