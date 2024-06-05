@@ -25,7 +25,7 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
 
     if ! $(u2 os -c win); then
 
-        u2 install wget curl nano git make psmisc net-tools nethogs coreutils sudo screen tcpdump
+        u2 install wget curl nano git make psmisc net-tools nethogs coreutils sudo screen tcpdump iftop
 
         if $(u2 os -c yum); then
             u2 install redhat-lsb-core epel-release the_silver_searcher udisks2

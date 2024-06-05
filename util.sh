@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.7.4
+    echo 5.8.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1530,7 +1530,7 @@ _web() {
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$webRedirect"); then redirect_web $webRedirect;
     elif $(hasValueq "$webDirectory"); then directory_web $webDirectory;
-    else server_web;
+    else server_web; 
     fi;
 }
 
@@ -1542,6 +1542,27 @@ b64e() {
 #(string) base64 decode
 b64d() {
     echo $@ | base64 -d
+}
+
+network() {
+    declare -A network_data; parseArg network_data $@;
+    local v2=$(parseGet network_data 2);
+    local help=$(parseGet network_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-2 \t\t (int) \t\t show iftop network, default show nethogs \n'
+  
+    display_network() {
+        if $(hasCmd nethogs) && ! $(hasValueq "$v2"); then 
+            sudo nethogs -C
+        elif $(hasCmd iftop); then
+            sudo iftop -b -P
+        fi
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";
+    else display_network; 
+    fi;
 }
 
 pid() {
@@ -1558,7 +1579,7 @@ pid() {
             if $(string -n $input); then pstree -laps $input;
             else pstree -spa | grep $input; 
             fi; 
-            port 2>/dev/null $input;
+            port 2>/dev/null $input; 
         fi; 
     else
         if $(os -c mac); then pstree -w;
