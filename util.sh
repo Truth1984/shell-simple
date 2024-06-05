@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.7.3
+    echo 5.7.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1545,41 +1545,26 @@ b64d() {
 }
 
 pid() {
-    declare -A pid_data; parseArg pid_data $@;
-    local target=$(parseGet pid_data t target _);
-    local port=$(parseGet pid_data p port);
-    local help=$(parseGet pid_data help);
-
-    local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-t,--target,_ \t (string) \t target to perform operation\n'
-    helpmsg+='\t-p,--port \t (string) \t find pid using port info \n'
-
-    target_pid() {
-        if $(hasValueq $@); then
-            if $(os -c mac); then 
-                if $(string -n $@); then pstree -p $@;
-                else pstree | grep $@; 
-                fi;
+    local input="$@"
+    if $(hasValueq $input); then
+        if $(os -c mac); then 
+            if $(string -n $input); then 
+                pstree -p $input;
             else 
-                if $(string -n $@); then pstree -laps $@;
-                else pstree -spa | grep $@; 
-                fi; 
+                pstree -spa | grep $input; 
+            fi;
+            lsof -a -i -n -P -p $input;
+        else 
+            if $(string -n $input); then pstree -laps $input;
+            else pstree -spa | grep $input; 
             fi; 
-        else
-            if $(os -c mac); then pstree -w;
-            else pstree -spa; 
-            fi; 
+            port 2>/dev/null $input;
         fi; 
-    }
-
-    port_pid() {
-        port $@
-    }
-
-    if $(hasValueq "$help"); then printf "$helpmsg"; 
-    elif $(hasValueq "$target"); then target_pid $target;
-    elif $(hasValueq "$port"); then port_pid $port;
-    fi;
+    else
+        if $(os -c mac); then pstree -w;
+        else pstree -spa; 
+        fi; 
+    fi; 
 }
 
 # --info, _ (string)
