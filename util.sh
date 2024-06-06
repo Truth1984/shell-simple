@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.9.1
+    echo 5.9.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -147,6 +147,27 @@ promptString() {
     local prompter="$@"
     read -p "$prompter"$'\n' responseString
     echo $responseString
+}
+
+# $1:question $2...:select options; i.e. Choose? i1 i2 i3
+promptSelect() {
+    local prompter=$1 options=("${@:2}")
+
+    for ((i = 0; i < ${#options[@]}; i++)); do
+        prompter+=$'\n'"[$i]: ${options[i]}"
+    done
+    prompter+=$'\n'"Your Option? Default [0] as ${options[0]}:"
+    read -p "$prompter"$'\n' responseIndex
+
+    if ! $(hasValueq $responseIndex); then 
+        _ED return index [0] as ${options[0]}
+        echo ${options[0]}
+    elif ! [[ "$responseIndex" =~ [0-9]+ ]]; then
+        return $(_ERC response index not a number); 
+    else
+        _ED return index [$responseIndex] : ${options[$responseIndex]}
+        echo ${options[$responseIndex]}
+    fi;
 }
 
 # (path): bool
