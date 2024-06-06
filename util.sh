@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.8.1
+    echo 5.9.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1588,12 +1588,98 @@ pid() {
     fi; 
 }
 
+service() { 
+    declare -A service_data; parseArg service_data $@;
+    local name=$(parseGet service_data n name _);
+    local active=$(parseGet service_data a active);
+    local restart=$(parseGet service_data r restart start);
+    local stop=$(parseGet service_data s stop);
+    local enable=$(parseGet service_data e enable);
+    local disable=$(parseGet service_data d disable);
+    local help=$(parseGet service_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-n,--name,_ \t\t (string) \t display the target service status \n'
+    helpmsg+='\t-a,--active \t\t () \t\t display the active service \n'
+    helpmsg+='\t-r,--restart,--start \t (string) \t stop and then start the target service, limited \n'
+    helpmsg+='\t-s,--stop \t\t (string) \t\t stop the target service, limited \n'
+    helpmsg+='\t-e,--enable \t\t (string) \t\t start and enable the target service, limited \n'
+    helpmsg+='\t-d,--disable \t\t (string) \t\t stop and disable the target service, limited \n'
+
+    detail_service() {
+        local serviceName=$@
+        if $(hasCmd systemctl); then systemctl status "$serviceName";
+        elif $(hasCmd rc-service); then rc-service "$serviceName" status;
+        elif $(hasCmd launchctl); then launchctl list "$serviceName";
+        elif $(os -c win); then sc query "$serviceName"; 
+        fi; 
+    }
+
+    list_service() {
+        if $(hasCmd systemctl); then systemctl list-units --type service;
+        elif $(hasCmd rc-status); then rc-status --servicelist;
+        elif $(hasCmd launchctl); then launchctl list;
+        elif $(os -c win); then sc query state=all; 
+        fi; 
+    }
+
+    active_service() {
+        if $(hasCmd systemctl); then systemctl list-units --type service -a --state=active;
+        elif $(hasCmd rc-status); then rc-status -a | grep started;
+        elif $(hasCmd launchctl); then launchctl list | grep -v '^-';
+        elif $(os -c win); then sc query state=active; 
+        fi; 
+    }
+
+    stop_service() {
+        local serviceName=$@
+        if $(hasCmd systemctl); then systemctl stop $serviceName;
+        elif $(hasCmd rc-service); then rc-service stop $serviceName;
+        else _ED "SKIP, LIMITED" 
+        fi; 
+    }
+
+    restart_service() {
+        local serviceName=$@
+        if $(hasCmd systemctl); then systemctl stop $serviceName || systemctl start $serviceName;
+        elif $(hasCmd rc-service); then rc-service stop $serviceName || rc-service start $serviceName; 
+        else _ED "SKIP, LIMITED"
+        fi; 
+    }
+
+    enable_service() {
+        local serviceName=$@
+        if $(hasCmd systemctl); then systemctl start $serviceName && systemctl enable $serviceName;
+        elif $(hasCmd rc-update); then rc-service start $serviceName && rc-update add $serviceName default; 
+        else _ED "SKIP, LIMITED"
+        fi; 
+    }
+
+    disable_service() {
+        local serviceName=$@
+        if $(hasCmd systemctl); then systemctl stop $serviceName || systemctl disable $serviceName;
+        elif $(hasCmd rc-update); then rc-service stop $serviceName || rc-update del $serviceName default; 
+        else _ED "SKIP, LIMITED"
+        fi; 
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq $name); then detail_service $name;
+    elif $(hasValueq "$active"); then active_service "$active";
+    elif $(hasValueq "$stop"); then stop_service "$stop";
+    elif $(hasValueq $restart); then restart_service $restart;
+    elif $(hasValueq $enable); then enable_service $enable;
+    elif $(hasValueq $disable); then disable_service $disable;
+    else list_service; 
+    fi;
+}
+
 # --info, _ (string)
 # -s,--cpu
 # -S,--mem
 # -p,--parent (int)
 # -l,--line (10)
-process() {
+process() { 
     declare -A process_data; parseArg process_data $@;
     local grepInfo=$(parseGet process_data info _);
     local sortCPU=$(parseGet process_data s cpu);
@@ -1648,7 +1734,7 @@ process() {
 
 # -t,--target,_ (string)
 # -d,--dest (string)
-tar() {
+tar() { 
     declare -A tar_data; parseArg tar_data $@;
     local target=$(parseGet tar_data t target _);
     local dest=$(parseGet tar_data d dest);
@@ -1679,13 +1765,13 @@ tar() {
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
-    else action_tar;
+    else action_tar; 
     fi;
 }
 
 # --large (string, int) large file finder, define [ path, length ]
 # --tree,--pstree display pstree
-extra() {
+extra() { 
     declare -A extra_data; parseArg extra_data $@;
     local large=$(parseGet extra_data large);
     local tree=$(parseGet extra_data tree pstree);
@@ -1719,7 +1805,7 @@ extra() {
 # -s,--show (int) show surrounding lines
 # -i,--ignore (string) a;b;c
 # -D,--Depth (int)
-search() {
+search() { 
     declare -A search_data; parseArg search_data $@;
     local content=$(parseGet search_data c content _);
     local path=$(parseGet search_data p path);

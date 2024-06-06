@@ -32,7 +32,7 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
         fi;
 
         if $(u2 os -c apk); then
-            u2 install the_silver_searcher
+            u2 install the_silver_searcher openrc
         fi;
         
         if $(u2 os -c apt); then
