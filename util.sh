@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.9.2
+    echo 5.9.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -153,6 +153,8 @@ promptString() {
 promptSelect() {
     local prompter=$1 options=("${@:2}")
 
+    if ! $(hasValueq ${@:2}); then return $(_ERC "selection collection empty"); fi; 
+
     for ((i = 0; i < ${#options[@]}; i++)); do
         prompter+=$'\n'"[$i]: ${options[i]}"
     done
@@ -163,7 +165,7 @@ promptSelect() {
         _ED return index [0] as ${options[0]}
         echo ${options[0]}
     elif ! [[ "$responseIndex" =~ [0-9]+ ]]; then
-        return $(_ERC response index not a number); 
+        return $(_ERC "response index not a number"); 
     else
         _ED return index [$responseIndex] : ${options[$responseIndex]}
         echo ${options[$responseIndex]}
@@ -990,7 +992,7 @@ string() {
 
     index_string() {
         local index="${@: -1}"
-        if [[ $index =~ ^[0-9]+$ ]]; then index=$(($index+1)); else return $(_ERC index $index is not a number); fi;
+        if [[ $index =~ ^[0-9]+$ ]]; then index=$(($index+1)); else return $(_ERC "index $index is not a number"); fi;
 
         echo "${@:$index:1}"
     }
@@ -1451,8 +1453,8 @@ git() {
 
     moveLocal_git() {
         local name=$(string -i $@ 0); commitID=$(string -i $@ 1);
-        if ! $(hasValue $name); then return $(_ERC name undefined, \'$@\'); fi;
-        if ! $(hasValue $commitID); then return $(_ERC commitID undefined, \'$@\'); fi;
+        if ! $(hasValue $name); then return $(_ERC "name undefined, \'$@\'"); fi;
+        if ! $(hasValue $commitID); then return $(_ERC "commitID undefined, \'$@\'"); fi;
 
         _ED move local: $name to $commitID 
         $GIT checkout $name && $GIT reset --hard $commitID
@@ -1460,8 +1462,8 @@ git() {
 
     moveCloud_git() {
         local name=$(string -i $@ 0); commitID=$(string -i $@ 1);
-        if ! $(hasValue $name); then return $(_ERC name undefined, \'$@\'); fi;
-        if ! $(hasValue $commitID); then return $(_ERC commitID undefined, \'$@\'); fi;
+        if ! $(hasValue $name); then return $(_ERC "name undefined, \'$@\'"); fi;
+        if ! $(hasValue $commitID); then return $(_ERC "commitID undefined, \'$@\'"); fi;
 
         _ED move cloud: $name to $commitID 
         $GIT push --force origin $commitID:refs/heads/$name
@@ -1652,8 +1654,15 @@ service() {
         fi; 
     }
 
-    stop_service() {
+    _fetch_service() {
         local serviceName=$@
+        if $(hasCmd systemctl); then promptSelect "choose your target service:" $(systemctl list-units --type service | grep $serviceName | awk '{print $1}'); 
+        elif $(hasCmd rc-status); then promptSelect "choose your target service:" $(rc-status | grep $serviceName); 
+        fi;
+    }
+
+    stop_service() {
+        local serviceName=$(_fetch_service $@)
         if $(hasCmd systemctl); then systemctl stop $serviceName;
         elif $(hasCmd rc-service); then rc-service stop $serviceName;
         else _ED "SKIP, LIMITED" 
@@ -1661,7 +1670,7 @@ service() {
     }
 
     restart_service() {
-        local serviceName=$@
+        local serviceName=$(_fetch_service $@)
         if $(hasCmd systemctl); then systemctl stop $serviceName || systemctl start $serviceName;
         elif $(hasCmd rc-service); then rc-service stop $serviceName || rc-service start $serviceName; 
         else _ED "SKIP, LIMITED"
@@ -1669,7 +1678,7 @@ service() {
     }
 
     enable_service() {
-        local serviceName=$@
+        local serviceName=$(_fetch_service $@)
         if $(hasCmd systemctl); then systemctl start $serviceName && systemctl enable $serviceName;
         elif $(hasCmd rc-update); then rc-service start $serviceName && rc-update add $serviceName default; 
         else _ED "SKIP, LIMITED"
@@ -1677,7 +1686,7 @@ service() {
     }
 
     disable_service() {
-        local serviceName=$@
+        local serviceName=$(_fetch_service $@)
         if $(hasCmd systemctl); then systemctl stop $serviceName || systemctl disable $serviceName;
         elif $(hasCmd rc-update); then rc-service stop $serviceName || rc-update del $serviceName default; 
         else _ED "SKIP, LIMITED"
