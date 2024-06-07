@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.10.0
+    echo 5.10.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1798,7 +1798,9 @@ dc() {
 
     
     _find_name() {
-        promptSelect "select target docker compose container:" $($DOCKER compose ps -a 2>/dev/null | awk 'NR>1 {print $1}')
+        local target="$($DOCKER compose ps -a 2>/dev/null | awk 'NR>1 {print $1}')"
+        if $(trimArgs "$target" | grep -q " "); then _EC "$target";
+        else promptSelect "select target docker compose container:"; fi
     }
 
     up_dc() {
@@ -1845,7 +1847,7 @@ dc() {
 
     exec_dc() {
         local name="$(_find_name)"
-        $DOCKER compose exec --privileged $name /bin/bash||/bin/sh
+        $DOCKER compose exec --privileged $name /bin/bash||/bin/sh||/bin/ash
     }
 
     exec_line_dc() {
