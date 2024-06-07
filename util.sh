@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.10.4
+    echo 5.10.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1846,7 +1846,7 @@ dc() {
 
     exec_dc() {
         local name="$(_find_name)"
-        $DOCKER compose exec --privileged $name /bin/bash||/bin/ash||/bin/sh
+        $DOCKER compose exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
     exec_line_dc() {
