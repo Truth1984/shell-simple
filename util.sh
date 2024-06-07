@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.9.5
+    echo 5.10.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
