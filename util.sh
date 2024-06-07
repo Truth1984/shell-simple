@@ -1758,7 +1758,126 @@ process() {
     elif $(hasValueq "$sortCPU"); then sortcpu_process $sortcpu_process;
     elif $(hasValueq "$sortMEM"); then sortmem_process $sortMEM; 
     elif $(hasValueq "$parent"); then parent_process $parent;
-    else info_process $grepInfo;
+    else info_process $grepInfo; 
+    fi;
+}
+
+dc() { 
+    declare -A dc_data; parseArg dc_data $@;
+    local up=$(parseGet dc_data u up);
+    local down=$(parseGet dc_data d down);
+    local down1=$(parseGet dc_data D d1 down1);
+    local stop=$(parseGet dc_data s stop rm remove);
+    local image=$(parseGet dc_data i image);
+    local build=$(parseGet dc_data b build);
+    local rebuild=$(parseGet dc_data B rebuild);
+    local exec=$(parseGet dc_data e exec);
+    local execline=$(parseGet dc_data E execline);
+    local restart=$(parseGet dc_data r restart);
+    local restart1=$(parseGet dc_data R r1 restart1);
+    local log=$(parseGet dc_data l log);
+    local livelog=$(parseGet dc_data L live);
+    local help=$(parseGet dc_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-u,--up \t () \t\t start with docker compose\n'
+    helpmsg+='\t-d,--down \t () \t\t down containers \n'
+    helpmsg+='\t-D,-d1,--down1 \t () \t\t down 1 container \n'
+    helpmsg+='\t-s,--stop,--rm,--remove \t () \t\t remove containers with volumes \n'
+    helpmsg+='\t-i,--image \t () \t\t show container images \n'
+    helpmsg+='\t-b,--build \t () \t\t build dockerfile \n'
+    helpmsg+='\t-B,--rebuild \t () \t\t rebuild dockerfile with no cache \n'
+    helpmsg+='\t-e,--exec \t () \t\t exec container with bash or sh \n'
+    helpmsg+='\t-E,--execline \t (name,cmd) \t exec cmd on name \n'
+    helpmsg+='\t-r,--restart \t () \t\t restart all containers \n'
+    helpmsg+='\t-R,--r1,--restart1 \t () \t\t restart 1 container \n'
+    helpmsg+='\t-l,--log \t () \t\t log target containers \n'
+    helpmsg+='\t-L,--live \t () \t\t live log target containers \n'
+
+    DOCKER=$(which docker);
+
+    
+    _find_name() {
+        promptSelect "select target docker compose container:" $($DOCKER compose ps -a 2>/dev/null | awk 'NR>1 {print $1}')
+    }
+
+    up_dc() {
+        $DOCKER compose --env-file .env up -d
+    }
+
+    down_dc() {
+        $DOCKER compose down --remove-orphans
+    }
+
+    down1_dc() {
+        local name="$(_find_name)"
+        $DOCKER compose down $name
+    }
+
+    stop_dc() {
+        $DOCKER compose rm -s
+    }
+
+    image_dc() {
+        $DOCKER compose images
+    }
+
+    restart_dc() {
+        $DOCKER compose restart
+    }
+
+    restart1_dc() {
+        local name="$(_find_name)"
+        $DOCKER compose restart $name
+    }
+
+    process_dc() {
+        $DOCKER compose ps -a
+    }
+
+    build_dc() {
+        $DOCKER compose build
+    }
+
+    rebuild_dc() {
+        $DOCKER compose build --no-cache
+    }
+
+    exec_dc() {
+        local name="$(_find_name)"
+        $DOCKER compose exec --privileged $name /bin/bash||/bin/sh
+    }
+
+    exec_line_dc() {
+        local target=$1 cmds="${@:2}"
+        $DOCKER compose exec --privileged $target $cmds
+    }
+
+    log_dc() {
+        local name="$(_find_name)" 
+        $DOCKER compose logs ${key} | tail -n 500
+    }
+
+    livelog_dc() {
+        local name="$(_find_name)"
+        $DOCKER compose logs -f --tail 500 $name
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; fi;
+    if ! $(hasFile "docker-compose.yml"); then return $(_ERC "docker-compose.yml not present in current dir"); 
+    elif $(hasValueq "$up"); then up_dc $up;
+    elif $(hasValueq "$down"); then down_dc $down;
+    elif $(hasValueq "$down1"); then down1_dc $down1;
+    elif $(hasValueq "$stop"); then stop_dc $stop;
+    elif $(hasValueq "$image"); then image_dc $image;
+    elif $(hasValueq "$build"); then build_dc $build;
+    elif $(hasValueq "$rebuild"); then rebuild_dc $rebuild;
+    elif $(hasValueq "$exec"); then exec_dc $exec;
+    elif $(hasValueq "$execline"); then exec_line_dc "$execline";
+    elif $(hasValueq "$restart"); then restart_dc $restart;
+    elif $(hasValueq "$restart1"); then restart1_dc $restart1;
+    elif $(hasValueq "$log"); then log_dc $log;
+    elif $(hasValueq "$livelog"); then livelog_dc $livelog; 
     fi;
 }
 
@@ -1825,7 +1944,7 @@ extra() {
 
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$large"); then large_extra $large;
-    elif $(hasValueq "$tree"); then tree_extra $tree;
+    elif $(hasValueq "$tree"); then tree_extra $tree; 
     fi;
 }
 
