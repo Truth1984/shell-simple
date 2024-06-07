@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.10.2
+    echo 5.10.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1795,12 +1795,11 @@ dc() {
     helpmsg+='\t-L,--live \t () \t\t live log target containers \n'
 
     DOCKER=$(which docker);
-
     
     _find_name() {
         local target="$($DOCKER compose ps -a 2>/dev/null | awk 'NR>1 {print $1}')"
-        if $(trimArgs "$target" | grep -q " "); then _EC "$target";
-        else promptSelect "select target docker compose container:"; fi
+        if ! $(trimArgs "$target" | grep -q " "); then _EC "$target";
+        else promptSelect "select target docker compose container:" $target; fi
     }
 
     up_dc() {
@@ -1847,7 +1846,7 @@ dc() {
 
     exec_dc() {
         local name="$(_find_name)"
-        $DOCKER compose exec --privileged $name /bin/bash||/bin/sh||/bin/ash
+        $DOCKER compose exec --privileged $name /bin/bash||/bin/ash||/bin/sh
     }
 
     exec_line_dc() {
@@ -1866,7 +1865,7 @@ dc() {
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; fi;
-    if ! $(hasFile "docker-compose.yml"); then return $(_ERC "docker-compose.yml not present in current dir"); 
+    if ! $(hasFile "docker-compose.yml"); then return $(_ERC "docker-compose.yml not present in the current dir"); 
     elif $(hasValueq "$up"); then up_dc $up;
     elif $(hasValueq "$down"); then down_dc $down;
     elif $(hasValueq "$down1"); then down1_dc $down1;
