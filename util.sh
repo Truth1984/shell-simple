@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.10.5
+    echo 5.10.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1259,6 +1259,7 @@ setup() {
     fi;
 
     mv $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
+    cp $_U2_Storage_Dir_Bin/u2 $_U2_Storage_Dir_Bin/u
     . $_U2_Storage_Dir_Bin/u2 _ED Current Version: $(version)
 }
 
@@ -1797,8 +1798,12 @@ dc() {
     DOCKER=$(which docker);
     
     _find_name() {
-        local target="$($DOCKER compose ps -a 2>/dev/null | awk 'NR>1 {print $1}')"
-        if ! $(trimArgs "$target" | grep -q " "); then _EC "$target";
+        local target;
+        if $(hasValueq $@); then target="$($DOCKER compose ps -a 2>/dev/null | grep $@ | awk 'NR>1 {print $1}')";
+        else target="$($DOCKER compose ps -a 2>/dev/null | awk 'NR>1 {print $1}')"; fi;
+
+        if ! $(hasValueq $target); then return $(_ERC "target -$@- not found"); 
+        elif ! $(trimArgs "$target" | grep -q " "); then _EC "$target";
         else promptSelect "select target docker compose container:" $target; fi
     }
 
@@ -1811,7 +1816,7 @@ dc() {
     }
 
     down1_dc() {
-        local name="$(_find_name)"
+        local name="$(_find_name $@)"
         $DOCKER compose down $name
     }
 
@@ -1828,7 +1833,7 @@ dc() {
     }
 
     restart1_dc() {
-        local name="$(_find_name)"
+        local name="$(_find_name $@)"
         $DOCKER compose restart $name
     }
 
@@ -1845,7 +1850,7 @@ dc() {
     }
 
     exec_dc() {
-        local name="$(_find_name)"
+        local name="$(_find_name $@)"
         $DOCKER compose exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
@@ -1855,12 +1860,12 @@ dc() {
     }
 
     log_dc() {
-        local name="$(_find_name)" 
+        local name="$(_find_name $@)" 
         $DOCKER compose logs ${key} | tail -n 500
     }
 
     livelog_dc() {
-        local name="$(_find_name)"
+        local name="$(_find_name $@)"
         $DOCKER compose logs -f --tail 500 $name
     }
 
