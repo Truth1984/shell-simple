@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.0.1
+    echo 6.0.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1903,6 +1903,7 @@ dc() {
     local image=$(parseGet dc_data i image);
     local build=$(parseGet dc_data b build);
     local rebuild=$(parseGet dc_data B rebuild);
+    local processes=$(parseGet dc_data p process);
     local execs=$(parseGet dc_data e exec);
     local execline=$(parseGet dc_data E execline);
     local restart=$(parseGet dc_data r restart);
@@ -1917,6 +1918,7 @@ dc() {
     helpmsg+='\t-D,-d1,--down1 \t () \t\t down 1 container \n'
     helpmsg+='\t-s,--stop,--rm,--remove \t () \t\t remove containers with volumes \n'
     helpmsg+='\t-i,--image \t () \t\t show container images \n'
+    helpmsg+='\t-p,--process \t () \t\t show container process \n'
     helpmsg+='\t-b,--build \t () \t\t build dockerfile \n'
     helpmsg+='\t-B,--rebuild \t () \t\t rebuild dockerfile with no cache \n'
     helpmsg+='\t-e,--exec \t () \t\t exec container with bash or sh \n'
@@ -2014,6 +2016,7 @@ dc() {
     elif $(hasValueq "$image"); then image_dc $image;
     elif $(hasValueq "$build"); then build_dc $build;
     elif $(hasValueq "$rebuild"); then rebuild_dc $rebuild;
+    elif $(hasValueq "$processes"); then process_dc $processes;
     elif $(hasValueq "$execs"); then exec_dc $execs;
     elif $(hasValueq "$execline"); then exec_line_dc "$execline";
     elif $(hasValueq "$restart"); then restart_dc $restart;
