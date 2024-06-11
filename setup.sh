@@ -68,6 +68,8 @@ if $(u2 string -c "$@" "docker"); then
     if ! $(u2 hasCmd docker); then 
         u2 install docker
         sudo usermod -aG docker $(whoami)
+
+        printf '{\n "registry-mirrors": [\n  "https://hub-mirror.c.163.com",\n  "https://docker.mirrors.ustc.edu.cn",\n  "https://mirror.baidubce.com"\n]\n}' > /etc/docker/daemon.json
        
         if $(u2 hasCmd systemctl); then
             sudo systemctl start docker.service
