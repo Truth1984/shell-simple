@@ -28,15 +28,15 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
         u2 install wget curl nano git make psmisc net-tools nethogs coreutils sudo screen tcpdump iftop
 
         if $(u2 os -c yum); then
-            u2 install redhat-lsb-core epel-release the_silver_searcher udisks2
+            u2 install redhat-lsb-core epel-release the_silver_searcher udisks2 openssh-server openssh-clients
         fi;
 
         if $(u2 os -c apk); then
-            u2 install the_silver_searcher openrc
+            u2 install the_silver_searcher openrc openssh
         fi;
         
         if $(u2 os -c apt); then
-            u2 install software-properties-common silversearcher-ag udisks2
+            u2 install software-properties-common silversearcher-ag udisks2 openssh-server openssh-client
         fi;
 
         if $(u2 os -c brew); then 
@@ -44,7 +44,7 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
                 sudo mkdir /usr/local/sbin && sudo chmod 777 /usr/local/sbin
                 echo 'export PATH=/usr/local/sbin:$PATH' >> $HOME/.bashrc
             fi;
-            u2 install the_silver_searcher pstree
+            u2 install the_silver_searcher pstree openssh
         fi;
 
     fi;
