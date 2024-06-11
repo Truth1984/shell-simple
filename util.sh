@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 5.10.7
+    echo 6.0.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1730,8 +1730,8 @@ process() {
 
     info_process() {
         local info="$@"
-         if ! $(hasValueq "$info"); then ps aux;
-         else ps aux | grep $info; fi;
+        if ! $(hasValueq "$info"); then ps aux;
+        else ps aux | grep $info; fi;
     }
 
     sortcpu_process() {
@@ -1763,6 +1763,137 @@ process() {
     fi;
 }
 
+docker() {
+    declare -A docker_data; parseArg docker_data $@;
+    local build=$(parseGet docker_data b build);
+    local image=$(parseGet docker_data i image);
+    local volume=$(parseGet docker_data v volume);
+    local processes=$(parseGet docker_data p process);
+    local execs=$(parseGet docker_data e exec);
+    local execTest=$(parseGet docker_data E test);
+    local log=$(parseGet docker_data l log);
+    local livelog=$(parseGet docker_data L live);
+    local tars=$(parseGet docker_data t tar);
+    local clean=$(parseGet docker_data c clean);
+    local pids=$(parseGet docker_data P pid);
+    local help=$(parseGet docker_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-b,--build \t (string) \t enter name:tag to build\n'
+    helpmsg+='\t-i,--image \t (string?) \t list image or enter image name to view details\n'
+    helpmsg+='\t-v,--volume \t (string?) \t list all or enter name to view volume details\n'
+    helpmsg+='\t-p,--process \t (string?) \t list all or enter name to view process details\n'
+    helpmsg+='\t-e,--exec \t (string) \t enter name to exec with bash\n'
+    helpmsg+='\t-E,--execTest \t (string) \t enter name to pause and test container, then unpause\n'
+    helpmsg+='\t-l,--log \t (string) \t enter name to log details\n'
+    helpmsg+='\t-L,--live \t (string) \t enter name to view log live\n'
+    helpmsg+='\t-t,--tar \t (string) \t enter x.tar to load, enter container name to export x.tar\n'
+    helpmsg+='\t-c,--clean \t (string) \t clean docker volume\n'
+    helpmsg+='\t-P,--pid \t (int) \t\t enter pid of process to find target docker container\n'
+    
+    DOCKER=$(which docker);
+    
+    _find_name() {
+        local target; 
+        if $(hasValueq $@); then target="$($DOCKER ps -a --format '{{.Names}}' | grep $@)";
+        else target="$($DOCKER ps -a --format '{{.Names}}')"; fi;
+
+        if ! $(hasValueq $target); then return $(_ERC "target -$@- not found"); 
+        elif ! $(trimArgs "$target" | grep -q " "); then _EC "$target";
+        else promptSelect "select target docker container:" $target; fi
+    }
+
+    build_docker() {
+        local nameTag=$@
+        if ! $(hasValue $nameTag); then return $(_ERC "name:tag undefined"); fi;
+        $DOCKER build -t $nameTag .
+    }
+
+    image_docker() {
+        local imageName="$@"
+        if ! $(hasValueq $imageName); then $DOCKER image ls;
+        else $DOCKER inspect $imageName; fi;
+    }
+
+    volume_docker() {
+        local name
+        if $(hasValueq $@); then name="$(_find_name $@)"; fi;
+        $DOCKER inspect --format='{{.Name}}: {{range .Mounts}}{{println " - " .Name ":" .Source " -> " .Destination }}{{end}}' $($DOCKER ps -q) | grep "$name"
+    }
+
+    process_docker() {
+        local name="$@"
+        if $(hasValueq $@); then name="$(_find_name $@)"; fi;
+        if ! $(hasValueq $name); then $DOCKER ps -a;
+        else $DOCKER ps -a | grep $name; fi;
+    }
+
+    exec_docker() {
+        local name="$(_find_name $@)"
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
+        $DOCKER compose exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+    }
+
+    execTest_docker() {
+        local name="$(_find_name $@)"
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
+        $DOCKER pause $name
+        $DOCKER compose exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+        $DOCKER unpause $name
+    }
+
+    log_docker() {
+        local name="$(_find_name $@)" 
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
+        $DOCKER logs $name | tail -n 500
+    }
+
+    livelog_docker() {
+        local name="$(_find_name $@)"
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
+        $DOCKER logs -f --tail 500 $name
+    }
+
+    tar_docker() {
+        local name="$@";
+        if $(string -c "$name" ".tar"); then
+            _ED docker loading $name
+            $DOCKER load < $name
+        else 
+            name="$(_find_name $@)"
+            _ED docker exporting $name
+            $DOCKER save -o $name.tar $name
+        fi;
+    }
+
+    clean_docker() {
+        $DOCKER system prune --volumes
+    }
+
+    pid_docker() {
+        local PID=$@
+        containerID=$(grep -oP 'docker-\K[0-9a-f]+(?=\.scope)' /proc/$PID/cgroup)
+        if ! $(hasValueq $containerID); then return $(_ERC "Docker pid -$PID- not found"); fi;
+        containerName=$($DOCKER ps --filter "id=$containerID" --format "{{.Names}}")
+        _ED containerName: $containerName
+        $DOCKER ps -a | grep $containerName
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";
+    elif $(hasValueq "$build"); then build_docker $build;
+    elif $(hasValueq "$image"); then image_docker $image;
+    elif $(hasValueq "$volume"); then volume_docker $volume;
+    elif $(hasValueq "$processes"); then process_docker $processes;
+    elif $(hasValueq "$execs"); then exec_docker $execs;
+    elif $(hasValueq "$execTest"); then execTest_docker $execTest;
+    elif $(hasValueq "$log"); then log_docker $log;
+    elif $(hasValueq "$livelog"); then livelog_docker $livelog;
+    elif $(hasValueq "$tars"); then tar_docker $tars;
+    elif $(hasValueq "$clean"); then clean_docker $clean;
+    elif $(hasValueq "$pids"); then pid_docker $pids; 
+    fi;
+}
+
 dc() { 
     declare -A dc_data; parseArg dc_data $@;
     local up=$(parseGet dc_data u up);
@@ -1772,7 +1903,7 @@ dc() {
     local image=$(parseGet dc_data i image);
     local build=$(parseGet dc_data b build);
     local rebuild=$(parseGet dc_data B rebuild);
-    local exec=$(parseGet dc_data e exec);
+    local execs=$(parseGet dc_data e exec);
     local execline=$(parseGet dc_data E execline);
     local restart=$(parseGet dc_data r restart);
     local restart1=$(parseGet dc_data R r1 restart1);
@@ -1817,6 +1948,7 @@ dc() {
 
     down1_dc() {
         local name="$(_find_name $@)"
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER compose down $name
     }
 
@@ -1834,6 +1966,7 @@ dc() {
 
     restart1_dc() {
         local name="$(_find_name $@)"
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER compose restart $name
     }
 
@@ -1851,6 +1984,7 @@ dc() {
 
     exec_dc() {
         local name="$(_find_name $@)"
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER compose exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
@@ -1861,11 +1995,13 @@ dc() {
 
     log_dc() {
         local name="$(_find_name $@)" 
-        $DOCKER compose logs ${key} | tail -n 500
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
+        $DOCKER compose logs $name | tail -n 500
     }
 
     livelog_dc() {
         local name="$(_find_name $@)"
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER compose logs -f --tail 500 $name
     }
 
@@ -1878,7 +2014,7 @@ dc() {
     elif $(hasValueq "$image"); then image_dc $image;
     elif $(hasValueq "$build"); then build_dc $build;
     elif $(hasValueq "$rebuild"); then rebuild_dc $rebuild;
-    elif $(hasValueq "$exec"); then exec_dc $exec;
+    elif $(hasValueq "$execs"); then exec_dc $execs;
     elif $(hasValueq "$execline"); then exec_line_dc "$execline";
     elif $(hasValueq "$restart"); then restart_dc $restart;
     elif $(hasValueq "$restart1"); then restart1_dc $restart1;
