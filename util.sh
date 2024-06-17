@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.1.7
+    echo 6.1.8
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1259,7 +1259,8 @@ quick() {
     run_quick(){
         part1=$(echo $targetFile | cut -d ' ' -f 1 )
         part2=$(echo $targetFile | sed 's/.* *//')
-        eval $(_EC bash "$part1" "$part2" "$variable")
+        _ED content:{$(cat $part1)} part2{$part2} variable{$variable} 
+        bash "$part1" "$part2" "$variable"
     }
 
     remove_quick(){
