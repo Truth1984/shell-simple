@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.0.4
+    echo 6.0.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1554,6 +1554,12 @@ _web() {
     if ! $(hasValue $webMessage); then webMessage="web message"; fi;
 
     server_web() {
+        if $(hasCmd bun); then
+            _ED Starting bun server on port:$webPort 
+            bun -e "Bun.serve({port: $webPort,async fetch(req) {console.log(req);try{return new Response(JSON.stringify({ method: req.method, url: req.url, headers: req.headers, body: await req.text()}))}catch(e){console.log(e);}},})"
+            return
+        fi;
+
         local webcmd=""
         if $(os mac); then webcmd="nc -l $webPort -k";
         else webcmd="nc -l -p $webPort -k"; fi;
@@ -1564,8 +1570,6 @@ _web() {
 
     redirect_web() {
         local webcmd="" weblocation=$@
-        if $(os mac); then webcmd="nc -l $webPort -k";
-        else webcmd="nc -l -p $webPort -k"; fi;
 
         if ! $(hasValueq $weblocation); then return $(_ERC "web redirect url not defined"); fi;
         
@@ -1574,6 +1578,15 @@ _web() {
 
         if [[ $weblocation != http://* && $weblocation != https://* ]]; then weblocation="http://$weblocation"; fi;
         
+        if $(hasCmd bun); then 
+            _ED Starting bun server redirect on port:$webPort to location: $weblocation
+            bun -e "Bun.serve({port: $webPort,async fetch(req){console.log(req);return Response.redirect(\"$weblocation\", 301);}})"
+            return
+        fi;
+
+        if $(os mac); then webcmd="nc -l $webPort -k";
+        else webcmd="nc -l -p $webPort -k"; fi;
+
         _ED Starting to redirect on port:$webPort to location: $weblocation, as \' nc $reHost $rePort \'
         echo -e "HTTP/1.1 301 Moved Permanently\r\nLocation: $weblocation\r\n\r\n" | $webcmd > >(nc $reHost $rePort)
     }
@@ -1583,7 +1596,7 @@ _web() {
         if ! $(hasValueq $servePath); then servePath="."; fi;
 
         _ED Starting bun file server on port:$webPort with directory: \'$servePath\'
-        bun -e "Bun.serve({port:$webPort, fetch(req){ return new Response(Bun.file(\"$servePath\" + new URL(req.url).pathname))}})"
+        bun -e "Bun.serve({port:$webPort, fetch(req){console.log(req);return new Response(Bun.file(\"$servePath\" + new URL(req.url).pathname))}})"
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";
