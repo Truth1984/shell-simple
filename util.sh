@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.0.2
+    echo 6.0.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1026,7 +1026,7 @@ _REQHelper() {
         if $(hasCmd curl); then curlCmd; elif $(hasCmd wget); then wgetCmd; fi;
     else
         if ! [[ -z $CURL ]]; then _ED "curl command specified" && curlCmd;
-        else _ED "wget command specified" && wgetCmd; fi;
+        else _ED "wget command specified" && wgetCmd; fi; 
     fi;
     echo ""
 }
@@ -1036,6 +1036,7 @@ _REQHelper() {
 # -s,--string post string
 # -C,--curl use curl
 # -W,--wget use wget
+# -U,--ua new useragent
 # -q,--quiet disable verbose
 post() {
     declare -A post_data; parseArg post_data $@;
@@ -1044,6 +1045,7 @@ post() {
     local string=$(parseGet post_data s string);
     local CURL=$(parseGet post_data C curl);
     local WGET=$(parseGet post_data W wget);
+    local AGENT=$(parseGet post_data U ua);
     local quiet=$(parseGet post_data q quiet);
     local help=$(parseGet post_data help);
 
@@ -1058,14 +1060,29 @@ post() {
     if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; 
     else curlEx=""; wgetEx=" -q"; fi;
 
+    if $(hasValueq "$AGENT"); then
+        if $(hasValueq $AGENT); then url=$AGENT; fi;
+        local useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3";
+        local userHeaders=("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" "Accept-Language: en-US,en;q=0.5" "Accept-Encoding: gzip, deflate, br" "Connection: keep-alive")
+
+        curlEx+=" -A \"$useragent\""
+        wgetEx+=" --user-agent=\"$useragent\""
+
+        for heads in "${userHeaders[@]}"
+        do
+        curlEx+=" -H \"$heads\""
+        wgetEx+=" --header=\"$heads\""
+        done
+    fi;
+        
     # (url, data)
     json_post(){
         local url=$1 data=$2
         curlCmd(){
-            curl $curlEx -H "Content-Type: application/json" -d "$data" "$url"
+            eval $(_EC curl $curlEx -H "\"Content-Type: application/json\"" -d \"$data\" "$url")
         }
         wgetCmd(){
-            wget $wgetEx -O- --header "Content-Type: application/json" --post-data "$data" "$url"
+            eval $(_EC wget $wgetEx -O- --header "\"Content-Type: application/json\"" --post-data \"$data\" "$url")
         }
         _REQHelper
     }
@@ -1074,10 +1091,10 @@ post() {
     string_post() {
         local url=$1 data=$2
         curlCmd(){
-            curl $curlEx -H "Content-Type: text/plain" -d "$data" "$url"
+            eval $(_EC curl $curlEx -H "\"Content-Type: text/plain\"" -d \"$data\" "$url")
         }
         wgetCmd(){
-            wget $wgetEx -O- --header "Content-Type: text/plain" --post-data "$data" "$url"
+            eval $(_EC wget $wgetEx -O- --header "\"Content-Type: text/plain\"" --post-data \"$data\" "$url")
         }
         _REQHelper
     }
@@ -1093,6 +1110,7 @@ post() {
 # -r,--run
 # -C,--curl use curl
 # -W,--wget use wget
+# -U,--ua new useragent
 # -q,--quiet disable verbose
 get() {
     declare -A get_data; parseArg get_data $@;
@@ -1100,6 +1118,7 @@ get() {
     local run=$(parseGet get_data r run);
     local CURL=$(parseGet get_data C curl);
     local WGET=$(parseGet get_data W wget);
+    local AGENT=$(parseGet get_data U ua);
     local quiet=$(parseGet get_data q quiet);
     local help=$(parseGet get_data help);
 
@@ -1108,18 +1127,34 @@ get() {
     helpmsg+='\t-r,--run \t (string) \t run the script from url, can pass extra command, but no "-" allowed\n'
     helpmsg+='\t-C,--curl \t () \t\t use curl\n'
     helpmsg+='\t-W,--wget \t () \t\t use wget\n'
+    helpmsg+='\t-U,--ua \t () \t\t use new user agent\n'
     helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
-
+    
     if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; 
     else curlEx=""; wgetEx=" -q"; fi;
+
+    if $(hasValueq "$AGENT"); then
+        if $(hasValueq $AGENT); then url=$AGENT; fi;
+        local useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3";
+        local userHeaders=("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" "Accept-Language: en-US,en;q=0.5" "Accept-Encoding: gzip, deflate, br" "Connection: keep-alive")
+
+        curlEx+=" -A \"$useragent\""
+        wgetEx+=" --user-agent=\"$useragent\""
+        
+        for heads in "${userHeaders[@]}"
+        do
+        curlEx+=" -H \"$heads\""
+        wgetEx+=" --header=\"$heads\""
+        done
+    fi;
 
     script_get() {
         local url=$1 exArgs="${@:2}"
         curlCmd(){
-            bash <(curl -s $url) $exArgs;
+            eval $(_EC bash <(curl -s $url) $exArgs)
         }
         wgetCmd(){
-            bash <(wget -O - $url) $exArgs; 
+            eval $(_EC bash <(wget -O - $url) $exArgs) 
         }
         _REQHelper
     }
@@ -1127,17 +1162,17 @@ get() {
     url_get(){
         local url=$1
         curlCmd(){
-            curl $curlEx -X GET $url
+            eval $(_EC curl $curlEx -X GET $url)
         }
         wgetCmd(){
-            wget $wgetEx -O- $url
+            eval $(_EC wget $wgetEx -O- $url)
         }
         _REQHelper
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$run"); then script_get $run;
-    elif $(hasValueq "$url"); then url_get $url;
+    elif $(hasValueq "$url"); then url_get $url; 
     fi;
 }
 
