@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.0.7
+    echo 6.1.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1208,7 +1208,7 @@ retry() {
 
 # -n,--name,_ *_default
 # -v,--variable
-# -a,--add,--cmd 
+# -a,--add 
 # -e,--edit
 # -c,--cat,--display,--show
 # -r,--remove,--delete
@@ -1217,7 +1217,7 @@ quick() {
     declare -A quick_data; parseArg quick_data $@;
     local name=$(parseGet quick_data n name _ e edit r remove delete c cat display show);
     local variable=$(parseGet quick_data v variable);
-    local add=$(parseGet quick_data a add cmd)
+    local add=$(parseGet quick_data a add)
     local edit=$(parseGet quick_data e edit);
     local display=$(parseGet quick_data c cat display show)
     local remove=$(parseGet quick_data r remove delete);
@@ -1227,7 +1227,7 @@ quick() {
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,_ \t\t\t (string) \t *_default, + -e,--edit,-r,--remove,--delete name of the quick data\n'
     helpmsg+='\t-v,--variable \t\t\t (string) \t variable or args to use\n'
-    helpmsg+='\t-a,--add,--cmd \t\t\t () \t\t add command to name, can use $1 and args in script, and use quick -v to add to script call\n'
+    helpmsg+='\t-a,--add \t\t\t (string) \t\t add command to name, can use $1 and args in script, and use quick -v to add to script call\n'
     helpmsg+='\t-e,--edit \t\t\t () \t\t edit the target file\n'
     helpmsg+='\t-c,--cat,--display,--show \t () \t\t display the content of file\n'
     helpmsg+='\t-r,--remove,--delete \t\t () \t\t remove the target file\n'
@@ -1245,13 +1245,21 @@ quick() {
     }
 
     add_quick() {
-        echo "$add" > $targetFile
+        local sentence=""
+        for ((i=1; i<=$#; i++)); do
+            if [[ "${!i}" == "-a" || "${!i}" == "--add" ]]; then
+                ((i++))
+                sentence="${@:i}"
+                break
+            fi
+        done
+        echo "$sentence" > $targetFile
     }
 
     run_quick(){
         part1=$(echo $targetFile | cut -d ' ' -f 1 )
         part2=$(echo $targetFile | sed 's/.* *//')
-        bash <(cat $part1) $part2 $variable
+        eval $(_EC bash "$part1" "$part2" "$variable")
     }
 
     remove_quick(){
@@ -1261,10 +1269,10 @@ quick() {
     if $(hasValueq "$help"); then printf "$helpmsg";  
     elif $(hasValueq "$list"); then ls -a $_U2_Storage_Dir_Quick;
     elif ! $(hasValueq "$name"); then return $(_ERC "name not specified"); 
-    elif $(hasValueq "$add"); then add_quick;
-    elif $(hasValueq "$edit"); then edit_quick;
-    elif $(hasValueq "$display"); then display_quick;
-    elif $(hasValueq "$remove"); then remove_quick;
+    elif $(hasValueq "$add"); then add_quick "$@";
+    elif $(hasValueq "$edit"); then edit_quick "$edit";
+    elif $(hasValueq "$display"); then display_quick "$display";
+    elif $(hasValueq "$remove"); then remove_quick "$remove";
     else run_quick; 
     fi;
 }
