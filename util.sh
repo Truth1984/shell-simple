@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.1.9
+    echo 6.1.11
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1818,6 +1818,7 @@ docker() {
     local image=$(parseGet docker_data i image);
     local volume=$(parseGet docker_data v volume);
     local processes=$(parseGet docker_data p process);
+    local stop=$(parseGet docker_data s stop);
     local execs=$(parseGet docker_data e exec);
     local execTest=$(parseGet docker_data E test);
     local log=$(parseGet docker_data l log);
@@ -1832,6 +1833,7 @@ docker() {
     helpmsg+='\t-i,--image \t (string?) \t list image or enter image name to view details\n'
     helpmsg+='\t-v,--volume \t (string?) \t list all or enter name to view volume details\n'
     helpmsg+='\t-p,--process \t (string?) \t list all or enter name to view process details\n'
+    helpmsg+='\t-s,--stop \t (string) \t enter name to stop and remove container\n'
     helpmsg+='\t-e,--exec \t (string) \t enter name to exec with bash\n'
     helpmsg+='\t-E,--execTest \t (string) \t enter name to pause and test container, then unpause\n'
     helpmsg+='\t-l,--log \t (string) \t enter name to log details\n'
@@ -1877,17 +1879,24 @@ docker() {
         else $DOCKER ps -a | grep $name; fi;
     }
 
+    stop_docker() {
+        local name
+        if $(hasValueq $@); then name="$(_find_name $@)"; fi;
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
+        $DOCKER stop $name && $DOCKER rm $name;
+    }
+
     exec_docker() {
         local name="$(_find_name $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
-        $DOCKER compose exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+        $DOCKER exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
     execTest_docker() {
         local name="$(_find_name $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER pause $name
-        $DOCKER compose exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+        $DOCKER exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
         $DOCKER unpause $name
     }
 
@@ -1933,6 +1942,7 @@ docker() {
     elif $(hasValueq "$image"); then image_docker $image;
     elif $(hasValueq "$volume"); then volume_docker $volume;
     elif $(hasValueq "$processes"); then process_docker $processes;
+    elif $(hasValueq "$stop"); then stop_docker $stop;
     elif $(hasValueq "$execs"); then exec_docker $execs;
     elif $(hasValueq "$execTest"); then execTest_docker $execTest;
     elif $(hasValueq "$log"); then log_docker $log;
