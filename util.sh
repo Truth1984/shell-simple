@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.1.8
+    echo 6.1.9
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1009,14 +1009,6 @@ string() {
 
 noproxy() {
     https_proxy="" http_proxy="" HTTPS_PROXY="" HTTP_PROXY="" no_proxy="" NO_PROXY="" $@
-}
-
-# (name, directory="."): string[]
-# may use regex for the name
-searchFile() {
-    local base="."
-    if $(hasValueq "$2"); then base="$2"; fi;
-    find "$base" -name $1
 }
 
 # Request helper
