@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.3.0
+    echo 6.3.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1851,6 +1851,7 @@ docker() {
     local tars=$(parseGet docker_data t tar);
     local clean=$(parseGet docker_data c clean);
     local pids=$(parseGet docker_data P pid);
+    local kills=$(parseGet docker_data k kill);
     local help=$(parseGet docker_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -1866,6 +1867,7 @@ docker() {
     helpmsg+='\t-t,--tar \t (string) \t enter x.tar to load, enter container name to export x.tar\n'
     helpmsg+='\t-c,--clean \t (string) \t clean docker volume\n'
     helpmsg+='\t-P,--pid \t (int) \t\t enter pid of process to find target docker container\n'
+    helpmsg+='\t-k,--kill \t (int) \t\t enter name or id to kill process and stop container\n'
     
     DOCKER=$(which docker);
     
@@ -1976,6 +1978,21 @@ docker() {
         $DOCKER ps -a | grep $containerName
     }
 
+    kill_docker() {
+        local name="$(_find_id $@)"
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
+        local PID=$(ps aux | grep -E moby.*\ $name | grep -v grep | awk '{print $2}');
+        if ! $(hasValueq $PID); then return $(_ERC "process pid not found"); fi;
+        local pspid=$(ps aux | grep $PID);
+        boolNum=$(prompt "kill target process: $pspid");
+        if [ boolNum -eq 1 ]; then 
+            _ED killing pid $PID
+            kill -9 $PID
+            _ED stoping container $name
+            $DOCKER stop $name && $DOCKER rm $name; 
+        fi;
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$build"); then build_docker $build;
     elif $(hasValueq "$image"); then image_docker $image;
@@ -1989,6 +2006,7 @@ docker() {
     elif $(hasValueq "$tars"); then tar_docker $tars;
     elif $(hasValueq "$clean"); then clean_docker $clean;
     elif $(hasValueq "$pids"); then pid_docker $pids; 
+    elif $(hasValueq "$kills"); then kill_docker $kills; 
     fi;
 }
 
