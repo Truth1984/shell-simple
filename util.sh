@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.1.12
+    echo 6.3.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -139,6 +139,30 @@ prompt() {
                 echo 0 ;
             ;;
         esac
+    fi;
+}
+
+# (PromptString, arrayName) 
+promptArray() {
+    local prompter=$1 
+    local -n options=$2
+
+    if ! $(hasValueq ${@:2}); then return $(_ERC "selection collection empty"); fi; 
+
+    for ((i = 0; i < ${#options[@]}; i++)); do
+        prompter+=$'\n'"[$i]: ${options[i]}"
+    done
+    prompter+=$'\n'"Your Option? Default [0] as ${options[0]}:"
+    read -p "$prompter"$'\n' responseIndex
+
+    if ! $(hasValueq $responseIndex); then 
+        _ED return index [0] as ${options[0]}
+        echo ${options[0]}
+    elif ! [[ "$responseIndex" =~ [0-9]+ ]]; then
+        return $(_ERC "response index not a number"); 
+    else
+        _ED return index [$responseIndex] : ${options[$responseIndex]}
+        echo ${options[$responseIndex]}
     fi;
 }
 
@@ -713,7 +737,8 @@ trash() {
     local trashInfoName="_U2_TRASH_INFO"
 
     put_trash() {
-        local input=$1 
+        local input=$@
+        if ! $(hasValueq $input); then return $(_ERC "to trash path not specified"); fi; 
         local inputPath=$(pathGetFull $input)
         local uid="$(uuid)"
         local trashDir=$(trimArgs $TP / $uid)
@@ -1854,6 +1879,20 @@ docker() {
         else promptSelect "select target docker container:" $target; fi
     }
 
+    _find_id() {
+        local target; 
+        if $(hasValueq $@); then target=$($DOCKER ps -a | grep $@);
+        else target=$($DOCKER ps -a); fi;
+        IFS=$'\n' read -r -d '' -a containers <<< "$target"
+
+        if ! $(hasValueq $containers); then return $(_ERC "target -$@- not found"); 
+        elif [ ${#containers[@]} -eq 1 ]; then _EC $(echo ${containers[0]} | awk '{print $1}')
+        else 
+            choice=$(promptArray "select target docker container:" containers);
+            _EC $(echo $choice | awk '{print $1}')
+        fi
+    }
+
     build_docker() {
         local nameTag=$@
         if ! $(hasValue $nameTag); then return $(_ERC "name:tag undefined"); fi;
@@ -1868,32 +1907,32 @@ docker() {
 
     volume_docker() {
         local name
-        if $(hasValueq $@); then name="$(_find_name $@)"; fi;
+        if $(hasValueq $@); then name="$(_find_name $@)" || name="$(_find_id $@)"; fi;
         $DOCKER inspect --format='{{.Name}}: {{range .Mounts}}{{println " - " .Name ":" .Source " -> " .Destination }}{{end}}' $($DOCKER ps -q) | grep "$name"
     }
 
     process_docker() {
         local name="$@"
-        if $(hasValueq $@); then name="$(_find_name $@)"; fi;
+        if $(hasValueq $@); then name="$(_find_name $@)" || name="$(_find_id $@)"; fi;
         if ! $(hasValueq $name); then $DOCKER ps -a;
         else $DOCKER ps -a | grep $name; fi;
     }
 
     stop_docker() {
         local name
-        if $(hasValueq $@); then name="$(_find_name $@)"; fi;
+        if $(hasValueq $@); then name="$(_find_name $@)" || name="$(_find_id $@)"; fi;
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER stop $name && $DOCKER rm $name;
     }
 
     exec_docker() {
-        local name="$(_find_name $@)"
+        local name="$(_find_name $@)" || name="$(_find_id $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
     execTest_docker() {
-        local name="$(_find_name $@)"
+        local name="$(_find_name $@)" || name="$(_find_id $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER pause $name
         $DOCKER exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
@@ -1901,13 +1940,13 @@ docker() {
     }
 
     log_docker() {
-        local name="$(_find_name $@)" 
+        local name="$(_find_name $@)" || name="$(_find_id $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER logs $name | tail -n 500
     }
 
     livelog_docker() {
-        local name="$(_find_name $@)"
+        local name="$(_find_name $@)" || name="$(_find_id $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER logs -f --tail 500 $name
     }
