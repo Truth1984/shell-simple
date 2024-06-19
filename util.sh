@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.1.11
+    echo 6.1.12
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2057,13 +2057,13 @@ dc() {
     log_dc() {
         local name="$(_find_name $@)" 
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
-        $DOCKER compose logs $name | tail -n 500
+        $DOCKER logs $name | tail -n 500
     }
 
     livelog_dc() {
         local name="$(_find_name $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
-        $DOCKER compose logs -f --tail 500 $name
+        $DOCKER logs -f --tail 500 $name
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; fi;
