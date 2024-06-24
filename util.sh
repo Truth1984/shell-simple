@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.3.2
+    echo 6.3.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1033,7 +1033,7 @@ string() {
 }
 
 noproxy() {
-    https_proxy="" http_proxy="" HTTPS_PROXY="" HTTP_PROXY="" no_proxy="" NO_PROXY="" $@
+    https_proxy="" http_proxy="" HTTPS_PROXY="" HTTP_PROXY="" no_proxy="" NO_PROXY="" command $@
 }
 
 # Request helper
