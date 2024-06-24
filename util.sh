@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.3.1
+    echo 6.3.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1168,10 +1168,16 @@ get() {
     script_get() {
         local url=$1 exArgs="${@:2}"
         curlCmd(){
-            eval $(_EC bash <(curl -s $url) $exArgs)
+            tmpfile=$(mktemp)
+            curl -s $url -o $tmpfile
+            bash $tmpfile $exArgs
+            rm -f $tmpfile
         }
         wgetCmd(){
-            eval $(_EC bash <(wget -O - $url) $exArgs) 
+            tmpfile=$(mktemp)
+            wget -d -O $tmpfile $url
+            bash $tmpfile $exArgs
+            rm -f $tmpfile
         }
         _REQHelper
     }
