@@ -1170,12 +1170,14 @@ get() {
         curlCmd(){
             tmpfile=$(mktemp)
             curl -s $url -o $tmpfile
+            _ED download finish, executing bash 
             bash $tmpfile $exArgs
             rm -f $tmpfile
         }
         wgetCmd(){
             tmpfile=$(mktemp)
             wget -d -O $tmpfile $url
+            _ED download finish, executing bash 
             bash $tmpfile $exArgs
             rm -f $tmpfile
         }
