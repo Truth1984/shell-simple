@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.3.3
+    echo 6.3.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1094,7 +1094,7 @@ post() {
         
     # (url, data)
     json_post(){
-        local url=$1 data=$2
+        local url=$1 data="${@:2}"
         curlCmd(){
             eval $(_EC curl $curlEx -H "\"Content-Type: application/json\"" -d \"$data\" "$url")
         }
@@ -1106,7 +1106,7 @@ post() {
 
     # (url, data)
     string_post() {
-        local url=$1 data=$2
+        local url=$1 data="${@:2}"
         curlCmd(){
             eval $(_EC curl $curlEx -H "\"Content-Type: text/plain\"" -d \"$data\" "$url")
         }
@@ -1117,8 +1117,8 @@ post() {
     }
     
     if $(hasValueq "$help"); then printf "$helpmsg"; 
-    elif $(hasValueq "$string"); then string_post $url $string;
-    elif $(hasValueq "$json"); then json_post $url $json; 
+    elif $(hasValueq "$string"); then string_post $url "$string";
+    elif $(hasValueq "$json"); then json_post $url "$json"; 
     else json_post $url; 
     fi;
 }
@@ -1203,7 +1203,7 @@ get() {
 
 # (url, outputFileName?)
 download() {
-    local url=$1 filename=$2
+    local url=$1 filename="${@:2}"
     if $(hasCmd wget); then
         if $(hasValue $filename); then wget -d -O $filename $url; else wget -d $url; fi;
     elif $(hasCmd curl); then
