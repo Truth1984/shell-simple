@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.3.4
+    echo 6.3.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1096,10 +1096,10 @@ post() {
     json_post(){
         local url=$1 data="${@:2}"
         curlCmd(){
-            eval $(_EC curl $curlEx -H "\"Content-Type: application/json\"" -d \"$data\" "$url")
+            eval $(_EC curl $curlEx -H "\"Content-Type: application/json\"" -d "'"$data"'" "$url")
         }
         wgetCmd(){
-            eval $(_EC wget $wgetEx -O- --header "\"Content-Type: application/json\"" --post-data \"$data\" "$url")
+            eval $(_EC wget $wgetEx -O- --header "\"Content-Type: application/json\"" --post-data "'"$data"'" "$url")
         }
         _REQHelper
     }
