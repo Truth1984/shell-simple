@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.3.5
+    echo 6.3.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1001,6 +1001,7 @@ string() {
     }
 
     contain_string(){
+        _ED DEPRECATE WARNING
         if [ "$#" -lt 2 ]; then return $(_RC 1 $@); fi;
         if $(echo "$1" | grep -q $2); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
     }
@@ -1963,7 +1964,7 @@ docker() {
 
     tar_docker() {
         local name="$@";
-        if $(string -c "$name" ".tar"); then
+        if $(echo "$name" | grep -q ".tar"); then
             _ED docker loading $name
             $DOCKER load < $name
         else 
