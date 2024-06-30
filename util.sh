@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.3.7
+    echo 6.3.8
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -400,6 +400,7 @@ os() {
     local pkgmanager=$(parseGet os_data p pkgmanager);
     local info=$(parseGet os_data i info);
     local sysinfo=$(parseGet os_data s sys);
+    local bashinfo=$(parseGet os_data b bash);
     local help=$(parseGet os_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -407,6 +408,7 @@ os() {
     helpmsg+='\t-p,--pkgmanager \t () \t\t get current package manager\n'
     helpmsg+='\t-i,--info \t\t () \t\t get os info, including hardware\n'
     helpmsg+='\t-s,--sys \t\t () \t\t get system info, with cpu, mem and disk info\n'
+    helpmsg+='\t-b,--bash \t\t () \t\t get bash info, with active one and installed one\n'
 
     # (): string
     pkgManager_os() {
@@ -486,11 +488,18 @@ os() {
         fi;
     }
 
+    bash_os() {
+        echo -e Session bash: "\t" $(echo $BASH_VERSION);
+        echo -e System bash: "\t" $(bash --version | head -n 1); 
+        _ED use 'ln $(which bash) /bin/bash' to use the new bash
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$check"); then check_os $check; 
     elif $(hasValueq "$pkgmanager"); then pkgManager_os $pkgmanager; 
     elif $(hasValueq "$sysinfo"); then sys_os $sysinfo;
-    elif $(hasValueq "$info"); then info_os $info;
+    elif $(hasValueq "$bashinfo"); then bash_os $bashinfo;
+    elif $(hasValueq "$info"); then info_os $info; 
     fi;
 
 }
