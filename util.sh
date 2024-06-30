@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.3.6
+    echo 6.3.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -535,6 +535,7 @@ ip() {
         local ethernet wifi
 
         if $(os -c linux); then
+            unset -f ip;
             IP=$(which ip);
             ethernet=$($IP addr show eth1 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
             wifi=$($IP addr show eth0 2> /dev/null | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
@@ -1512,6 +1513,7 @@ git() {
     helpmsg+='\t-m,--moveLocal \t (string,string) \t move local branch to target id, require: [ name, commitID ] \n'
     helpmsg+='\t-M,--moveCloud \t (string) \t move cloud Reference to target id, require: [ name, commitID ] \n'
 
+    unset -f git;
     local GIT=$(which git);
 
     adog_git() {
@@ -1563,6 +1565,7 @@ gitclone() {
         echo '_U2_GIT_CLONE_TO_DIR=~/Documents' >> $HOME/.bash_env
     fi;
     
+    unset -f git;
     local GIT=$(which git);
     $GIT clone "https://github.com/$_U2_GIT_USER/$@.git" "$_U2_GIT_CLONE_TO_DIR/$@"
 }
@@ -1878,6 +1881,7 @@ docker() {
     helpmsg+='\t-P,--pid \t (int) \t\t enter pid of process to find target docker container\n'
     helpmsg+='\t-k,--kill \t (int) \t\t enter name or id to kill process and stop container\n'
     
+    unset -f docker;
     DOCKER=$(which docker);
     
     _find_name() {
@@ -2053,6 +2057,7 @@ dc() {
     helpmsg+='\t-l,--log \t () \t\t log target containers \n'
     helpmsg+='\t-L,--live \t () \t\t live log target containers \n'
 
+    unset -f docker;
     DOCKER=$(which docker);
     
     _find_name() {
@@ -2166,7 +2171,9 @@ tar() {
     action_tar() {
         if ! $(hasValueq "$target"); then return $(_ERC "target undefined"); fi;
 
+        unset -f tar;
         TAR=$(which tar);
+        unset -f file;
         FILE=$(which file);
     
         local toZip=false;
