@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.4.1
+    echo 6.4.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1952,14 +1952,14 @@ docker() {
     exec_docker() {
         local name="$(_find_name $@)" || name="$(_find_id $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
-        $DOCKER exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+        $DOCKER exec -it --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
     execTest_docker() {
         local name="$(_find_name $@)" || name="$(_find_id $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER pause $name
-        $DOCKER exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+        $DOCKER exec -it --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
         $DOCKER unpause $name
     }
 
@@ -2071,8 +2071,8 @@ dc() {
     
     _find_name() {
         local target;
-        if $(hasValueq $@); then target="$($DOCKER compose ps -a 2>/dev/null | grep $@ | awk 'NR>1 {print $1}')";
-        else target="$($DOCKER compose ps -a 2>/dev/null | awk 'NR>1 {print $1}')"; fi;
+        if $(hasValueq $@); then target="$($DOCKER compose ps --format "{{.Service}}\t{{.Name}}\t{{.Image}} 2>/dev/null | grep $@ | awk '{print $1}')";
+        else target="$($DOCKER compose ps --format "{{.Service}}\t{{.Name}}\t{{.Image}}" 2>/dev/null | awk '{print $1}')"; fi;
 
         if ! $(hasValueq $target); then return $(_ERC "target -$@- not found"); 
         elif ! $(trimArgs "$target" | grep -q " "); then _EC "$target";
@@ -2127,7 +2127,7 @@ dc() {
     exec_dc() {
         local name="$(_find_name $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
-        $DOCKER compose exec --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+        $DOCKER compose exec -it --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
     exec_line_dc() {
