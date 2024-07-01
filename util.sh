@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.4.0
+    echo 6.4.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2080,6 +2080,7 @@ dc() {
     }
 
     up_dc() {
+        if ! $(hasFile .env); then touch .env; fi;
         $DOCKER compose --env-file .env up -d
     }
 
