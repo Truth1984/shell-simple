@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.3.8
+    echo 6.4.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1003,7 +1003,7 @@ string() {
     helpmsg+='\t-e,--equal \t (string,string) \t\t compare two strings\n'
     helpmsg+='\t-c,--contain \t (string,stringOrRegex) \t check if string contains\n'
     helpmsg+='\t-r,--replace \t (string,string,string) \t 1,original string; 2,search string, 3,replacement \n'
-    helpmsg+='\t-n,--number \t (string) \t\t check if string is number \n'
+    helpmsg+='\t-n,--number \t (string) \t\t\t check if string is a number \n'
     helpmsg+='\t-i,--index \t (...string,int) \t\t treat string as array, get index of it \n'
     
     equal_string(){
@@ -1011,9 +1011,9 @@ string() {
     }
 
     contain_string(){
-        _ED DEPRECATE WARNING
+        shift
         if [ "$#" -lt 2 ]; then return $(_RC 1 $@); fi;
-        if $(echo "$1" | grep -q $2); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+        if $(echo "$1" | grep -q "$2"); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
     }
 
     replace_string(){
@@ -1035,7 +1035,7 @@ string() {
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$equal"); then equal_string $equal;
-    elif $(hasValueq "$contain"); then contain_string "$contain";
+    elif $(hasValueq "$contain"); then contain_string "$@";
     elif $(hasValueq "$replace"); then replace_string $replace;
     elif $(hasValueq "$number"); then number_string $number;
     elif $(hasValueq "$index"); then index_string $index;
@@ -2299,4 +2299,20 @@ search() {
 # --- EXTRA END ---
 
 # put this at the end of the file
-$@;
+# dispatch for function:
+# string -c / --contain
+case "$1" in 
+    string)
+        case "$2" in 
+            "-c" | "--contain")
+                string -c "${@:3}"
+            ;;
+            *)
+                $@
+            ;;
+        esac
+    ;;
+    *)
+        $@;
+    ;;
+esac
