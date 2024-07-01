@@ -2071,8 +2071,8 @@ dc() {
     
     _find_name() {
         local target;
-        if $(hasValueq $@); then target="$($DOCKER compose ps --format "{{.Service}}\t{{.Name}}\t{{.Image}} 2>/dev/null | grep $@ | awk '{print $1}')";
-        else target="$($DOCKER compose ps --format "{{.Service}}\t{{.Name}}\t{{.Image}}" 2>/dev/null | awk '{print $1}')"; fi;
+        if $(hasValueq $@); then target="$($DOCKER compose ps --format '{{.Service}}\t{{.Name}}\t{{.Image}}' 2>/dev/null | grep $@ | awk '{print $1}')"; 
+        else target="$($DOCKER compose ps --format '{{.Service}}\t{{.Name}}\t{{.Image}}' 2>/dev/null | awk '{print $1}')"; fi;
 
         if ! $(hasValueq $target); then return $(_ERC "target -$@- not found"); 
         elif ! $(trimArgs "$target" | grep -q " "); then _EC "$target";
