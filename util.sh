@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.4.5
+    echo 6.4.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1510,11 +1510,13 @@ port() {
 # -h,--head,_
 # -m,--moveLocal (name, commitID)
 # -M,--moveCloud (name, commitID)
+# -i,--info
 git() {
     declare -A git_data; parseArg git_data $@;
     local head=$(parseGet git_data h head _);
     local moveLocal=$(parseGet git_data m moveLocal);
-    local moveCloud=$(parseGet git_data M moveCloud)
+    local moveCloud=$(parseGet git_data M moveCloud);
+    local gitInfo=$(parseGet git_data i info);
     local help=$(parseGet git_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -1551,13 +1553,19 @@ git() {
         $GIT push --force origin $commitID:refs/heads/$name
     }
 
+    info_git() {
+        $GIT status
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$head"); then head_git $head;
     elif $(hasValueq "$moveLocal"); then moveLocal_git $moveLocal;
-    elif $(hasValueq "$moveCloud"); then moveCloud_git $moveCloud;
+    elif $(hasValueq "$moveCloud"); then moveCloud_git $moveCloud; 
     fi;
 
-    adog_git
+    if $(hasValueq "$gitInfo"); then info_git $gitInfo; 
+    else adog_git; 
+    fi;
 }
 
 # (string)
