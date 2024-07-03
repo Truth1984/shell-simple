@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.4.4
+    echo 6.4.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2247,6 +2247,7 @@ search() {
     local path=$(parseGet search_data p path);
     local base=$(parseGet search_data b base);
     local show=$(parseGet search_data s show);
+    local hidden=$(parseGet search_data h hidden);
     local ignore=$(parseGet search_data i ignore);
     local depth=$(parseGet search_data D depth);
     local help=$(parseGet search_data help);
@@ -2256,6 +2257,7 @@ search() {
     helpmsg+='\t-p,--path \t (string) \t search for file or folder name only\n'
     helpmsg+='\t-b,--base \t (string) \t base directory to search in, default "."\n'
     helpmsg+='\t-s,--show \t (int) \t\t show n(*_2) lines of surrounding context\n'
+    helpmsg+='\t-h,--hidden \t () \t\t search hidden folder\n'
     helpmsg+='\t-i,--ignore \t (string) \t ignore list, use ";" as delimiter \n'
     helpmsg+='\t-D,--depth \t (int) \t\t search depth, default 7\n'
 
@@ -2276,6 +2278,8 @@ search() {
         # show with line
         if ! $(hasValueq "$show"); then AG_ARGS="$AG_ARGS --files-with-matches";
         else AG_ARGS="$AG_ARGS --context $show"; fi;
+
+        if $(hasValueq $hidden); then AG_ARGS="$AG_ARGS --hidden"; fi;
         # extra
         AG_ARGS="$AG_ARGS --follow --noheading --column"
     }
