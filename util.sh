@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.4.8
+    echo 6.4.9
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1041,6 +1041,10 @@ string() {
     elif $(hasValueq "$index"); then index_string $index;
     fi;
 
+}
+
+np() {
+    https_proxy="" http_proxy="" HTTPS_PROXY="" HTTP_PROXY="" no_proxy="" NO_PROXY="" command $@
 }
 
 noproxy() {

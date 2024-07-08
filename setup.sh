@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo SCRIPT_VERSION=1.0.1
+echo SCRIPT_VERSION=1.0.3
 
 if [[ -z "$(command -v u2)" ]]; then
     ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup && source ~/.bash_mine
@@ -69,7 +69,7 @@ if $(u2 string -c "$@" "docker"); then
         u2 install docker
         sudo usermod -aG docker $(whoami)
 
-        printf '{\n "registry-mirrors": [\n  "https://hub-mirror.c.163.com",\n  "https://docker.mirrors.ustc.edu.cn",\n  "https://mirror.baidubce.com"\n]\n}' > /etc/docker/daemon.json
+        printf '{\n "registry-mirrors": [\n  "https://hub-mirror.c.163.com",\n  "https://docker.mirrors.ustc.edu.cn",\n  "https://mirror.baidubce.com",\n  "https://mirror.azure.cn",\n  "https://mirror.ccs.tencentyun.com"\n]\n}' > /etc/docker/daemon.json
        
         if $(u2 hasCmd systemctl); then
             sudo systemctl start docker.service
@@ -91,5 +91,12 @@ if $(u2 string -c "$@" "bun"); then
             echo 'export BUN_INSTALL="$HOME/.bun"' >> $HOME/.bash_env 
             echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> $HOME/.bash_env 
         fi;
+    fi; 
+fi;
+
+if $(u2 string -c "$@" "pm2"); then 
+    if ! $(u2 hasCmd pm2); then 
+        npm i -g pm2
+        pm2 startup
     fi; 
 fi;
