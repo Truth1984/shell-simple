@@ -1356,11 +1356,13 @@ setup() {
 # -d,--docker add docker to setup
 # -n,--node add node to setup
 # -b,--bun add bun to setup
+# -p,--pm2
 setupEX() {
     declare -A setupex_data; parseArg setupex_data $@;
     local basic=$(parseGet setupex_data B basic _);
     local nodeAdd=$(parseGet setupex_data n node);
     local bunAdd=$(parseGet setupex_data b bun);
+    local pm2Add=$(parseGet setupex_data p pm2);
     local dockerAdd=$(parseGet setupex_data d docker);
     local help=$(parseGet setupex_data help);
 
@@ -1374,6 +1376,7 @@ setupEX() {
         local extraArgs=""
         if $(hasValueq "$nodeAdd"); then extraArgs="$extraArgs node"; fi;
         if $(hasValueq "$bunAdd"); then extraArgs="$extraArgs bun"; fi;
+        if $(hasValueq "$pm2Add"); then extraArgs="$extraArgs pm2"; fi;
         if $(hasValueq "$dockerAdd"); then extraArgs="$extraArgs docker"; fi;
         _ED extraArgs: "$extraArgs"
 
