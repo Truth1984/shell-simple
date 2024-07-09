@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.5.2
+    echo 6.6.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1354,6 +1354,7 @@ subdir() {
 
     perform_subdir(){
         skip+=" .git node_modules"
+        _ED skipping {$skip}
         IFS=' ' read -ra skipArray <<< "$skip"
         grepExclude=""
 
@@ -1372,7 +1373,6 @@ subdir() {
     fi;
     
 }
-
 
 # call setup bash beforehand
 setup() {
@@ -2306,6 +2306,31 @@ extra() {
     elif $(hasValueq "$tree"); then tree_extra $tree; 
     fi;
 }
+
+# usage: put 'eval $(u _strict $@);' at the end of the file
+# then the script had to be called with the existing function name 
+_strict() {
+    echo -e '
+    help() { 
+        compgen -A function | grep -v "^_";
+    };
+    _function_exists() {
+        declare -f -F $1 > /dev/null;
+        return $?;
+    };
+    _execute_function() {
+        local function_name="$1";
+        
+        if _function_exists "$function_name"; then
+            "$function_name";
+        else
+            u _ERC "Function {$function_name} not found.";
+        fi;
+    };
+    _execute_function "$@";
+    '
+}
+
 
 # -c,--content,_
 # -p,--path (bool) search path only
