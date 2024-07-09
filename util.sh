@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.4.9
+    echo 6.5.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1322,6 +1322,57 @@ quick() {
     fi;
 }
 
+subdir() {
+    declare -A subdir_data; parseArg subdir_data $@;
+    local perform=$(parseGet subdir_data p perform);
+    local target=$(parseGet subdir_data t target);
+    local skip=$(parseGet subdir_data s skip);
+    local help=$(parseGet subdir_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-p,--perform,_ \t (string) \t put perform at the end to execute full command\n'
+    helpmsg+='\t-t,--target \t (string) \t default to current dir\n'
+    helpmsg+='\t-s,--skip \t (string) \t default to .git and node_modules\n'
+
+    if ! $(hasValueq $target); then target="$(pwd)"; fi;
+    if $(hasValueq $perform); then 
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                -p|--perform)
+                    shift
+                    action=$1
+                    break
+                ;;
+                *)
+                ;;
+            esac
+            shift
+        done
+    else
+        action=$@
+    fi;
+
+    perform_subdir(){
+        skip+=" .git node_modules"
+        IFS=' ' read -ra skipArray <<< "$skip"
+        grepExclude=""
+
+        for folder in "${skipArray[@]}"; do
+            grepExclude+=" -e /$folder"
+        done
+        
+        find "$target" -mindepth 1 -maxdepth 1 -type d | grep -v $grepExclude | while read -r subfolder; do
+            _ED perform action in {$subfolder}
+            cd "$subfolder" && $action; 
+        done
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";  
+    elif $(hasValueq "$action"); then perform_subdir $action;
+    fi;
+    
+}
+
 
 # call setup bash beforehand
 setup() {
@@ -1370,6 +1421,7 @@ setupEX() {
     helpmsg+='\t-B,--basic,_ \t () \t basic dependency setup\n'
     helpmsg+='\t-n,--node \t () \t add node to setup\n'
     helpmsg+='\t-b,--bun \t () \t add bun to setup\n'
+    helpmsg+='\t-p,--pm2 \t () \t add pm2 to setup\n'
     helpmsg+='\t-d,--docker \t () \t add docker to setup\n'
   
     install_setupEx() {
