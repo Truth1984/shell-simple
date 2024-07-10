@@ -1340,7 +1340,7 @@ subdir() {
             case $1 in
                 -p|--perform)
                     shift
-                    action=$1
+                    action=$@
                     break
                 ;;
                 *)
