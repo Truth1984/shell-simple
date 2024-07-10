@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.6.0
+    echo 6.6.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1362,9 +1362,10 @@ subdir() {
             grepExclude+=" -e /$folder"
         done
         
-        find "$target" -mindepth 1 -maxdepth 1 -type d | grep -v $grepExclude | while read -r subfolder; do
+        find $(realpath $target) -mindepth 1 -maxdepth 1 -type d | grep -v $grepExclude | while read -r subfolder; do
             _ED perform action in {$subfolder}
-            cd "$subfolder" && $action; 
+            cd "$subfolder";
+            eval "$action"; 
         done
     }
 
