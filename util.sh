@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.6.4
+    echo 6.6.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2078,8 +2078,10 @@ docker() {
                 return $(_ERC "name {$name} not found")
             fi;
 
-            _ED docker exporting $dname
-            $DOCKER save -o $dname.tar $dname
+            d2name=$dname;
+            if $(string -c "$dname" "/"); then d2name=$(echo $dname | sed 's/\//-/g; s/:/-V-/g'); fi;
+            _ED docker exporting $d2name from $dname
+            $DOCKER save -o $d2name.tar $dname
         fi;
     }
 
