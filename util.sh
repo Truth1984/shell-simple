@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.6.6
+    echo 6.9.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -344,7 +344,7 @@ envGet() {
 # -m,--modify modify date
 # -M,--modifyQ modify date quiet output long
 # -f,--full full info
-stats() {
+stat() {
     declare -A stats_data; parseArg stats_data $@;
     local size=$(parseGet stats_data s size _);
     local modify=$(parseGet stats_data m modify);
@@ -358,21 +358,24 @@ stats() {
     helpmsg+='\t-M,--modifyQ \t (string) \t modify date of the path as long, quiet\n'
     helpmsg+='\t-f,--full \t (string) \t full stats info\n'
 
+    unset -f stat;
+    STAT=$(which stat);
+
     size_stats() {
         _EC $(du -sh $1 | cut -f1)
     }
 
     modify_stats() {
-        if $(os -c mac); then _EC $(stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" $1); 
-        else _EC $(stat --printf="%y\n" $1 | awk -F'[ .]' '{print $1, $2}'); fi;
+        if $(os -c mac); then _EC $($STAT -f "%Sm" -t "%Y-%m-%d %H:%M:%S" $1); 
+        else _EC $($STAT --printf="%y\n" $1 | awk -F'[ .]' '{print $1, $2}'); fi;
     }
 
     modifyQ_stats() {
          # os -c mac quiet
         if $(hasCmdq uname && uname | grep -q Darwin); then
-            stat -f "%Sm" -t "%s" $1
+            $STAT -f "%Sm" -t "%s" $1
         else
-            formatDate=$(stat --printf="%y\n" "$1" | awk -F'[ .]' '{print $1, $2}')
+            formatDate=$($STAT --printf="%y\n" "$1" | awk -F'[ .]' '{print $1, $2}')
             date -d "$formatDate" +%s
         fi;
     }
@@ -587,28 +590,17 @@ ip() {
     fi;
 }
 
-# -D,--Datetime *_default date+time
-# -l,--long long date
-# -d,--date date only
-# -t,--time time only
-# -p,--plain plain format as 2000_12_31_23_59_59
-# -i,--iso iso8601 format
-# -f,--full full display of dates
-# -r,--reparse reparse the date format back
-# -o,--older current time minus $2 in sec > $1 time
-# -s,--second older than seconds
 dates() {
     declare -A date_data; parseArg date_data $@;
-    local dateTime=$(parseGet date_data D Datetime _);
+    local parse=$(parseGet date_data p parse _)
+    local dateTime=$(parseGet date_data D Datetime);
     local dateLong=$(parseGet date_data l long);
     local dateOnly=$(parseGet date_data d date);
     local timeOnly=$(parseGet date_data t time);
-    local plain=$(parseGet date_data p plain);
+    local plain=$(parseGet date_data P plain);
     local iso=$(parseGet date_data i iso);
     local full=$(parseGet date_data f full)
-    local reparse=$(parseGet date_data r reparse);
-    local older=$(parseGet date_data o older);
-    local second=$(parseGet date_data s second);
+    local older=$(parseGet date_data o older)
     local help=$(parseGet date_data help);
 
     local dateFormat='%Y-%m-%d'
@@ -619,70 +611,66 @@ dates() {
     local iso8601="%Y-%m-%dT%H:%M:%S%z"
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-D,--Datetime,_ \t () \t\t date as datetime format\n'
+    helpmsg+='\t-p,--parse,_ \t\t () \t\t parse date from string, can use "now"\n'
+    helpmsg+='\t-D,--Datetime, \t\t () \t\t date as datetime format\n'
     helpmsg+='\t-l,--long \t\t () \t\t date as long format\n'
     helpmsg+='\t-d,--date \t\t () \t\t date only format of date\n'
     helpmsg+='\t-t,--time \t\t () \t\t time only format of date\n'
-    helpmsg+='\t-p,--plain \t\t () \t\t plain format of date\n'
+    helpmsg+='\t-P,--plain \t\t () \t\t plain format of date\n'
     helpmsg+='\t-f,--full \t\t () \t\t full display format of date\n'
-    helpmsg+='\t-r,--reparse \t\t (string) \t reparse string into date\n'
-    helpmsg+='\t-o,--older \t\t (string) \t current time minus (-s in sec) > $1 time\n'
-    helpmsg+='\t-s,--second \t\t (number) \t older than x second\n'
+    helpmsg+='\t-o,--older \t\t (time1, time2?, gap?) \t time2 can be "now", if gap exist, use absolute num for diff\n'
+
+    DATE=$(which gdate || which date);
+
+    parse_dates() {
+        local input=$(echo $@ | xargs)
+        plainFormat="[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+"
+        longFormat="^[0-9]+$"
+        now="now"
+        
+        if [[ $input =~ $plainFormat ]]; then input=$(echo "$input" | awk -F_ '{printf("%s-%s-%s %s:%s:%s", $1, $2, $3, $4, $5, $6)}'); 
+        elif [[ $input =~ $longFormat ]]; then echo $input;
+        elif [[ $input =~ $now ]]; then date +%s;
+        else $DATE -d "$input" +%s; 
+        fi;
+    }
+
+    if ! $(hasValueq $parse); then time=$(date +%s);
+    else time=$(parse_dates $parse); fi; 
+    if ! $(hasValueq $time); then return $(_ERC "time parsing error"); fi;
 
     toFormat_dates() {
-        echo $(date +"$1")
-    }
-
-    parseDateOS() {
-        timeString=$(echo $1 | xargs)
-        format=$2
-        additional=$3
-
-        # os -c mac quiet
-        if $(hasCmdq uname && uname | grep -q Darwin); then
-            echo $(date -j -f "$format" "$timeString" $additional)
-        else
-            echo $(date -d "$timeString" +"$format" $additional)
-        fi;
-    }
-
-    reparse_dates() {
-        local input=$1
-        input=$(echo $1 | xargs)
-        additional=$2
-
-        p0="^[0-9]+$"
-        p1="[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+"
-        p2="[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+_[0-9]+"
-        p3="[0-9]+-[0-9]+-[0-9]+T"
-        p4="[0-9]+-[0-9]+-[0-9]+"
-        p5="[0-9]+:[0-9]+:[0-9]+"
-        target=""
-
-        if [[ $input =~ $p0 ]]; then target=$dateLongFormat; 
-        elif [[ $input =~ $p1 ]]; then target=$dateTimeFormat; 
-        elif [[ $input =~ $p2 ]]; then target=$plainFormat; 
-        elif [[ $input =~ $p3 ]]; then target=$iso8601; 
-        elif [[ $input =~ $p4 ]]; then target=$dateFormat; 
-        elif [[ $input =~ $p5 ]]; then target=$timeFormat; 
-        fi;
-
-        if ! $(hasValueq $target); then return $(_ERC "Error: no pattern found"); 
-        else _ED datetime format found, using $target; fi;
-
-        parseDateOS "$input" "$target" $additional
+        echo $($DATE -d "@$time" +"$1")
     }
 
     older_dates() {
-        if ! $(hasValueq $second); then return $(_ERC '$second value undefined'); fi;
-        
-        inputDate=$(echo $@ | xargs)
-        target=$(reparse_dates "$inputDate" "+%s")
-        current_timestamp=$(date +%s)
-        difference=$((current_timestamp - target))
+        shift
+        value1="$1"
+        value2="$2"
+        gap="$3"
 
-        if [ "$difference" -gt $second ]; then _RC 0 difference:$difference '>' $second;
-        else _RC 1 difference:$difference '<' $second; fi;
+        _ED value1 {$value1} value2 {$value2} gap {$gap}
+        if ! $(hasValueq $value2); then 
+            return $(_ERC "value 1 missing")
+        fi;
+
+        if ! $(hasValueq $value2); then 
+            _ED "value2 missing, using current time"; 
+            value2=$time
+        fi;
+
+        value1=$(parse_dates $value1);
+        value2=$(parse_dates $value2);
+        difference=$(($value1 - $value2));
+
+        if $(hasValueq $gap); then 
+            _ED gap {$gap} found, using absolute number
+            difference=${difference#-}
+            if [ "$difference" -gt $gap ]; then _RC 0 difference:$difference '>' $gap;
+            else _RC 1 difference:$difference '<=' $gap; 
+            fi;
+        elif [ "$difference" -gt 0 ]; then _RC 0 difference:$value1 '>' $value2;
+        else _RC 1 difference:$value1 '<=' $value2; fi;
     }
 
     full_dates() {
@@ -707,13 +695,11 @@ dates() {
     elif $(hasValueq "$timeOnly"); then toFormat_dates "$timeFormat"; 
     elif $(hasValueq "$plain"); then toFormat_dates "$plainFormat"; 
     elif $(hasValueq "$iso"); then toFormat_dates "$iso8601"; 
-    elif $(hasValueq "$older"); then older_dates $older; 
+    elif $(hasValueq "$older"); then older_dates "$@"; 
     elif $(hasValueq "$full"); then full_dates $full; 
-    elif $(hasValueq "$reparse"); then reparse_dates "$reparse"; 
     else toFormat_dates "$dateTimeFormat"; 
     fi;
 }
-
 
 # -p,--path path to trash, *_default
 # -l,--list list trash 
@@ -789,7 +775,7 @@ trash() {
         local length=${folder_data[length]}
         for ((i=0; i<$length; i++)); do     
             target=${folder_data[${i}_${indexStr}]}
-            if ! $(eval "$evalStr $target"); then
+            if ! $(eval "$evalStr \"$target\""); then
                 unset folder_data[${i}_index]
                 unset folder_data[${i}_uuid]
                 unset folder_data[${i}_original_dir]
@@ -893,7 +879,7 @@ trash() {
         local seconds=7890000
         if $(hasValueq $1); then seconds=$1; fi;
         loadArray
-        trashFilter "dtime" 'a(){ if $(dates -o $@ -s'" $seconds); then return 0; else return 1; fi; }; a "
+        trashFilter "dtime" 'a(){ if $(dates -o "$@" "now"'" $seconds); then return 0; else return 1; fi; }; a "
         printTrashList 
 
         if [ "${#folder_data[@]}" -lt 2 ]; then
@@ -2289,7 +2275,7 @@ tar() {
         elif ! $($FILE "$target" | grep -q "tar"); then toZip=true; fi;
 
         if $toZip; then 
-            if ! $(hasValueq $dest); then dest="$(dates -p).tar"; fi;
+            if ! $(hasValueq $dest); then dest="$(dates -P).tar"; fi;
             $TAR -cf $dest $target;
         else 
             if $(hasValueq $dest); then $TAR -xzf $target -C $dest;
@@ -2429,11 +2415,22 @@ search() {
 # put this at the end of the file
 # dispatch for function:
 # string -c / --contain
+# dates -o /--older
 case "$1" in 
     string)
         case "$2" in 
             "-c" | "--contain")
                 string -c "${@:3}"
+            ;;
+            *)
+                $@
+            ;;
+        esac
+    ;;
+    dates)
+        case "$2" in 
+            "-o" | "--older")
+                dates -o "${@:3}"
             ;;
             *)
                 $@
