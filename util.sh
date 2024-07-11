@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.6.5
+    echo 6.6.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -648,7 +648,7 @@ dates() {
 
     reparse_dates() {
         local input=$1
-        input=$(trimArgs $1)
+        input=$(echo $1 | xargs)
         additional=$2
 
         p0="^[0-9]+$"
