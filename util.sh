@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.6.2
+    echo 6.6.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1219,10 +1219,10 @@ get() {
 # (url, outputFileName?)
 download() {
     local url=$1 filename="${@:2}"
-    if $(hasCmd wget); then
-        if $(hasValue $filename); then wget -d -O $filename $url; else wget -d $url; fi;
-    elif $(hasCmd curl); then
+    if $(hasCmd curl); then
         if $(hasValue $filename); then curl $url -v --output $filename; else curl -v -O $url; fi;
+    elif $(hasCmd wget); then
+        if $(hasValue $filename); then wget -d -O $filename $url; else wget -d $url; fi; 
     fi;
 }
 
@@ -1370,7 +1370,7 @@ subdir() {
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";  
-    elif $(hasValueq "$action"); then perform_subdir $action;
+    elif $(hasValueq "$action"); then perform_subdir $action; 
     fi;
     
 }
@@ -1840,8 +1840,12 @@ service() {
 
     restart_service() {
         local serviceName=$(_fetch_service $@)
-        if $(hasCmd systemctl); then systemctl stop $serviceName || systemctl start $serviceName;
-        elif $(hasCmd rc-service); then rc-service stop $serviceName || rc-service start $serviceName; 
+        if $(hasCmd systemctl); then 
+            systemctl stop $serviceName;
+            systemctl start $serviceName;
+        elif $(hasCmd rc-service); then 
+            rc-service stop $serviceName;
+            rc-service start $serviceName; 
         else _ED "SKIP, LIMITED"
         fi; 
     }
@@ -1942,7 +1946,7 @@ docker() {
     local execTest=$(parseGet docker_data E test);
     local log=$(parseGet docker_data l log);
     local livelog=$(parseGet docker_data L live);
-    local tars=$(parseGet docker_data t tar);
+    local tars=$(parseGet docker_data t tar save);
     local clean=$(parseGet docker_data c clean);
     local pids=$(parseGet docker_data P pid);
     local kills=$(parseGet docker_data k kill);
@@ -1958,7 +1962,7 @@ docker() {
     helpmsg+='\t-E,--execTest \t (string) \t enter name to pause and test container, then unpause\n'
     helpmsg+='\t-l,--log \t (string) \t enter name to log details\n'
     helpmsg+='\t-L,--live \t (string) \t enter name to view log live\n'
-    helpmsg+='\t-t,--tar \t (string) \t enter x.tar to load, enter container name to export x.tar\n'
+    helpmsg+='\t-t,--tar,--save \t (string) \t enter x.tar to load, enter container name to export x.tar\n'
     helpmsg+='\t-c,--clean \t (string) \t clean docker volume\n'
     helpmsg+='\t-P,--pid \t (int) \t\t enter pid of process to find target docker container\n'
     helpmsg+='\t-k,--kill \t (int) \t\t enter name or id to kill process and stop container\n'
@@ -1974,6 +1978,17 @@ docker() {
         if ! $(hasValueq $target); then return $(_ERC "target -$@- not found"); 
         elif ! $(trimArgs "$target" | grep -q " "); then _EC "$target";
         else promptSelect "select target docker container:" $target; fi
+    }
+
+    _find_img() {
+        local target; 
+        if $(hasValueq $@); then target="$($DOCKER images --format '{{.Repository}}:{{.Tag}}' | grep $@)";
+        else target="$($DOCKER images --format '{{.Repository}}:{{.Tag}}')"; fi;
+
+        if ! $(hasValueq $target); then return $(_ERC "target -$@- not found"); 
+        elif ! $(trimArgs "$target" | grep -q " "); then _EC "$target";
+        else promptSelect "select target docker image:" $target; fi
+
     }
 
     _find_id() {
@@ -2054,9 +2069,17 @@ docker() {
             _ED docker loading $name
             $DOCKER load < $name
         else 
-            name="$(_find_name $@)"
-            _ED docker exporting $name
-            $DOCKER save -o $name.tar $name
+            dname="$(_find_name $@)"
+            if ! $(hasValueq $dname); then 
+                dname="$(_find_img $@)"
+            fi;
+
+            if ! $(hasValueq $dname); then 
+                return $(_ERC "name {$name} not found")
+            fi;
+
+            _ED docker exporting $dname
+            $DOCKER save -o $dname.tar $dname
         fi;
     }
 
