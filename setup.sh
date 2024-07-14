@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo SCRIPT_VERSION=1.0.3
+echo SCRIPT_VERSION=1.0.4
 
 if [[ -z "$(command -v u2)" ]]; then
     ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup && source ~/.bash_mine
@@ -64,7 +64,10 @@ fi;
 
 # ./setup docker
 
-if $(u2 string -c "$@" "docker"); then 
+ALL=false;
+if $(u2 string -c "$@" "ALL"); then ALL=true; fi;
+
+if $(u2 string -c "$@" "docker") || $ALL; then 
     if ! $(u2 hasCmd docker); then 
         u2 install docker
         sudo usermod -aG docker $(whoami)
@@ -78,13 +81,13 @@ if $(u2 string -c "$@" "docker"); then
     fi; 
 fi;
 
-if $(u2 string -c "$@" "node"); then 
+if $(u2 string -c "$@" "node") || $ALL; then 
     if ! $(u2 hasCmd node); then 
         curl -L https://bit.ly/n-install | bash -s -- -y 
     fi; 
 fi;
 
-if $(u2 string -c "$@" "bun"); then 
+if $(u2 string -c "$@" "bun") || $ALL; then 
     if ! $(u2 hasCmd bun); then 
         curl -fsSL https://bun.sh/install | bash
         if ! $(u2 hasContent $HOME/.bash_env BUN_INSTALL); then
@@ -94,7 +97,7 @@ if $(u2 string -c "$@" "bun"); then
     fi; 
 fi;
 
-if $(u2 string -c "$@" "pm2"); then 
+if $(u2 string -c "$@" "pm2") || $ALL; then 
     if ! $(u2 hasCmd pm2); then 
         npm i -g pm2
         pm2 startup

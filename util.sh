@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.9.0
+    echo 6.9.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1402,6 +1402,7 @@ setupEX() {
     local bunAdd=$(parseGet setupex_data b bun);
     local pm2Add=$(parseGet setupex_data p pm2);
     local dockerAdd=$(parseGet setupex_data d docker);
+    local allAdd=$(parseGet setupex_data a all);
     local help=$(parseGet setupex_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -1417,6 +1418,7 @@ setupEX() {
         if $(hasValueq "$bunAdd"); then extraArgs="$extraArgs bun"; fi;
         if $(hasValueq "$pm2Add"); then extraArgs="$extraArgs pm2"; fi;
         if $(hasValueq "$dockerAdd"); then extraArgs="$extraArgs docker"; fi;
+        if $(hasValueq "$allAdd"); then extraArgs="$extraArgs ALL"; fi;
         _ED extraArgs: "$extraArgs"
 
         setupURL="https://raw.gitmirror.com/Truth1984/shell-simple/main/setup.sh" 
@@ -1424,7 +1426,7 @@ setupEX() {
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";  
-    else install_setupEx;
+    else install_setupEx; 
     fi;
 }
 
