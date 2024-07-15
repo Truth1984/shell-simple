@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.9.1
+    echo 6.9.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1930,8 +1930,9 @@ docker() {
     local volume=$(parseGet docker_data v volume);
     local processes=$(parseGet docker_data p process);
     local stop=$(parseGet docker_data s stop);
+    local test=$(parseGet docker_data E test);
     local execs=$(parseGet docker_data e exec);
-    local execTest=$(parseGet docker_data E test);
+    local execTest=$(parseGet docker_data stoptest);
     local log=$(parseGet docker_data l log);
     local livelog=$(parseGet docker_data L live);
     local tars=$(parseGet docker_data t tar save);
@@ -1946,8 +1947,9 @@ docker() {
     helpmsg+='\t-v,--volume \t (string?) \t list all or enter name to view volume details\n'
     helpmsg+='\t-p,--process \t (string?) \t list all or enter name to view process details\n'
     helpmsg+='\t-s,--stop \t (string) \t enter name to stop and remove container\n'
+    helpmsg+='\t-E,--test \t (string) \t enter image name to test with bash\n'
     helpmsg+='\t-e,--exec \t (string) \t enter name to exec with bash\n'
-    helpmsg+='\t-E,--execTest \t (string) \t enter name to pause and test container, then unpause\n'
+    helpmsg+='\t-stoptest \t (string) \t enter name to pause and test container, then unpause\n'
     helpmsg+='\t-l,--log \t (string) \t enter name to log details\n'
     helpmsg+='\t-L,--live \t (string) \t enter name to view log live\n'
     helpmsg+='\t-t,--tar,--save \t (string) \t enter x.tar to load, enter container name to export x.tar\n'
@@ -2023,6 +2025,12 @@ docker() {
         if $(hasValueq $@); then name="$(_find_name $@)" || name="$(_find_id $@)"; fi;
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER stop $name && $DOCKER rm $name;
+    }
+
+    test_docker() {
+        local name="$(_find_img $@)";
+        if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
+        $DOCKER run --rm -it $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
     exec_docker() {
