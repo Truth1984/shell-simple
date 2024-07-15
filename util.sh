@@ -2115,6 +2115,7 @@ docker() {
     elif $(hasValueq "$volume"); then volume_docker $volume;
     elif $(hasValueq "$processes"); then process_docker $processes;
     elif $(hasValueq "$stop"); then stop_docker $stop;
+    elif $(hasValueq "$test"); then test_docker $test;
     elif $(hasValueq "$execs"); then exec_docker $execs;
     elif $(hasValueq "$execTest"); then execTest_docker $execTest;
     elif $(hasValueq "$log"); then log_docker $log;
