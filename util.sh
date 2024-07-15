@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.9.2
+    echo 6.9.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1930,7 +1930,7 @@ docker() {
     local volume=$(parseGet docker_data v volume);
     local processes=$(parseGet docker_data p process);
     local stop=$(parseGet docker_data s stop);
-    local test=$(parseGet docker_data E test);
+    local test=$(parseGet docker_data E T test);
     local execs=$(parseGet docker_data e exec);
     local execTest=$(parseGet docker_data stoptest);
     local log=$(parseGet docker_data l log);
@@ -1947,7 +1947,7 @@ docker() {
     helpmsg+='\t-v,--volume \t (string?) \t list all or enter name to view volume details\n'
     helpmsg+='\t-p,--process \t (string?) \t list all or enter name to view process details\n'
     helpmsg+='\t-s,--stop \t (string) \t enter name to stop and remove container\n'
-    helpmsg+='\t-E,--test \t (string) \t enter image name to test with bash\n'
+    helpmsg+='\t-E,-T,--test \t (string) \t enter image name to test with bash\n'
     helpmsg+='\t-e,--exec \t (string) \t enter name to exec with bash\n'
     helpmsg+='\t-stoptest \t (string) \t enter name to pause and test container, then unpause\n'
     helpmsg+='\t-l,--log \t (string) \t enter name to log details\n'
@@ -2030,20 +2030,20 @@ docker() {
     test_docker() {
         local name="$(_find_img $@)";
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
-        $DOCKER run --rm -it $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+        $DOCKER run --rm -it --entrypoint sh $name -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh' 
     }
 
     exec_docker() {
         local name="$(_find_name $@)" || name="$(_find_id $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
-        $DOCKER exec -it --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+        $DOCKER exec -it --privileged --entrypoint sh $name -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
     execTest_docker() {
         local name="$(_find_name $@)" || name="$(_find_id $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
         $DOCKER pause $name
-        $DOCKER exec -it --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+        $DOCKER exec -it --privileged --entrypoint sh $name -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
         $DOCKER unpause $name
     }
 
@@ -2222,7 +2222,7 @@ dc() {
     exec_dc() {
         local name="$(_find_name $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
-        $DOCKER compose exec -it --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+        $DOCKER compose exec -it --privileged --entrypoint sh $name -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
     exec_line_dc() {
