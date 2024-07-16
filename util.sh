@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.9.6
+    echo 6.9.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1236,22 +1236,16 @@ q(){
     quick $@
 }
 
-# -n,--name,_ *_default
-# -v,--variable
-# -a,--add 
-# -e,--edit
-# -c,--cat,--display,--show
-# -r,--remove,--delete
-# -l,--list
 quick() {
     declare -A quick_data; parseArg quick_data $@;
-    local name=$(parseGet quick_data n name _ e edit r remove delete c cat display show);
+    local name=$(parseGet quick_data n name _ e edit r remove delete c cat display show h has);
     local variable=$(parseGet quick_data v variable);
     local add=$(parseGet quick_data a add)
     local edit=$(parseGet quick_data e edit);
     local display=$(parseGet quick_data c cat display show)
     local remove=$(parseGet quick_data r remove delete);
     local list=$(parseGet quick_data l list);
+    local hasName=$(parseGet quick_data h has);
     local help=$(parseGet quick_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -1296,6 +1290,10 @@ quick() {
     remove_quick(){
         if $(hasFile $targetFile); then trash $targetFile; fi;
     }
+
+    has_quick() {
+        return $(hasFile $targetFile);
+    }
     
     if $(hasValueq "$help"); then printf "$helpmsg";  
     elif $(hasValueq "$list"); then ls -a $_U2_Storage_Dir_Quick;
@@ -1304,6 +1302,7 @@ quick() {
     elif $(hasValueq "$edit"); then edit_quick "$edit";
     elif $(hasValueq "$display"); then display_quick "$display";
     elif $(hasValueq "$remove"); then remove_quick "$remove";
+    elif $(hasValueq "$hasName"); then has_quick "$hasName";
     else run_quick; 
     fi;
 }
