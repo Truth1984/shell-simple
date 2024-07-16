@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.9.4
+    echo 6.9.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1397,7 +1397,6 @@ setup() {
 # -p,--pm2
 setupEX() {
     declare -A setupex_data; parseArg setupex_data $@;
-    local basic=$(parseGet setupex_data B basic _);
     local nodeAdd=$(parseGet setupex_data n node);
     local bunAdd=$(parseGet setupex_data b bun);
     local pm2Add=$(parseGet setupex_data p pm2);
@@ -1406,7 +1405,6 @@ setupEX() {
     local help=$(parseGet setupex_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-B,--basic,_ \t () \t basic dependency setup\n'
     helpmsg+='\t-n,--node \t () \t add node to setup\n'
     helpmsg+='\t-b,--bun \t () \t add bun to setup\n'
     helpmsg+='\t-p,--pm2 \t () \t add pm2 to setup\n'
@@ -2334,6 +2332,7 @@ extra() {
 # then the script had to be called with the existing function name 
 _strict() {
     echo -e '
+    cd "$(dirname "${BASH_SOURCE[0]}")";
     help() { 
         compgen -A function | grep -v "^_";
     };
