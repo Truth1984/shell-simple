@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.9.7
+    echo 6.10.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1284,7 +1284,7 @@ quick() {
         part1=$(echo $targetFile | cut -d ' ' -f 1 )
         part2=$(echo $targetFile | sed 's/.* *//')
         _ED content:{$(cat $part1)} part2{$part2} variable{$variable} 
-        bash "$part1" "$part2" "$variable"
+        exec bash "$part1" "$part2" "$variable"
     }
 
     remove_quick(){
@@ -1457,14 +1457,13 @@ help(){
 
     update_help() {
         _ED Current Version: $(version)
-        local scriptLoc="$_U2_Storage_Dir_Bin/u2"
         local updateUrl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"
-        local tmpfile=/tmp/$(password).sh
+        local tmpfile=$(mktemp)
         if $(hasCmd curl); then curl $updateUrl --output $tmpfile
         elif $(hasCmd wget); then wget -O $tmpfile $updateUrl
         fi;
 
-        chmod 777 $tmpfile && $tmpfile setup
+        exec chmod 777 $tmpfile && $tmpfile setup
     }
 
     list_help() {
@@ -1475,7 +1474,7 @@ help(){
     elif $(hasValueq "$name"); then list_help $name;
     elif $(hasValueq "$update"); then $(update_help);
     elif $(hasValueq "$version"); then echo $(version);
-    else $(list_help);
+    else $(list_help); 
     fi;
     
 }
@@ -2297,17 +2296,17 @@ tar() {
     fi;
 }
 
-# --large (string, int) large file finder, define [ path, length ]
-# --tree,--pstree display pstree
 extra() { 
     declare -A extra_data; parseArg extra_data $@;
     local large=$(parseGet extra_data large);
     local tree=$(parseGet extra_data tree pstree);
+    local clone=$(parseGet extra_data clone);
     local help=$(parseGet extra_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t--large \t\t (string, int) \t large file finder, define [ path=".", length=20 ]\n'
     helpmsg+='\t--tree,--pstree \t () \t\t display pstree\n'
+    helpmsg+='\t--clone \t () \t\t clone u to target dir\n'
     
     large_extra() {
         local largeDir=$1 largeLength=$2
@@ -2321,9 +2320,16 @@ extra() {
         else ps auxwwf; fi;
     }
 
+    clone_extra() {
+        local location=$1
+        if ! $(hasValueq $location); then location="."; fi;
+        cp $(u _SCRIPTPATHFULL) $location
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$large"); then large_extra $large;
     elif $(hasValueq "$tree"); then tree_extra $tree; 
+    elif $(hasValueq "$clone"); then clone_extra $clone; 
     fi;
 }
 
