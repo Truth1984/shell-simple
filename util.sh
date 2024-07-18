@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.10.3
+    echo 6.10.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1075,7 +1075,8 @@ post() {
     helpmsg+='\t-W,--wget \t () \t\t use wget\n'
     helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
 
-    if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; 
+    if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx="";
+        if ! $(os -c alpine); then wgetEx=" -d"; fi;
     else curlEx=""; wgetEx=" -q"; fi;
 
     if $(hasValueq "$AGENT"); then
@@ -1148,7 +1149,8 @@ get() {
     helpmsg+='\t-U,--ua \t () \t\t use new user agent\n'
     helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
     
-    if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx=" -d"; 
+    if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx="";
+        if ! $(os -c alpine); then wgetEx=" -d"; fi;
     else curlEx=""; wgetEx=" -q"; fi;
 
     if $(hasValueq "$AGENT"); then
@@ -1176,8 +1178,10 @@ get() {
             rm -f $tmpfile
         }
         wgetCmd(){
+            local wgetEx=""
+            if ! $(os -c alpine); then wgetEx=" -d"; fi;
             tmpfile=$(mktemp)
-            wget -d -O $tmpfile $url
+            wget $wgetEx -O $tmpfile $url
             _ED download finish, executing bash 
             bash $tmpfile $exArgs
             rm -f $tmpfile
@@ -1208,7 +1212,9 @@ download() {
     if $(hasCmd curl); then
         if $(hasValue $filename); then curl $url -v --output $filename; else curl -v -O $url; fi;
     elif $(hasCmd wget); then
-        if $(hasValue $filename); then wget -d -O $filename $url; else wget -d $url; fi; 
+        local wgetEx=""
+        if ! $(os -c alpine); then wgetEx=" -d"; fi;
+        if $(hasValue $filename); then wget $wgetEx -O $filename $url; else wget $wgetEx $url; fi; 
     fi;
 }
 
@@ -2021,7 +2027,7 @@ docker() {
     test_docker() {
         local name="$(_find_img $@)";
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
-        $DOCKER run --rm -it --entrypoint sh $name -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh' 
+        eval $(_EC $DOCKER run --rm -it --entrypoint sh $name -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh')
     }
 
     exec_docker() {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo SCRIPT_VERSION=1.0.7
+echo SCRIPT_VERSION=1.0.9
 
 if [[ -z "$(command -v u2)" ]]; then
     ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup && source ~/.bash_mine
@@ -14,36 +14,33 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
 
     if grep -q "ID=ubuntu" /etc/os-release ; then 
         codename=$(sh -c '. /etc/os-release; echo $VERSION_CODENAME')
-        printf "
-        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename main restricted universe multiverse
-        deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename main restricted universe multiverse
-        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-updates main restricted universe multiverse
-        deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-updates main restricted universe multiverse
-        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-backports main restricted universe multiverse
-        deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-backports main restricted universe multiverse
-        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-security main restricted universe multiverse
-        deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-security main restricted universe multiverse
+        printf "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename main restricted universe multiverse
+\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename main restricted universe multiverse
+\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-updates main restricted universe multiverse
+\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-updates main restricted universe multiverse
+\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-backports main restricted universe multiverse
+\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-backports main restricted universe multiverse
+\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-security main restricted universe multiverse
+\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-security main restricted universe multiverse
         " > /etc/apt/sources.list
     fi;
 
     if grep -q "ID=debian" /etc/os-release ; then
         codename=$(dpkg --status tzdata|grep Provides|cut -f2 -d'-')
-        printf "
-        deb https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename main contrib non-free
-        deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename main contrib non-free
-        deb https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-updates main contrib non-free
-        deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-updates main contrib non-free
-        deb https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-backports main contrib non-free
-        deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-backports main contrib non-free
-        deb https://mirrors.tuna.tsinghua.edu.cn/debian-security $codename/updates main contrib non-free
-        deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security $codename/updates main contrib non-free
+        printf "deb https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename main contrib non-free
+\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename main contrib non-free
+\ndeb https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-updates main contrib non-free
+\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-updates main contrib non-free
+\ndeb https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-backports main contrib non-free
+\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-backports main contrib non-free
+\ndeb https://mirrors.tuna.tsinghua.edu.cn/debian-security $codename/updates main contrib non-free
+\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security $codename/updates main contrib non-free
         " > /etc/apt/sources.list
     fi;
 
     if grep -q "ID=alpine" /etc/os-release ; then
-        printf "
-        https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main
-        https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/community
+        printf "https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main
+\nhttps://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/community
         " > /etc/apk/repositories
     fi;
 
