@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo SCRIPT_VERSION=1.0.4
+echo SCRIPT_VERSION=1.0.7
 
 if [[ -z "$(command -v u2)" ]]; then
     ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup && source ~/.bash_mine
@@ -12,18 +12,51 @@ source $HOME/.bash_env
 
 if ! $(u2 hasValue $_U2_INIT_DEP); then
 
-    if $(u2 os -c alpine); then
-        sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
+    if grep -q "ID=ubuntu" /etc/os-release ; then 
+        codename=$(sh -c '. /etc/os-release; echo $VERSION_CODENAME')
+        printf "
+        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename main restricted universe multiverse
+        deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename main restricted universe multiverse
+        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-updates main restricted universe multiverse
+        deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-updates main restricted universe multiverse
+        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-backports main restricted universe multiverse
+        deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-backports main restricted universe multiverse
+        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-security main restricted universe multiverse
+        deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ $codename-security main restricted universe multiverse
+        " > /etc/apt/sources.list
     fi;
 
-    if $(u2 hasFile /etc/apt/sources.list); then
-        sed -i 's/http.*[^security].com/https:\/\/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
-        sed -i 's/http.*[^security].org/https:\/\/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+    if grep -q "ID=debian" /etc/os-release ; then
+        codename=$(dpkg --status tzdata|grep Provides|cut -f2 -d'-')
+        printf "
+        deb https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename main contrib non-free
+        deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename main contrib non-free
+        deb https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-updates main contrib non-free
+        deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-updates main contrib non-free
+        deb https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-backports main contrib non-free
+        deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ $codename-backports main contrib non-free
+        deb https://mirrors.tuna.tsinghua.edu.cn/debian-security $codename/updates main contrib non-free
+        deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security $codename/updates main contrib non-free
+        " > /etc/apt/sources.list
+    fi;
+
+    if grep -q "ID=alpine" /etc/os-release ; then
+        printf "
+        https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main
+        https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/community
+        " > /etc/apk/repositories
     fi;
 
     u2 upgrade
 
-    if ! $(u2 os -c win); then
+    if $(u2 string -c "$@" "container"); then
+        u2 install wget curl nano make psmisc net-tools coreutils screen
+
+        if $(u2 os -c apk); then u2 install the_silver_searcher; fi;
+        if $(u2 os -c apt); then u2 install software-properties-common silversearcher-ag; fi;
+        if $(u2 os -c yum); then u2 install redhat-lsb-core epel-release the_silver_searcher; fi;
+
+    elif ! $(u2 os -c win); then
 
         u2 install wget curl nano git make psmisc net-tools nethogs coreutils sudo screen tcpdump iftop
 
@@ -49,14 +82,14 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
 
     fi;
 
-    if $(u2 hasFile /etc/resolv.conf) && ! $(u2 hasContent /etc/resolv.conf 1.1.1.1); then
-        sudo sh -c "printf 'nameserver\t1.1.1.1\n' >> /etc/resolv.conf"
+    if $(u2 hasFile /etc/resolv.conf) && ! $(u2 hasContent /etc/resolv.conf 1.0.0.1); then
+        sudo sh -c "printf 'nameserver\t1.0.0.1\n' >> /etc/resolv.conf"
         sudo sh -c "printf 'nameserver\t8.8.8.8\n' >> /etc/resolv.conf"
         sudo sh -c "printf 'nameserver\t8.8.4.4\n' >> /etc/resolv.conf"
     fi;
 
-    if $(u2 hasFile /etc/systemd/resolved.conf) && ! $(u2 hasContent /etc/systemd/resolved.conf 'DNS=1.1.1.1'); then
-        sudo sh -c "printf 'DNS=1.1.1.1 8.8.8.8 8.8.4.4\n' >> /etc/systemd/resolved.conf" 
+    if $(u2 hasFile /etc/systemd/resolved.conf) && ! $(u2 hasContent /etc/systemd/resolved.conf 'DNS=1.0.0.1'); then
+        sudo sh -c "printf 'DNS=1.0.0.1 8.8.8.8 8.8.4.4\n' >> /etc/systemd/resolved.conf" 
     fi;
 
     echo "_U2_INIT_DEP=1" >> $HOME/.bash_env

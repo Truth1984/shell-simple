@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.10.0
+    echo 6.10.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1389,17 +1389,13 @@ setup() {
     . $_U2_Storage_Dir_Bin/u2 _ED Current Version: $(version)
 }
 
-# setup dependency
-# -d,--docker add docker to setup
-# -n,--node add node to setup
-# -b,--bun add bun to setup
-# -p,--pm2
 setupEX() {
     declare -A setupex_data; parseArg setupex_data $@;
     local nodeAdd=$(parseGet setupex_data n node);
     local bunAdd=$(parseGet setupex_data b bun);
     local pm2Add=$(parseGet setupex_data p pm2);
     local dockerAdd=$(parseGet setupex_data d docker);
+    local containerAdd=$(parseGet setupex_data c container);
     local allAdd=$(parseGet setupex_data a all);
     local help=$(parseGet setupex_data help);
 
@@ -1408,6 +1404,7 @@ setupEX() {
     helpmsg+='\t-b,--bun \t () \t add bun to setup\n'
     helpmsg+='\t-p,--pm2 \t () \t add pm2 to setup\n'
     helpmsg+='\t-d,--docker \t () \t add docker to setup\n'
+    helpmsg+='\t-c,--container \t () \t container repo setup\n'
   
     install_setupEx() {
         local extraArgs=""
@@ -1415,6 +1412,7 @@ setupEX() {
         if $(hasValueq "$bunAdd"); then extraArgs="$extraArgs bun"; fi;
         if $(hasValueq "$pm2Add"); then extraArgs="$extraArgs pm2"; fi;
         if $(hasValueq "$dockerAdd"); then extraArgs="$extraArgs docker"; fi;
+        if $(hasValueq "$containerAdd"); then extraArgs="$extraArgs container"; fi;
         if $(hasValueq "$allAdd"); then extraArgs="$extraArgs ALL"; fi;
         _ED extraArgs: "$extraArgs"
 
