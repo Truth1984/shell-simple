@@ -14,6 +14,7 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
 
     if grep -q "ID=ubuntu" /etc/os-release ; then 
         codename=$(sh -c '. /etc/os-release; echo $VERSION_CODENAME')
+        u2 _ED updating ubuntu $codename mirror
         printf "deb https://mirrors.163.com/ubuntu/ $codename main restricted universe multiverse
 \ndeb-src https://mirrors.163.com/ubuntu/ $codename main restricted universe multiverse
 \ndeb https://mirrors.163.com/ubuntu/ $codename-updates main restricted universe multiverse
@@ -27,6 +28,7 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
 
     if grep -q "ID=debian" /etc/os-release ; then
         codename=$(dpkg --status tzdata|grep Provides|cut -f2 -d'-')
+        u2 _ED updating debian $codename mirror
         printf "deb https://mirrors.163.com/debian/ $codename main contrib non-free
 \ndeb-src https://mirrors.163.com/debian/ $codename main contrib non-free
 \ndeb https://mirrors.163.com/debian/ $codename-updates main contrib non-free
@@ -39,6 +41,7 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
     fi;
 
     if grep -q "ID=alpine" /etc/os-release ; then
+        u2 _ED updating alpine mirror
         printf "https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main
 \nhttps://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/community
         " > /etc/apk/repositories

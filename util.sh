@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.10.4
+    echo 6.10.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1995,7 +1995,7 @@ docker() {
     build_docker() {
         local nameTag=$@
         if ! $(hasValue $nameTag); then return $(_ERC "name:tag undefined"); fi;
-        $DOCKER build -t $nameTag .
+        $DOCKER build --progress=plain -t $nameTag .
     }
 
     image_docker() {
@@ -2209,11 +2209,11 @@ dc() {
     }
 
     build_dc() {
-        $DOCKER compose build
+        $DOCKER compose build --progress=plain
     }
 
     rebuild_dc() {
-        $DOCKER compose build --no-cache
+        $DOCKER compose build --no-cache --progress=plain
     }
 
     exec_dc() {
