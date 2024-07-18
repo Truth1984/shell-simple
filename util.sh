@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.10.5
+    echo 6.10.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -937,14 +937,27 @@ upgrade() {
     local prefix="" m=$(os -p)
     if $(os -c linux) && $(hasCmd sudo); then prefix="sudo"; fi;
 
-    if [ "$m" = "yum" ]; then eval $(_EC "$prefix yum update -y $@");
-    elif [ "$m" = "brew" ]; then eval $(_EC "brew install $@");
-    elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get upgrade -y $@");
-    elif [ "$m" = "apk" ]; then eval $(_EC "$prefix apk upgrade $@");
-    elif [ "$m" = "pacman" ]; then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
-    elif [ "$m" = "dnf" ]; then eval $(_EC "$prefix dnf upgrade -y $@");
-    elif [ "$m" = "choco" ]; then eval $(_EC "choco upgrade -y $@");
-    elif [ "$m" = "winget" ]; then eval $(_EC "winget upgrade --accept-package-agreements --accept-source-agreements $@");
+    if ! $(hasValue $@); then 
+        _ED update packages list
+        if [ "$m" = "yum" ]; then eval $(_EC "$prefix yum update -y");
+        elif [ "$m" = "brew" ]; then eval $(_EC "brew update");
+        elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get update -y");
+        elif [ "$m" = "apk" ]; then eval $(_EC "$prefix apk update");
+        elif [ "$m" = "pacman" ]; then eval $(_EC "$prefix pacman -Sy");
+        elif [ "$m" = "dnf" ]; then eval $(_EC "$prefix dnf check-update");
+        elif [ "$m" = "choco" ]; then eval $(_EC "choco upgrade all -y");
+        elif [ "$m" = "winget" ]; then eval $(_EC "winget upgrade --all -y --accept-package-agreements --accept-source-agreements"); 
+        fi; 
+    else
+        if [ "$m" = "yum" ]; then eval $(_EC "$prefix yum upgrade -y $@");
+        elif [ "$m" = "brew" ]; then eval $(_EC "brew install $@");
+        elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get upgrade -y $@");
+        elif [ "$m" = "apk" ]; then eval $(_EC "$prefix apk upgrade $@");
+        elif [ "$m" = "pacman" ]; then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
+        elif [ "$m" = "dnf" ]; then eval $(_EC "$prefix dnf upgrade -y $@");
+        elif [ "$m" = "choco" ]; then eval $(_EC "choco upgrade -y $@");
+        elif [ "$m" = "winget" ]; then eval $(_EC "winget upgrade --accept-package-agreements --accept-source-agreements $@"); 
+        fi; 
     fi;
 }
 
@@ -1611,9 +1624,7 @@ git() {
     elif $(hasValueq "$head"); then head_git $head;
     elif $(hasValueq "$moveLocal"); then moveLocal_git $moveLocal;
     elif $(hasValueq "$moveCloud"); then moveCloud_git $moveCloud; 
-    fi;
-
-    if $(hasValueq "$gitInfo"); then info_git $gitInfo; 
+    elif $(hasValueq "$gitInfo"); then info_git $gitInfo; 
     else adog_git; 
     fi;
 }
