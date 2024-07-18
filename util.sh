@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.10.2
+    echo 6.10.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1436,10 +1436,6 @@ edit(){
     elif $(hasCmd vi); then vi $editPath; fi;
 }
 
-# -n,--name,_ *_default
-# -u,--update,--upgrade
-# -v,--version
-# -h,--help
 help(){    
     declare -A help_data; parseArg help_data $@;
     local name=$(parseGet help_data n name _);
@@ -1461,7 +1457,8 @@ help(){
         elif $(hasCmd wget); then wget -O $tmpfile $updateUrl
         fi;
 
-        exec chmod 777 $tmpfile && $tmpfile setup
+        chmod 777 $tmpfile 
+        exec $tmpfile setup
     }
 
     list_help() {
