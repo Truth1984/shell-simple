@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.10.7
+    echo 6.10.8
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1406,6 +1406,7 @@ setup() {
     mv $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
     cp $_U2_Storage_Dir_Bin/u2 $_U2_Storage_Dir_Bin/u
     . $_U2_Storage_Dir_Bin/u2 _ED Current Version: $(version)
+    if $(hasCmd ln); then ln -s $_U2_Storage_Dir_Bin/u2 /usr/bin/u; fi;
 }
 
 setupEX() {
@@ -2038,7 +2039,7 @@ docker() {
     test_docker() {
         local name="$(_find_img $@)";
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
-        eval $(_EC $DOCKER run --rm -it --entrypoint sh $name -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh')
+        $DOCKER run --rm -it --entrypoint sh $name -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
     exec_docker() {
@@ -2230,7 +2231,7 @@ dc() {
     exec_dc() {
         local name="$(_find_name $@)"
         if ! $(hasValueq $name); then return $(_ERC "name not found"); fi;
-        $DOCKER compose exec -it --privileged --entrypoint sh $name -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
+        $DOCKER compose exec -it --privileged $name sh -c '[ -x /bin/bash ] && exec /bin/bash || [ -x /bin/ash ] && exec /bin/ash || exec /bin/sh'
     }
 
     exec_line_dc() {
