@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.10.1
+    echo 6.10.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2298,13 +2298,13 @@ extra() {
     declare -A extra_data; parseArg extra_data $@;
     local large=$(parseGet extra_data large);
     local tree=$(parseGet extra_data tree pstree);
-    local clone=$(parseGet extra_data clone);
+    local clone=$(parseGet extra_data c clone);
     local help=$(parseGet extra_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t--large \t\t (string, int) \t large file finder, define [ path=".", length=20 ]\n'
     helpmsg+='\t--tree,--pstree \t () \t\t display pstree\n'
-    helpmsg+='\t--clone \t () \t\t clone u to target dir\n'
+    helpmsg+='\t-c,--clone \t () \t\t clone u to target dir\n'
     
     large_extra() {
         local largeDir=$1 largeLength=$2
