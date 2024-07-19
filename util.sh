@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.10.8
+    echo 6.10.9
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1405,8 +1405,8 @@ setup() {
 
     mv $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
     cp $_U2_Storage_Dir_Bin/u2 $_U2_Storage_Dir_Bin/u
+    if $(has -d /usr/bin); then exec cp -f $_U2_Storage_Dir_Bin/u2 /usr/bin/u; fi;
     . $_U2_Storage_Dir_Bin/u2 _ED Current Version: $(version)
-    if $(hasCmd ln); then ln -s $_U2_Storage_Dir_Bin/u2 /usr/bin/u; fi;
 }
 
 setupEX() {
