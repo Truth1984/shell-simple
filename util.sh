@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.10.12
+    echo 6.11.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -142,8 +142,9 @@ prompt() {
     fi;
 }
 
+# unable to receive reference from outside of the script, unless source first
 # (PromptString, arrayName) 
-promptArray() {
+_promptArray() {
     local prompter=$1 
     local -n options=$2
 
@@ -2001,7 +2002,7 @@ docker() {
         if ! $(hasValueq $containers); then return $(_ERC "target -$@- not found"); 
         elif [ ${#containers[@]} -eq 1 ]; then _EC $(echo ${containers[0]} | awk '{print $1}')
         else 
-            choice=$(promptArray "select target docker container:" containers);
+            choice=$(_promptArray "select target docker container:" containers);
             _EC $(echo $choice | awk '{print $1}')
         fi
     }
@@ -2022,7 +2023,7 @@ docker() {
     imageHas_docker() {
         local imageName=$($DOCKER image ls | grep $@)
         if $(hasValue $imageName); then return $(_RC 0 "{$@} found");
-        else return $(_ERC "$@ image not found"); fi;
+        else return $(_ERC $@ image not found); fi;
     }
 
     volume_docker() {
@@ -2474,6 +2475,15 @@ case "$1" in
                 $@
             ;;
         esac
+    ;;
+    prompt)
+        prompt "${@:2}"
+    ;;
+    promptString)
+        promptString "${@:2}"
+    ;;
+    promptSelect)
+        promptSelect "${@:2}"
     ;;
     *)
         $@;
