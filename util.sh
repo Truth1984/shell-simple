@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.10.10
+    echo 6.10.12
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1936,6 +1936,7 @@ docker() {
     declare -A docker_data; parseArg docker_data $@;
     local build=$(parseGet docker_data b build);
     local image=$(parseGet docker_data i image);
+    local hasImg=$(parseGet docker_data I hasImg);
     local volume=$(parseGet docker_data v volume);
     local processes=$(parseGet docker_data p process);
     local stop=$(parseGet docker_data s stop);
@@ -1953,6 +1954,7 @@ docker() {
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-b,--build \t (string) \t enter name:tag to build\n'
     helpmsg+='\t-i,--image \t (string?) \t list image or enter image name to view details\n'
+    helpmsg+='\t-I,--hasImg \t (string) \t check if image exist\n'
     helpmsg+='\t-v,--volume \t (string?) \t list all or enter name to view volume details\n'
     helpmsg+='\t-p,--process \t (string?) \t list all or enter name to view process details\n'
     helpmsg+='\t-s,--stop \t (string) \t enter name to stop and remove container\n'
@@ -2013,7 +2015,14 @@ docker() {
     image_docker() {
         local imageName="$@"
         if ! $(hasValueq $imageName); then $DOCKER image ls;
-        else $DOCKER inspect $imageName; fi;
+        else imageName="$(_find_img $@)";
+        $DOCKER inspect $imageName; fi;
+    }
+
+    imageHas_docker() {
+        local imageName=$($DOCKER image ls | grep $@)
+        if $(hasValue $imageName); then return $(_RC 0 "{$@} found");
+        else return $(_ERC "$@ image not found"); fi;
     }
 
     volume_docker() {
@@ -2121,6 +2130,7 @@ docker() {
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$build"); then build_docker $build;
     elif $(hasValueq "$image"); then image_docker $image;
+    elif $(hasValueq "$hasImg"); then imageHas_docker $hasImg;
     elif $(hasValueq "$volume"); then volume_docker $volume;
     elif $(hasValueq "$processes"); then process_docker $processes;
     elif $(hasValueq "$stop"); then stop_docker $stop;
