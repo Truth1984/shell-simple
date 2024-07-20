@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.10.9
+    echo 6.10.10
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1095,7 +1095,7 @@ post() {
     if $(hasValueq "$AGENT"); then
         if $(hasValueq $AGENT); then url=$AGENT; fi;
         local useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3";
-        local userHeaders=("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" "Accept-Language: en-US,en;q=0.5" "Accept-Encoding: gzip, deflate, br" "Connection: keep-alive")
+        local userHeaders=("Accept: text/*, application/*;q=0.8, image/*;q=0.6, video/*" "Accept-Language: en-US,en;q=0.5" "Accept-Encoding: gzip, deflate, br" "Connection: keep-alive")
 
         curlEx+=" -A \"$useragent\""
         wgetEx+=" --user-agent=\"$useragent\""
@@ -1169,7 +1169,7 @@ get() {
     if $(hasValueq "$AGENT"); then
         if $(hasValueq $AGENT); then url=$AGENT; fi;
         local useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.3";
-        local userHeaders=("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" "Accept-Language: en-US,en;q=0.5" "Accept-Encoding: gzip, deflate, br" "Connection: keep-alive")
+        local userHeaders=("Accept: text/*, application/*;q=0.8, image/*;q=0.6, video/*" "Accept-Language: en-US,en;q=0.5" "Accept-Encoding: gzip, deflate, br" "Connection: keep-alive")
 
         curlEx+=" -A \"$useragent\""
         wgetEx+=" --user-agent=\"$useragent\""
