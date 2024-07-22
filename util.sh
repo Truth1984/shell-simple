@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.1.1
+    echo 7.1.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -989,11 +989,12 @@ password() {
 shiftto() {
     local pattern="$1"
     local input="${@:2}"
-    local regex="(^|[[:space:]])($pattern)([[:space:]]|$)"
+    local regex="(^|[[:space:]])($pattern)([[:space:]]+|$)"
 
     _ED pattern {$pattern} input {$input}
     if [[ "$input" =~ $regex ]]; then
-        _EC ${input#*"${BASH_REMATCH[0]}"${BASH_REMATCH[1]}}
+        local remaining="${input#*"${BASH_REMATCH[0]}"}"
+        _EC ${remaining#*${BASH_REMATCH[2]}}
     else
         return $(_ERC "pattern not found")
     fi
@@ -2381,7 +2382,7 @@ mount() {
         local target="$@"
         _ED finding mount info {$@}
         if $(hasCmd fdisk); then
-            fdisk -l $target;
+            fdisk -l $target; 
         fi;
     }
 
