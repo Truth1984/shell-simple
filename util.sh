@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.0.0
+    echo 7.0.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1314,7 +1314,8 @@ quick() {
                 break
             fi
         done
-        echo "$sentence" > $targetFile
+        local profile="$(_PROFILE)"
+        printf "#!/usr/bin/env bash\nsource $profile\n$sentence\n" > $targetFile
     }
 
     run_quick(){
