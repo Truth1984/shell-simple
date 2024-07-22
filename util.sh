@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.1.3
+    echo 7.2.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -80,6 +80,11 @@ _ED() {
     if [ -n "$verbose" ]; then
         echo ED, 0, $(basename "$0"), $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \""$@"\" >&2
     fi;
+}
+
+# echo to file descriptor 2
+_E2() {
+    $@ >&2
 }
 
 # (declare -A Option, ...data): {key:value, _:"" } 
@@ -1090,6 +1095,7 @@ post() {
     local url=$(parseGet post_data u url _);
     local json=$(parseGet post_data j json);
     local string=$(parseGet post_data s string);
+    local DNS=$(parseGet post_data D dns);
     local CURL=$(parseGet post_data C curl);
     local WGET=$(parseGet post_data W wget);
     local AGENT=$(parseGet post_data U ua);
@@ -1100,6 +1106,7 @@ post() {
     helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
     helpmsg+='\t-j,--json \t (string) \t json data to post\n'
     helpmsg+='\t-s,--string \t (string) \t string data to post\n'
+    helpmsg+='\t-D,--dns \t () \t\t use DNS over HTTPS to request website\n'
     helpmsg+='\t-C,--curl \t () \t\t use curl\n'
     helpmsg+='\t-W,--wget \t () \t\t use wget\n'
     helpmsg+='\t-q,--quiet \t () \t\t disable verbose\n'
@@ -1107,6 +1114,11 @@ post() {
     if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx="";
         if ! $(os -c alpine); then wgetEx=" -d"; fi;
     else curlEx=""; wgetEx=" -q"; fi;
+
+    if $(hasValueq "$DNS"); then 
+        curlEx+=" --doh-url https://cloudflare-dns.com/dns-query";
+        CURL=true 
+    fi;
 
     if $(hasValueq "$AGENT"); then
         if $(hasValueq $AGENT); then url=$AGENT; fi;
@@ -1164,6 +1176,7 @@ get() {
     declare -A get_data; parseArg get_data $@;
     local url=$(parseGet get_data u url _);
     local run=$(parseGet get_data r run);
+    local DNS=$(parseGet get_data D dns);
     local CURL=$(parseGet get_data C curl);
     local WGET=$(parseGet get_data W wget);
     local AGENT=$(parseGet get_data U ua);
@@ -1173,6 +1186,7 @@ get() {
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
     helpmsg+='\t-r,--run \t (string) \t run the script from url, can pass extra command, should be at the end\n'
+    helpmsg+='\t-D,--dns \t () \t\t use DNS over HTTPS to request website\n'
     helpmsg+='\t-C,--curl \t () \t\t use curl\n'
     helpmsg+='\t-W,--wget \t () \t\t use wget\n'
     helpmsg+='\t-U,--ua \t () \t\t use new user agent\n'
@@ -1181,6 +1195,11 @@ get() {
     if [[ -z $quiet ]]; then curlEx=" -v"; wgetEx="";
         if ! $(os -c alpine); then wgetEx=" -d"; fi;
     else curlEx=""; wgetEx=" -q"; fi;
+
+    if $(hasValueq "$DNS"); then 
+        curlEx+=" --doh-url https://cloudflare-dns.com/dns-query";
+        CURL=true 
+    fi;
 
     if $(hasValueq "$AGENT"); then
         if $(hasValueq $AGENT); then url=$AGENT; fi;
@@ -1414,8 +1433,8 @@ setup() {
 
     mv $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
     cp $_U2_Storage_Dir_Bin/u2 $_U2_Storage_Dir_Bin/u
+    $_U2_Storage_Dir_Bin/u2 _ED Current Version: $($_U2_Storage_Dir_Bin/u2 version)
     if $(has -d /usr/bin); then exec cp -f $_U2_Storage_Dir_Bin/u2 /usr/bin/u; fi;
-    u2 _ED Current Version: $(version)
 }
 
 setupEX() {
@@ -2400,7 +2419,7 @@ mount() {
         if ! $(hasValueq $target); then target="."; fi;
         _ED checking if the dir {$target} is mounted by a source
         if $(hasCmd findmnt); then
-            findmnt $target; 
+            _E2 findmnt $target; 
         fi;
     }
 
