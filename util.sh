@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.1.2
+    echo 7.1.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2369,11 +2369,13 @@ mount() {
     declare -A mount_data; parseArg mount_data $@;
     local info=$(parseGet mount_data i info _);
     local unmounted=$(parseGet mount_data I uminfo);
+    local checkDir=$(parseGet mount_data c check);
     local help=$(parseGet mount_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-i,--info,_ \t (string?) \t information of target mounting device\n'
     helpmsg+='\t-I,--uminfo \t () \t\t find mounted devices \n'
+    helpmsg+='\t-c,--check \t (string) \t check if dir has mounted info\n'
 
     unset -f mount;
     MOUNT=$(which mount);
@@ -2393,6 +2395,15 @@ mount() {
         fi;
     }
 
+    check_mount() {
+        local target="$@"
+        if ! $(hasValueq $target); then target="."; fi;
+        _ED checking if the dir {$target} is mounted by a source
+        if $(hasCmd findmnt); then
+            findmnt $target; 
+        fi;
+    }
+
     general_mount(){
         info_mount
         unmounted_mount
@@ -2401,6 +2412,7 @@ mount() {
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$info"); then info_mount $mount;
     elif $(hasValueq "$unmounted"); then unmounted_mount $unmounted;
+    elif $(hasValueq "$checkDir"); then check_mount $checkDir;
     else general_mount; 
     fi;
 }
