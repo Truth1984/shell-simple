@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.0.1
+    echo 7.0.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1413,7 +1413,7 @@ setup() {
     mv $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
     cp $_U2_Storage_Dir_Bin/u2 $_U2_Storage_Dir_Bin/u
     if $(has -d /usr/bin); then exec cp -f $_U2_Storage_Dir_Bin/u2 /usr/bin/u; fi;
-    . $_U2_Storage_Dir_Bin/u2 _ED Current Version: $(version)
+    u2 _ED Current Version: $(version)
 }
 
 setupEX() {
@@ -2090,9 +2090,9 @@ docker() {
             _ED docker loading $name
             $DOCKER load < $name
         else 
-            dname="$(_find_name $@)"
+            dname="$(_find_img $@)"
             if ! $(hasValueq $dname); then 
-                dname="$(_find_img $@)"
+                dname="$(_find_name $@)"
             fi;
 
             if ! $(hasValueq $dname); then 
