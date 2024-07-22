@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.0.2
+    echo 7.1.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -621,7 +621,8 @@ dates() {
     helpmsg+='\t-f,--full \t\t () \t\t full display format of date\n'
     helpmsg+='\t-o,--older \t\t (time1, time2?, gap?) \t time2 can be "now", if gap exist, use absolute num for diff\n'
 
-    DATE=$(which gdate || which date);
+    if $(hasCmdq gdate); then DATE=$(which gdate);
+    else DATE=$(which date); fi;
 
     parse_dates() {
         local input=$(echo $@ | xargs)
@@ -1750,9 +1751,9 @@ network() {
   
     display_network() {
         if $(hasCmd nethogs) && ! $(hasValueq "$v2"); then 
-            sudo nethogs -C
+            nethogs -C || nethogs
         elif $(hasCmd iftop); then
-            sudo iftop -b -P
+            iftop -b -P
         fi
     }
 
@@ -2360,6 +2361,46 @@ extra() {
     elif $(hasValueq "$large"); then large_extra $large;
     elif $(hasValueq "$tree"); then tree_extra $tree; 
     elif $(hasValueq "$clone"); then clone_extra $clone; 
+    fi;
+}
+
+mount() {
+    declare -A mount_data; parseArg mount_data $@;
+    local info=$(parseGet mount_data i info _);
+    local unmounted=$(parseGet mount_data I uminfo);
+    local help=$(parseGet mount_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-i,--info,_ \t (string?) \t information of target mounting device\n'
+    helpmsg+='\t-I,--uminfo \t () \t\t find mounted devices \n'
+
+    unset -f mount;
+    MOUNT=$(which mount);
+
+    info_mount() {
+        local target="$@"
+        _ED finding mount info {$@}
+        if $(hasCmd fdisk); then
+            fdisk -l $target;
+        fi;
+    }
+
+    unmounted_mount() {
+        _ED finding unmounted info
+        if $(hasCmd lsblk); then 
+            lsblk --noheadings --raw -o NAME,MOUNTPOINT | awk '$1~/[[:digit:]]/ && $2 == ""'
+        fi;
+    }
+
+    general_mount(){
+        info_mount
+        unmounted_mount
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$info"); then info_mount $mount;
+    elif $(hasValueq "$unmounted"); then unmounted_mount $unmounted;
+    else general_mount; 
     fi;
 }
 

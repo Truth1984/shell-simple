@@ -102,7 +102,6 @@ if $(u2 string -c "$@" "ALL"); then ALL=true; fi;
 
 if $(u2 string -c "$@" "docker") || $ALL; then 
     if ! $(u2 hasCmd docker); then 
-        u2 install docker
         u get -r https://raw.gitmirror.com/docker/docker-install/master/install.sh --mirror Aliyun
         sudo usermod -aG docker $(whoami)
        
