@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 6.11.0
+    echo 7.0.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -985,6 +985,19 @@ password() {
     LC_ALL=C tr -dc $range </dev/urandom | head -c $length ; echo
 }
 
+shiftto() {
+    local pattern="$1"
+    local input="${@:2}"
+    local regex="(^|[[:space:]])($pattern)([[:space:]]|$)"
+
+    _ED pattern {$pattern} input {$input}
+    if [[ "$input" =~ $regex ]]; then
+        _EC ${input#*"${BASH_REMATCH[0]}"${BASH_REMATCH[1]}}
+    else
+        return $(_ERC "pattern not found")
+    fi
+}
+
 # -e,--equal (string, string)
 # -c,--contain (string, stringOrRegex)
 # -r,--replace (string, string, string)
@@ -1001,7 +1014,7 @@ string() {
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-e,--equal \t (string,string) \t\t compare two strings\n'
-    helpmsg+='\t-c,--contain \t (string,stringOrRegex) \t check if string contains\n'
+    helpmsg+='\t-c,--contain \t (string,stringOrRegex) \t check if string contains, calling from other script should ensure quote bottom "$@" dispatch section \n'
     helpmsg+='\t-r,--replace \t (string,string,string) \t 1,original string; 2,search string, 3,replacement \n'
     helpmsg+='\t-n,--number \t (string) \t\t\t check if string is a number \n'
     helpmsg+='\t-i,--index \t (...string,int) \t\t treat string as array, get index of it \n'
@@ -1157,7 +1170,7 @@ get() {
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
-    helpmsg+='\t-r,--run \t (string) \t run the script from url, can pass extra command, but no "-" allowed\n'
+    helpmsg+='\t-r,--run \t (string) \t run the script from url, can pass extra command, should be at the end\n'
     helpmsg+='\t-C,--curl \t () \t\t use curl\n'
     helpmsg+='\t-W,--wget \t () \t\t use wget\n'
     helpmsg+='\t-U,--ua \t () \t\t use new user agent\n'
@@ -1182,13 +1195,16 @@ get() {
         done
     fi;
 
+    # exArgs starts with "-"" will not be passed as whole string
     script_get() {
-        local url=$1 exArgs="${@:2}"
+        remain=$(shiftto "-r|--run" $@); 
+        local url=$(echo "$remain" | awk '{print $1}'); exArgs=$(echo "$remain" | cut -d' ' -f2-);
         curlCmd(){
             tmpfile=$(mktemp)
             curl -s $url -o $tmpfile
-            _ED download finish, executing bash 
-            bash $tmpfile $exArgs
+            _ED download finish, executing bash: url {$url} args {$exArgs}
+            if [[ "$exArgs" == -* ]]; then bash $tmpfile $exArgs;
+            else bash $tmpfile "$exArgs"; fi;
             rm -f $tmpfile
         }
         wgetCmd(){
@@ -1196,8 +1212,9 @@ get() {
             if ! $(os -c alpine); then wgetEx=" -d"; fi;
             tmpfile=$(mktemp)
             wget $wgetEx -O $tmpfile $url
-            _ED download finish, executing bash 
-            bash $tmpfile $exArgs
+            _ED download finish, executing bash: url {$url} args {$exArgs}
+            if [[ "$exArgs" == -* ]]; then bash $tmpfile $exArgs;
+            else bash $tmpfile "$exArgs"; fi;
             rm -f $tmpfile
         }
         _REQHelper
@@ -1215,7 +1232,7 @@ get() {
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
-    elif $(hasValueq "$run"); then script_get $run;
+    elif $(hasValueq "$run"); then script_get $@;
     elif $(hasValueq "$url"); then url_get $url; 
     fi;
 }
@@ -1341,20 +1358,8 @@ subdir() {
 
     if ! $(hasValueq $target); then target="$(pwd)"; fi;
     if $(hasValueq $perform); then 
-        while [[ $# -gt 0 ]]; do
-            case $1 in
-                -p|--perform)
-                    shift
-                    action=$@
-                    break
-                ;;
-                *)
-                ;;
-            esac
-            shift
-        done
-    else
-        action=$@
+        action=$(shiftto "-p|--perform" $@);
+        if ! $(hasValueq $action); then action=$@; fi; 
     fi;
 
     perform_subdir(){
@@ -1438,7 +1443,7 @@ setupEX() {
         _ED extraArgs: "$extraArgs"
 
         setupURL="https://raw.gitmirror.com/Truth1984/shell-simple/main/setup.sh" 
-        get -r $setupURL $extraArgs
+        get -r $setupURL "$extraArgs"
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";  
@@ -2021,7 +2026,7 @@ docker() {
     }
 
     imageHas_docker() {
-        local imageName=$($DOCKER image ls | grep $@)
+        local imageName=$($DOCKER image ls --format "{{.Repository}}:{{.Tag}} {{.ID}}"| grep $@)
         if $(hasValue $imageName); then return $(_RC 0 "{$@} found");
         else return $(_ERC $@ image not found); fi;
     }
@@ -2357,7 +2362,7 @@ extra() {
     fi;
 }
 
-# usage: put 'eval $(u _strict $@);' at the end of the file
+# usage: put 'eval $(u _strict "$@");' at the end of the file
 # then the script had to be called with the existing function name 
 _strict() {
     echo -e '

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo SCRIPT_VERSION=1.2.0
+echo SCRIPT_VERSION=1.3.0
 
 if [[ -z "$(command -v u2)" ]]; then
     ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup && source ~/.bash_mine
@@ -103,6 +103,7 @@ if $(u2 string -c "$@" "ALL"); then ALL=true; fi;
 if $(u2 string -c "$@" "docker") || $ALL; then 
     if ! $(u2 hasCmd docker); then 
         u2 install docker
+        u get -r https://raw.gitmirror.com/docker/docker-install/master/install.sh --mirror Aliyun
         sudo usermod -aG docker $(whoami)
        
         if $(u2 hasCmd systemctl); then
@@ -114,23 +115,27 @@ fi;
 
 if $(u2 string -c "$@" "node") || $ALL; then 
     if ! $(u2 hasCmd node); then 
-        curl -L https://bit.ly/n-install | bash -s -- -y 
-    fi; 
+        curl -L https://raw.gitmirror.com/mklement0/n-install/stable/bin/n-install | bash -s -- -y 
+    fi;
+    npm config set registry http://registry.npmmirror.com
+    # original:
+    # npm config set registry https://registry.npmjs.org
 fi;
 
 if $(u2 string -c "$@" "bun") || $ALL; then 
     if ! $(u2 hasCmd bun); then 
-        curl -fsSL https://bun.sh/install | bash
+        u2 install unzip
+        u np npm i -g bun --loglevel verbose
         if ! $(u2 hasContent $HOME/.bash_env BUN_INSTALL); then
             echo 'export BUN_INSTALL="$HOME/.bun"' >> $HOME/.bash_env 
             echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> $HOME/.bash_env 
-        fi;
+        fi; 
     fi; 
 fi;
 
 if $(u2 string -c "$@" "pm2") || $ALL; then 
     if ! $(u2 hasCmd pm2); then 
-        npm i -g pm2
+        bun i -g pm2
         pm2 startup
     fi; 
 fi;
