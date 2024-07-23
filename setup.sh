@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo SCRIPT_VERSION=1.3.0
+echo SCRIPT_VERSION=1.3.1
 
 if [[ -z "$(command -v u2)" ]]; then
     ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup && source ~/.bash_mine
@@ -58,7 +58,7 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
 
     elif ! $(u2 os -c win); then
 
-        u2 install wget curl nano git make psmisc net-tools nethogs coreutils sudo screen tcpdump iftop
+        u2 install wget curl nano git make psmisc net-tools nethogs coreutils sudo screen tcpdump iftop gnupg
 
         if $(u2 os -c yum); then
             u2 install redhat-lsb-core epel-release the_silver_searcher udisks2 openssh-server openssh-clients

@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.2.5
+    echo 7.3.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -991,6 +991,23 @@ password() {
     LC_ALL=C tr -dc $range </dev/urandom | head -c $length ; echo
 }
 
+encrypt() {
+    source ~/.bash_env
+    if ! $(hasCmd gpg); then return $(_ERC "gpg not found"); fi;
+    if ! $(hasValueq $_U2_GPG_PW); then return $(_ERC "_U2_GPG_PW not present or set in bash_env"); fi;
+    _ED using gpg to encrypt {$@}
+
+    gpg --batch --passphrase "$_U2_GPG_PW" -c "$@"
+}
+
+decrypt() {
+    source ~/.bash_env
+    if ! $(hasCmd gpg); then return $(_ERC "gpg not found"); fi;
+    if ! $(hasValueq $_U2_GPG_PW); then return $(_ERC "_U2_GPG_PW not present or set in bash_env"); fi;
+    _ED using gpg to decrypt {$@}
+    gpg --batch --yes --passphrase "$_U2_GPG_PW" "$@"
+}
+
 shiftto() {
     local pattern="$1"
     local input="${@:2}"
@@ -1426,6 +1443,8 @@ setup() {
         printf 'export no_proxy=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\nexport NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\n\n' >> $HOME/.bash_mine 
         printf 'if [[ ! -z "$u_proxy" ]] && curl --output /dev/null --silent --head "$u_proxy"; then\n export https_proxy=$u_proxy\n export http_proxy=$u_proxy\n export HTTPS_PROXY=$u_proxy\n export HTTP_PROXY=$u_proxy\nfi;\n'  >> $HOME/.bash_mine
         echo "alias trash='u trash'" >> $HOME/.bash_mine
+
+        echo '_U2_GPG_PW=' >> $HOME/.bash_env
 
         if $(os -c alpine); then profile="/etc/profile"; echo 'source $HOME/.bash_mine' >> $profile; fi;
         if $(os -c mac); then printf 'export BASH_SILENCE_DEPRECATION_WARNING=1\n' >> $HOME/.bash_mine; fi; 
