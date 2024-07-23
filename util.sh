@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.3.1
+    echo 7.3.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1471,7 +1471,8 @@ setupEX() {
     helpmsg+='\t-b,--bun \t () \t add bun to setup\n'
     helpmsg+='\t-p,--pm2 \t () \t add pm2 to setup\n'
     helpmsg+='\t-d,--docker \t () \t add docker to setup\n'
-    helpmsg+='\t-c,--container \t () \t container repo setup\n'
+    helpmsg+='\t-a,--all \t () \t add all except container\n'
+    helpmsg+='\t-c,--container \t () \t container repo and slim package setup\n'
   
     install_setupEx() {
         local extraArgs=""
@@ -1783,11 +1784,19 @@ b64d() {
 network() {
     declare -A network_data; parseArg network_data $@;
     local v2=$(parseGet network_data 2);
+    local dns=$(parseGet network_data d dns);
     local help=$(parseGet network_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-2 \t\t (int) \t\t show iftop network, default show nethogs \n'
+    helpmsg+='\t-d,--dns \t () \t\t show current dns \n'
   
+    dns_network() {
+        if $(u os mac); then scutil --dns; 
+        elif $(u hasCmdq resolvectl); then resolvectl dns; 
+        else cat /etc/resolv.conf; fi;
+    }
+
     display_network() {
         if $(hasCmd nethogs) && ! $(hasValueq "$v2"); then 
             nethogs -C || nethogs
@@ -1797,6 +1806,7 @@ network() {
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";
+    elif $(hasValueq "$dns"); then dns_network $dns;
     else display_network; 
     fi;
 }
