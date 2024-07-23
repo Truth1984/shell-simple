@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.3.3
+    echo 7.3.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1938,18 +1938,20 @@ service() {
 # -l,--line (10)
 process() { 
     declare -A process_data; parseArg process_data $@;
-    local grepInfo=$(parseGet process_data info _);
+    local grepInfo=$(parseGet process_data info _ k kill);
     local sortCPU=$(parseGet process_data s cpu);
     local sortMEM=$(parseGet process_data S mem);
     local parent=$(parseGet process_data p parent);
     local line=$(parseGet process_data l line);
+    local kill=$(parseGet process_data k kill);
     local help=$(parseGet process_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t--info,_ \t (string) \t grep process based on info given\n'
+    helpmsg+='\t--info,_,k,kill \t (string) \t grep process based on info given\n'
     helpmsg+='\t-s,--cpu \t () \t\t sort process by cpu and mem\n'
     helpmsg+='\t-S,--mem \t () \t\t sort process by mem and cpu \n'
     helpmsg+='\t-p,--parent \t (int) \t\t find parent process until reach 1 \n'
+    helpmsg+='\t-k,--kill \t (string/uid) \t pkill process via name or uid \n'
     helpmsg+='\t-l,--line \t (int) \t\t sort process line to output, default to 10 \n'
 
     if ! $(hasValueq "$line"); then line=10; fi;
@@ -1981,10 +1983,20 @@ process() {
         done
     }
 
+    kill_process() {
+        local name=$@;
+        if $(string -n $name); then 
+            pid $name
+            _ED killing pid $name;
+            kill $name 
+        else pkill -e $name; fi;
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$sortCPU"); then sortcpu_process $sortcpu_process;
     elif $(hasValueq "$sortMEM"); then sortmem_process $sortMEM; 
     elif $(hasValueq "$parent"); then parent_process $parent;
+    elif $(hasValueq "$kill"); then kill_process $grepInfo;
     else info_process $grepInfo; 
     fi;
 }
