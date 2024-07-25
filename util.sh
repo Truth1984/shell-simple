@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.3.5
+    echo 7.3.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -797,9 +797,10 @@ trash() {
         printf 'index:\tOriginal Directory:\t\t\t\t\tDeletetime:\t\tSize:\tDIR:\n'
         local length=${folder_data[length]}
 
-        for ((i=0; i<$length; i++)); do     
+        for ((i=0; i<$length; i++)); do  
+            uuid=${folder_data[${i}_uuid]}   
+            if ! $(hasValueq $uuid); then continue; fi;
             index=${folder_data[${i}_index]}
-            uuid=${folder_data[${i}_uuid]}
             original_dir=${folder_data[${i}_original_dir]}
             dtime=${folder_data[${i}_dtime]}
             size=${folder_data[${i}_size]}
