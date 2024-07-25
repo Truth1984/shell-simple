@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.4.0
+    echo 7.5.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2435,6 +2435,13 @@ extra() {
     elif $(hasValueq "$tree"); then tree_extra $tree; 
     elif $(hasValueq "$clone"); then clone_extra $clone; 
     fi;
+}
+
+calc() {
+    local equation=$(_EC "$@") 
+    result=$(echo "scale=8; $equation" | bc)
+    result=$(echo $result | awk '{printf "%.8f", $0}' | sed 's/\.0*$//; s/0*$//')
+    _EC $result
 }
 
 mount() {
