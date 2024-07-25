@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.3.6
+    echo 7.4.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -262,27 +262,27 @@ has() {
         return 1;
     }
 
-    local value=$(parseGet has_data v value);
-    local valueQ=$(parseGetQ has_data V Value);
     local cmd=$(parseGet has_data c cmd command);
     local cmdQ=$(parseGetQ has_data C Cmd Command);
     local dir=$(parseGet has_data d dir);
     local dirQ=$(parseGetQ has_data D Dir);
     local file=$(parseGet has_data f file);
     local fileQ=$(parseGetQ has_data F File);
+    local path=$(parseGet has_data p path);
+    local pathQ=$(parseGetQ has_data P Path);
     local env=$(parseGet has_data e env);
     local envQ=$(parseGetQ has_data E Env);
     local help=$(parseGet has_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-v,--value \t (string) \t check if it has value\n'
-    helpmsg+='\t-V,--Value,*_ \t (string) \t check if it has value quietly. Can do $(has "$value")\n'
     helpmsg+='\t-c,--cmd \t (string) \t check if it has command\n'
     helpmsg+='\t-C,--Cmd \t (string) \t check if it has command quietly\n'
     helpmsg+='\t-d,--dir \t (string) \t check if it has directory\n'
     helpmsg+='\t-D,--Dir \t (string) \t check if it has directory quietly\n'
     helpmsg+='\t-f,--file \t (string) \t check if it has file\n'
     helpmsg+='\t-F,--File \t (string) \t check if it has file quietly\n'
+    helpmsg+='\t-p,--path \t (string) \t check if it has path, both dir or file\n'
+    helpmsg+='\t-P,--Path \t (string) \t check if it has path quietly, both dir or file\n'
     helpmsg+='\t-e,--env \t (string) \t check if it has environment\n'
     helpmsg+='\t-E,--Env \t (string) \t check if it has environment quietly\n'
 
@@ -303,19 +303,27 @@ has() {
     }
 
     dir_has() {
-        if [ -d "$1" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+        if [ -d "$@" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
     }
 
     dir_Q_has() {
-        [ -d "$1" ];
+        [ -d "$@" ];
     }
 
     file_has() {
-        if [ -f "$1" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+        if [ -f "$@" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
     }
 
     file_Q_has() {
-        [ -f "$1" ];
+        [ -f "$@" ];
+    }
+
+    path_has() {
+        if [ -e "$@" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    }
+
+    path_Q_has() {
+        [ -e "$@" ];
     }
 
     env_has() {
@@ -335,6 +343,8 @@ has() {
     elif $(value_Q_has "$dirQ"); then dir_Q_has $dirQ; 
     elif $(value_Q_has "$file"); then file_has $file; 
     elif $(value_Q_has "$fileQ"); then file_Q_has $fileQ; 
+    elif $(value_Q_has "$path"); then path_has $path; 
+    elif $(value_Q_has "$pathQ"); then path_Q_has $pathQ; 
     elif $(value_Q_has "$env"); then env_has $env; 
     elif $(value_Q_has "$envQ"); then env_Q_has $envQ; 
     fi;
@@ -743,6 +753,7 @@ trash() {
         local input=$@
         if ! $(hasValueq $input); then return $(_ERC "to trash path not specified"); fi; 
         local inputPath=$(pathGetFull $input)
+        if ! $(has --Path $inputPath); then return $(_ERC "input path {$inputPath} not exist"); fi;
         local uid="$(uuid)"
         local trashDir=$(trimArgs $TP / $uid)
         local size=$(du -sh $inputPath | awk '{print $1}')
