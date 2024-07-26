@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.5.0
+    echo 7.5.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -244,12 +244,7 @@ hasValueq() {
     ! [[ -z $1 ]]
 }
 
-# -v,--value; -V,--Value, *_default slient
-# -c,--cmd,--command; -C,--Cmd,--Command silent
-# -d,--dir; -D,--Dir silent
-# -f,--file; -F,--File silent
-# -e,--env; -E,--Env silent
-has() {
+has() { 
     declare -A has_data; parseArg has_data $@;
 
     if [ "$_target" = "_" ]; then 
@@ -285,14 +280,6 @@ has() {
     helpmsg+='\t-P,--Path \t (string) \t check if it has path quietly, both dir or file\n'
     helpmsg+='\t-e,--env \t (string) \t check if it has environment\n'
     helpmsg+='\t-E,--Env \t (string) \t check if it has environment quietly\n'
-
-    value_has() {
-        if ! [[ -z $1 ]]; then return $(_RC 0 "$@"); else return $(_RC 1 "$@"); fi;
-    }
-
-    value_Q_has() {
-        ! [[ -z $1 ]];
-    }
 
     cmd_has() {
         if ! [[ -z "$(command -v $1)" ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
@@ -335,8 +322,6 @@ has() {
     }
 
     if $(value_Q_has "$help"); then printf "$helpmsg"; 
-    elif [ "$_target" == 'v' ] || [ "$_target" == 'value' ]; then value_has "$value"; 
-    elif [ "$_target" == 'V' ] || [ "$_target" == 'Value' ]; then value_Q_has "$valueQ"; 
     elif $(value_Q_has "$cmd"); then cmd_has $cmd; 
     elif $(value_Q_has "$cmdQ"); then cmd_Q_has $cmdQ; 
     elif $(value_Q_has "$dir"); then dir_has $dir; 
