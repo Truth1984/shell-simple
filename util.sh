@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.5.1
+    echo 7.5.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -321,17 +321,17 @@ has() {
         ! [[ -z ${!1+set} ]]; 
     }
 
-    if $(value_Q_has "$help"); then printf "$helpmsg"; 
-    elif $(value_Q_has "$cmd"); then cmd_has $cmd; 
-    elif $(value_Q_has "$cmdQ"); then cmd_Q_has $cmdQ; 
-    elif $(value_Q_has "$dir"); then dir_has $dir; 
-    elif $(value_Q_has "$dirQ"); then dir_Q_has $dirQ; 
-    elif $(value_Q_has "$file"); then file_has $file; 
-    elif $(value_Q_has "$fileQ"); then file_Q_has $fileQ; 
-    elif $(value_Q_has "$path"); then path_has $path; 
-    elif $(value_Q_has "$pathQ"); then path_Q_has $pathQ; 
-    elif $(value_Q_has "$env"); then env_has $env; 
-    elif $(value_Q_has "$envQ"); then env_Q_has $envQ; 
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$cmd"); then cmd_has $cmd; 
+    elif $(hasValueq "$cmdQ"); then cmd_Q_has $cmdQ; 
+    elif $(hasValueq "$dir"); then dir_has $dir; 
+    elif $(hasValueq "$dirQ"); then dir_Q_has $dirQ; 
+    elif $(hasValueq "$file"); then file_has $file; 
+    elif $(hasValueq "$fileQ"); then file_Q_has $fileQ; 
+    elif $(hasValueq "$path"); then path_has $path; 
+    elif $(hasValueq "$pathQ"); then path_Q_has $pathQ; 
+    elif $(hasValueq "$env"); then env_has $env; 
+    elif $(hasValueq "$envQ"); then env_Q_has $envQ; 
     fi;
 
 }
