@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.5.4
+    echo 7.5.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1450,10 +1450,10 @@ setup() {
         if $(os -c mac); then printf 'export BASH_SILENCE_DEPRECATION_WARNING=1\n' >> $HOME/.bash_mine; fi; 
     fi;
 
-    mv $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
-    cp $_U2_Storage_Dir_Bin/u2 $_U2_Storage_Dir_Bin/u
+    cp $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
+    cp $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u
     $_U2_Storage_Dir_Bin/u2 _ED Current Version: $($_U2_Storage_Dir_Bin/u2 version)
-    if $(has -d /usr/bin); then exec cp -f $_U2_Storage_Dir_Bin/u2 /usr/bin/u; fi;
+    if [ -w /usr/bin ] && $(has -d /usr/bin); then exec cp -f $(_SCRIPTPATHFULL) /usr/bin/u; fi;
 }
 
 setupEX() {
@@ -1526,7 +1526,7 @@ help(){
         fi;
 
         chmod 777 $tmpfile 
-        exec $tmpfile setup
+        exec $tmpfile setup &
     }
 
     list_help() {
@@ -2427,8 +2427,7 @@ extra() {
 
 calc() {
     local equation=$(_EC "$@") 
-    result=$(echo "scale=8; $equation" | bc)
-    result=$(echo $result | awk '{printf "%.8f", $0}' | sed 's/\.0*$//; s/0*$//')
+    result=$(echo "scale=8; $equation" | bc | awk '{printf "%.8f", $0}' | sed 's/\.0*$//; s/0*$//')
     _EC $result
 }
 
