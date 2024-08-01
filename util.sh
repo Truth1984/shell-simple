@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.5.7
+    echo 7.6.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -25,6 +25,10 @@ _SCRIPTPATH() {
 # eval following line to get the current dir
 _PATH() {
     echo 'echo "$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"'
+}
+
+__dirname() {
+    exec echo "$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 }
 
 # (): string
@@ -977,7 +981,22 @@ install() {
     elif [ "$m" = "pacman" ]; then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
     elif [ "$m" = "dnf" ]; then eval $(_EC "$prefix dnf install -y $@");
     elif [ "$m" = "choco" ]; then eval $(_EC "choco install -y $@");
-    elif [ "$m" = "winget" ]; then eval $(_EC "winget install --accept-package-agreements --accept-source-agreements $@");
+    elif [ "$m" = "winget" ]; then eval $(_EC "winget install --accept-package-agreements --accept-source-agreements $@"); 
+    fi;
+}
+
+rmpkg() {
+    local prefix="" m=$(os -p)
+    if $(os -c linux) && $(hasCmd sudo); then prefix="sudo"; fi;
+
+    if [ "$m" = "yum" ]; then eval $(_EC "$prefix yum autoremove -y $@");
+    elif [ "$m" = "brew" ]; then eval $(_EC "brew uninstall $@");
+    elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get autoremove -y $@");
+    elif [ "$m" = "apk" ]; then eval $(_EC "$prefix apk del $@");
+    elif [ "$m" = "pacman" ]; then eval $(_EC "$prefix pacman -Rns --noconfirm $@");
+    elif [ "$m" = "dnf" ]; then eval $(_EC "$prefix dnf autoremove -y $@");
+    elif [ "$m" = "choco" ]; then eval $(_EC "choco uninstall -y $@");
+    elif [ "$m" = "winget" ]; then eval $(_EC "winget uninstall $@"); 
     fi;
 }
 
