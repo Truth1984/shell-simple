@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.6.0
+    echo 7.6.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1024,6 +1024,7 @@ decrypt() {
     gpg --batch --yes --passphrase "$_U2_GPG_PW" "$@"
 }
 
+# shiftto "-p|--pattern" "-p abc" -> "abc"
 shiftto() {
     local pattern="$1"
     local input="${@:2}"
@@ -2446,8 +2447,7 @@ extra() {
 
 calc() {
     local equation=$(_EC "$@") 
-    result=$(echo "scale=8; $equation" | bc | awk '{printf "%.8f", $0}' | sed 's/\.0*$//; s/0*$//')
-    _EC $result
+    _EC $(echo "scale=8; $equation" | bc | sed -E 's/([0-9]*\.[0-9]*[1-9])0*$/\1/; s/^\.+/0./' )
 }
 
 mount() {
