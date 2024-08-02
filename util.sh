@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.6.1
+    echo 7.6.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1376,6 +1376,7 @@ quick() {
     run_quick(){
         part1=$(echo $targetFile | cut -d ' ' -f 1 )
         part2=$(echo $targetFile | sed 's/.* *//')
+        if $(hasValueq $variable); then variable=$(shiftto "-v|--variable" $@); fi;
         _ED content:{$(cat $part1)} part2{$part2} variable{$variable} 
         exec bash "$part1" "$part2" "$variable"
     }
@@ -1396,7 +1397,7 @@ quick() {
     elif $(hasValueq "$display"); then display_quick "$display";
     elif $(hasValueq "$remove"); then remove_quick "$remove";
     elif $(hasValueq "$hasName"); then has_quick "$hasName";
-    else run_quick; 
+    else run_quick "$@"; 
     fi;
 }
 
