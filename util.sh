@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.6.2
+    echo 7.6.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2632,6 +2632,5 @@ case "$1" in
         promptSelect "${@:2}"
     ;;
     *)
-        $@;
-    ;;
+        $@
 esac
