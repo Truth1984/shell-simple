@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.6.3
+    echo 7.8.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -89,6 +89,16 @@ _ED() {
 # echo to file descriptor 2
 _E2() {
     $@ >&2
+}
+
+# Quiet, get rid of descriptor 2
+_EQ() {
+    $@ 2> /dev/null
+}
+
+#Quiet, no output 
+_ENULL() {
+    $@ > /dev/null 2>&1
 }
 
 # (declare -A Option, ...data): {key:value, _:"" } 
@@ -1740,8 +1750,9 @@ _web() {
     if ! $(hasValue $webMessage); then webMessage="web message"; fi;
 
     server_web() {
+        local lip=$(ip -P)
         if $(hasCmd bun); then
-            _ED Starting bun server on port:$webPort 
+            _ED Starting bun server on $lip:$webPort 
             bun -e "Bun.serve({port: $webPort,async fetch(req) {console.log(req);try{return new Response(JSON.stringify({ method: req.method, url: req.url, headers: req.headers, body: await req.text()}))}catch(e){console.log(e);}},})"
             return
         fi;
@@ -1750,7 +1761,7 @@ _web() {
         if $(os mac); then webcmd="nc -l $webPort -k";
         else webcmd="nc -l -p $webPort -k"; fi;
 
-        _ED Starting to open test web on port:$webPort
+        _ED Starting to open test web on $lip:$webPort
         echo -e "HTTP/1.1 200 OK\r\n\r\n$webMessage" | $webcmd
     }
 
@@ -1773,16 +1784,26 @@ _web() {
         if $(os mac); then webcmd="nc -l $webPort -k";
         else webcmd="nc -l -p $webPort -k"; fi;
 
-        _ED Starting to redirect on port:$webPort to location: $weblocation, as \' nc $reHost $rePort \'
+        local lip=$(ip -P)
+        _ED Starting to redirect on $lip:$webPort to location: $weblocation, as \' nc $reHost $rePort \'
         echo -e "HTTP/1.1 301 Moved Permanently\r\nLocation: $weblocation\r\n\r\n" | $webcmd > >(nc $reHost $rePort)
     }
 
     directory_web() {
         local servePath=$@
         if ! $(hasValueq $servePath); then servePath="."; fi;
+        
+        local lip=$(ip -P)
+        _ED Starting bun file server on $lip:$webPort with directory: \'$servePath\'
 
-        _ED Starting bun file server on port:$webPort with directory: \'$servePath\'
-        bun -e "Bun.serve({port:$webPort, fetch(req){console.log(req);return new Response(Bun.file(\"$servePath\" + new URL(req.url).pathname))}})"
+        bun -e " Bun.serve({ port: $webPort, fetch(req) {
+        const url = new URL(req.url);
+        const filePath = require('path').resolve(\`$servePath\`, url.pathname.slice(1));
+        return require('fs/promises').stat(filePath)
+        .then(stats => stats.isDirectory() 
+            ? require('fs/promises').readdir(filePath).then(files => new Response(files.join('\n'), { headers: { 'Content-Type': 'text/plain' } }))
+            : require('fs/promises').readFile(filePath).then(content => new Response(content, { headers: { 'Content-Disposition':'attachment; filename=\"'+url.pathname.split('/').pop()+'\"' } }))
+        ).catch(() => new Response('Not Found', { status: 404 }));},});"
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";
