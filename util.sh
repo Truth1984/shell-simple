@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.8.0
+    echo 7.8.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1800,8 +1800,12 @@ _web() {
         const url = new URL(req.url);
         const filePath = require('path').resolve(\`$servePath\`, url.pathname.slice(1));
         return require('fs/promises').stat(filePath)
-        .then(stats => stats.isDirectory() 
-            ? require('fs/promises').readdir(filePath).then(files => new Response(files.join('\n'), { headers: { 'Content-Type': 'text/plain' } }))
+        .then(stats => stats.isDirectory() ? require('fs/promises').readdir(filePath).then(files => 
+                Promise.all(files.map(async file => {
+                    const fullPath = require('path').join(filePath, file);
+                    const fileStats = await require('fs/promises').stat(fullPath);
+                    return fileStats.isDirectory() ? file + '/' : file;
+                })).then(formattedFiles => new Response(formattedFiles.join('\n'), { headers: { 'Content-Type': 'text/plain' } })))
             : require('fs/promises').readFile(filePath).then(content => new Response(content, { headers: { 'Content-Disposition':'attachment; filename=\"'+url.pathname.split('/').pop()+'\"' } }))
         ).catch(() => new Response('Not Found', { status: 404 }));},});"
     }
