@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.8.2
+    echo 7.8.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1061,6 +1061,8 @@ string() {
     local replace=$(parseGet string_data r replace);
     local number=$(parseGet string_data n number);
     local index=$(parseGet string_data i index);
+    local upper=$(parseGet string_data u upper);
+    local lower=$(parseGet string_data l lower);
     local help=$(parseGet string_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -1097,12 +1099,24 @@ string() {
         echo "${@:$index:1}"
     }
 
+    upper_string() {
+        shift
+        _EC $@ | tr '[:lower:]' '[:upper:]'
+    }
+
+    lower_string() {
+        shift
+        _EC $@ | tr '[:upper:]' '[:lower:]' 
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$equal"); then equal_string $equal;
     elif $(hasValueq "$contain"); then contain_string "$@";
     elif $(hasValueq "$replace"); then replace_string $replace;
     elif $(hasValueq "$number"); then number_string $number;
     elif $(hasValueq "$index"); then index_string $index;
+    elif $(hasValueq "$upper"); then upper_string "$@"; 
+    elif $(hasValueq "$lower"); then lower_string "$@"; 
     fi;
 
 }
@@ -2433,13 +2447,15 @@ extra() {
     declare -A extra_data; parseArg extra_data $@;
     local large=$(parseGet extra_data large);
     local tree=$(parseGet extra_data tree pstree);
-    local clone=$(parseGet extra_data c clone);
+    local clone=$(parseGet extra_data clone);
+    local copy=$(parseGet extra_data c copy);
     local help=$(parseGet extra_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t--large \t\t (string, int) \t large file finder, define [ path=".", length=20 ]\n'
     helpmsg+='\t--tree,--pstree \t () \t\t display pstree\n'
-    helpmsg+='\t-c,--clone \t () \t\t clone u to target dir\n'
+    helpmsg+='\t--clone \t () \t\t clone u to target dir\n'
+    helpmsg+='\t-c,--copy \t () \t\t copy content to clipboard\n'
     
     large_extra() {
         local largeDir=$1 largeLength=$2
@@ -2459,10 +2475,20 @@ extra() {
         cp $(u _SCRIPTPATHFULL) $location
     }
 
+    copy_extra() {
+        shift
+        if $(os -c mac); then _EC "$@" | pbcopy; 
+        elif $(os -c win); then _EC "$@" | clip.exe;
+        elif $(hasCmd xsel); then _EC "$@" | xsel --clipboard --input; 
+        elif $(hasCmd xclip); then _EC "$@" | xclip -selection clipboard; 
+        else _ERC "copy content failed"; fi;
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$large"); then large_extra $large;
     elif $(hasValueq "$tree"); then tree_extra $tree; 
     elif $(hasValueq "$clone"); then clone_extra $clone; 
+    elif $(hasValueq "$copy"); then copy_extra "$@"; 
     fi;
 }
 
