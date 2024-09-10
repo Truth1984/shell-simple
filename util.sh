@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.8.5
+    echo 7.9.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -96,7 +96,7 @@ _EQ() {
     $@ 2> /dev/null
 }
 
-#Quiet, no output 
+# Quiet, no output 
 _ENULL() {
     $@ > /dev/null 2>&1
 }
@@ -105,12 +105,19 @@ _ENULL() {
 # example: declare -A data; parseArg data $@; parseGet data _;
 parseArg() {
     local -n parse_result=$1;
-    local _target="_"
+    local _target="_";
+
     for i in ${@:2:$#}; do    
         if ! [[ "$i" =~ ^"-" ]]; then parse_result[$_target]="${parse_result[$_target]}$i ";
-        else _target=$(echo " $i" | sed 's/^ -*//'); [[ -z "${parse_result[$_target]}" ]] && parse_result[$_target]=' ';
-        fi;
+        else _target=$(echo " $i" | sed 's/^ -*//'); [[ -z "${parse_result[$_target]}" ]] && parse_result[$_target]=' '; 
+        fi; 
     done;
+
+    if [[ -p /dev/stdin ]]; then
+        while IFS= read -r line; do
+            parse_result[$_target]=$line
+        done < /dev/stdin
+    fi; 
 }
 
 # (declare -A Option, ...keys): string
@@ -2477,7 +2484,7 @@ extra() {
 
     copy_extra() {
         shift
-        if $(os -c mac); then _EC "$@" | pbcopy; 
+        if $(os -c mac); then _EC $(parse2 "$@") | pbcopy; 
         elif $(os -c win); then _EC "$@" | clip.exe;
         elif $(hasCmd xsel); then _EC "$@" | xsel --clipboard --input; 
         elif $(hasCmd xclip); then _EC "$@" | xclip -selection clipboard; 
@@ -2494,7 +2501,7 @@ extra() {
 
 calc() {
     local equation=$(_EC "$@") 
-    _EC $(echo "scale=8; $equation" | bc | sed -E 's/([0-9]*\.[0-9]*[1-9])0*$/\1/; s/^\.+/0./' )
+    _EC $(echo "scale=8; $equation" | bc | sed -E 's/([0-9]*\.[0-9]*[1-9])0*$/\1/; s/^\.+/0./')
 }
 
 mount() {
