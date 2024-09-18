@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.9.0
+    echo 7.9.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2217,6 +2217,10 @@ docker() {
             dname="$(_find_img $@)"
             if ! $(hasValueq $dname); then 
                 dname="$(_find_name $@)"
+            fi;
+
+            if ! $(hasValueq $dname); then
+                dname="$(_find_img $@)"
             fi;
 
             if ! $(hasValueq $dname); then 
