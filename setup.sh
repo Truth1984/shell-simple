@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo SCRIPT_VERSION=1.3.1
+echo SCRIPT_VERSION=1.3.2
 
 if [[ -z "$(command -v u2)" ]]; then
     ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup && source ~/.bash_mine
@@ -114,7 +114,7 @@ fi;
 
 if $(u2 string -c "$@" "node") || $ALL; then 
     if ! $(u2 hasCmd node); then 
-        curl -L https://raw.gitmirror.com/mklement0/n-install/stable/bin/n-install | bash -s -- -y 
+        u2 install nodejs npm
     fi;
     npm config set registry http://registry.npmmirror.com
     # original:

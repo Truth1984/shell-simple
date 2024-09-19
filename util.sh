@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.9.1
+    echo 7.10.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -235,12 +235,18 @@ hasFile() {
 
 # (cmdName): bool
 hasCmd() {
-    if ! [[ -z "$(command -v $1)" ]]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+    if command -v "$1" > /dev/null 2>&1; then
+        if [[ "$(type -t "$1")" != "function" ]]; then return $(_RC 0 $@); fi; 
+    fi;
+    return $(_RC 1 $@);
 }
 
 # (cmdName): bool
 hasCmdq() {
-    [[ ! -z "$(command -v "$1")" ]];
+    if command -v "$1" > /dev/null 2>&1; then
+        if [[ "$(type -t "$1")" != "function" ]]; then return 0; fi; 
+    fi;
+    return 1 
 }
 
 # (envName): bool
