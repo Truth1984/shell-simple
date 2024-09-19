@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.10.0
+    echo 7.10.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2534,6 +2534,9 @@ mount() {
         _ED finding mount info {$@}
         if $(hasCmd fdisk); then
             fdisk -l $target; 
+        fi;
+        if $(hasCmd lsblk); then 
+            lsblk -f
         fi;
     }
 
