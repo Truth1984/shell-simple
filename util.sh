@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.10.4
+    echo 7.10.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1511,7 +1511,7 @@ setup() {
     cp $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
     cp $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u
     $_U2_Storage_Dir_Bin/u2 _ED Current Version: $($_U2_Storage_Dir_Bin/u2 version)
-    if [ -w /usr/bin ] && $(has -d /usr/bin); then exec cp -f $(_SCRIPTPATHFULL) /usr/bin/u; fi;
+    if [ -w /usr/bin ] && $(has -d /usr/bin); then exec cp -f $(_SCRIPTPATHFULL) /usr/bin/u 2>/dev/null; fi;
 }
 
 setupEX() {
@@ -1522,6 +1522,7 @@ setupEX() {
     local dockerAdd=$(parseGet setupex_data d docker);
     local containerAdd=$(parseGet setupex_data c container);
     local allAdd=$(parseGet setupex_data a all);
+    local sourceAdd=$(parseGet setupex_data s source);
     local help=$(parseGet setupex_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -1530,6 +1531,7 @@ setupEX() {
     helpmsg+='\t-p,--pm2 \t () \t add pm2 to setup\n'
     helpmsg+='\t-d,--docker \t () \t add docker to setup\n'
     helpmsg+='\t-a,--all \t () \t add all except container\n'
+    helpmsg+='\t-s,--source \t () \t only setup source\n'
     helpmsg+='\t-c,--container \t () \t container repo and slim package setup\n'
 
     source_setupEx() {
@@ -1538,28 +1540,28 @@ setupEX() {
             if grep -q "ID=ubuntu" /etc/os-release ; then 
                 codename=$(sh -c '. /etc/os-release; echo $VERSION_CODENAME')
                 _ED updating ubuntu $codename mirror
-                printf "deb https://mirrors.163.com/ubuntu/ $codename main restricted universe multiverse
-\ndeb-src https://mirrors.163.com/ubuntu/ $codename main restricted universe multiverse
-\ndeb https://mirrors.163.com/ubuntu/ $codename-updates main restricted universe multiverse
-\ndeb-src https://mirrors.163.com/ubuntu/ $codename-updates main restricted universe multiverse
-\ndeb https://mirrors.163.com/ubuntu/ $codename-backports main restricted universe multiverse
-\ndeb-src https://mirrors.163.com/ubuntu/ $codename-backports main restricted universe multiverse
-\ndeb https://mirrors.163.com/ubuntu/ $codename-security main restricted universe multiverse
-\ndeb-src https://mirrors.163.com/ubuntu/ $codename-security main restricted universe multiverse
+                printf "deb http://mirrors.163.com/ubuntu/ $codename main restricted universe multiverse
+\ndeb-src http://mirrors.163.com/ubuntu/ $codename main restricted universe multiverse
+\ndeb http://mirrors.163.com/ubuntu/ $codename-updates main restricted universe multiverse
+\ndeb-src http://mirrors.163.com/ubuntu/ $codename-updates main restricted universe multiverse
+\ndeb http://mirrors.163.com/ubuntu/ $codename-backports main restricted universe multiverse
+\ndeb-src http://mirrors.163.com/ubuntu/ $codename-backports main restricted universe multiverse
+\ndeb http://mirrors.163.com/ubuntu/ $codename-security main restricted universe multiverse
+\ndeb-src http://mirrors.163.com/ubuntu/ $codename-security main restricted universe multiverse
         " > /etc/apt/sources.list
             fi;
 
             if grep -q "ID=debian" /etc/os-release ; then
                 codename=$(dpkg --status tzdata|grep Provides|cut -f2 -d'-')
                 _ED updating debian $codename mirror
-                printf "deb https://mirrors.163.com/debian/ $codename main contrib non-free
-\ndeb-src https://mirrors.163.com/debian/ $codename main contrib non-free
-\ndeb https://mirrors.163.com/debian/ $codename-updates main contrib non-free
-\ndeb-src https://mirrors.163.com/debian/ $codename-updates main contrib non-free
-\ndeb https://mirrors.163.com/debian/ $codename-backports main contrib non-free
-\ndeb-src https://mirrors.163.com/debian/ $codename-backports main contrib non-free
-\ndeb https://mirrors.163.com/debian-security $codename/updates main contrib non-free
-\ndeb-src https://mirrors.163.com/debian-security $codename/updates main contrib non-free
+                printf "deb http://mirrors.163.com/debian/ $codename main contrib non-free
+\ndeb-src http://mirrors.163.com/debian/ $codename main contrib non-free
+\ndeb http://mirrors.163.com/debian/ $codename-updates main contrib non-free
+\ndeb-src http://mirrors.163.com/debian/ $codename-updates main contrib non-free
+\ndeb http://mirrors.163.com/debian/ $codename-backports main contrib non-free
+\ndeb-src http://mirrors.163.com/debian/ $codename-backports main contrib non-free
+\ndeb http://mirrors.163.com/debian-security $codename/updates main contrib non-free
+\ndeb-src http://mirrors.163.com/debian-security $codename/updates main contrib non-free
         " > /etc/apt/sources.list
             fi;
 
@@ -1571,8 +1573,9 @@ setupEX() {
             fi;
 
             upgrade
-            install wget curl
+            install wget curl ca-certificates
             setup
+            if $(has -f /etc/apt/sources.list); then sed -i 's|http://|https://|g' /etc/apt/sources.list; fi; 
         fi;
     }
   
@@ -1586,14 +1589,15 @@ setupEX() {
         if $(hasValueq "$allAdd"); then extraArgs="$extraArgs ALL"; fi;
         _ED extraArgs: "$extraArgs"
 
+        source_setupEx
+
         setupURL="https://raw.gitmirror.com/Truth1984/shell-simple/main/setup.sh" 
         get -r $setupURL "$extraArgs"
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";  
-    else
-        if $(hasValueq "$containerAdd"); then source_setupEx; fi; 
-        install_setupEx; 
+    elif $(hasValueq "$sourceAdd"); then source_setupEx; 
+    else install_setupEx; 
     fi;
 }
 
