@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.10.2
+    echo 7.10.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1738,6 +1738,7 @@ git() {
     helpmsg+='\t-h,--head,_ \t (string) \t\t transfer head to target location\n'
     helpmsg+='\t-m,--moveLocal \t (string,string) \t move local branch to target id, require: [ name, commitID ] \n'
     helpmsg+='\t-M,--moveCloud \t (string) \t move cloud Reference to target id, require: [ name, commitID ] \n'
+    helpmsg+='\t-i,--info \t (string) \t\t display change status\n'
 
     unset -f git;
     local GIT=$(which git);
