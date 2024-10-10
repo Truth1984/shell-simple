@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.10.1
+    echo 7.10.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1531,6 +1531,49 @@ setupEX() {
     helpmsg+='\t-d,--docker \t () \t add docker to setup\n'
     helpmsg+='\t-a,--all \t () \t add all except container\n'
     helpmsg+='\t-c,--container \t () \t container repo and slim package setup\n'
+
+    source_setupEx() {
+        if ! $(hasValue $_U2_INIT_DEP); then
+            
+            if grep -q "ID=ubuntu" /etc/os-release ; then 
+                codename=$(sh -c '. /etc/os-release; echo $VERSION_CODENAME')
+                _ED updating ubuntu $codename mirror
+                printf "deb https://mirrors.163.com/ubuntu/ $codename main restricted universe multiverse
+\ndeb-src https://mirrors.163.com/ubuntu/ $codename main restricted universe multiverse
+\ndeb https://mirrors.163.com/ubuntu/ $codename-updates main restricted universe multiverse
+\ndeb-src https://mirrors.163.com/ubuntu/ $codename-updates main restricted universe multiverse
+\ndeb https://mirrors.163.com/ubuntu/ $codename-backports main restricted universe multiverse
+\ndeb-src https://mirrors.163.com/ubuntu/ $codename-backports main restricted universe multiverse
+\ndeb https://mirrors.163.com/ubuntu/ $codename-security main restricted universe multiverse
+\ndeb-src https://mirrors.163.com/ubuntu/ $codename-security main restricted universe multiverse
+        " > /etc/apt/sources.list
+            fi;
+
+            if grep -q "ID=debian" /etc/os-release ; then
+                codename=$(dpkg --status tzdata|grep Provides|cut -f2 -d'-')
+                _ED updating debian $codename mirror
+                printf "deb https://mirrors.163.com/debian/ $codename main contrib non-free
+\ndeb-src https://mirrors.163.com/debian/ $codename main contrib non-free
+\ndeb https://mirrors.163.com/debian/ $codename-updates main contrib non-free
+\ndeb-src https://mirrors.163.com/debian/ $codename-updates main contrib non-free
+\ndeb https://mirrors.163.com/debian/ $codename-backports main contrib non-free
+\ndeb-src https://mirrors.163.com/debian/ $codename-backports main contrib non-free
+\ndeb https://mirrors.163.com/debian-security $codename/updates main contrib non-free
+\ndeb-src https://mirrors.163.com/debian-security $codename/updates main contrib non-free
+        " > /etc/apt/sources.list
+            fi;
+
+            if grep -q "ID=alpine" /etc/os-release ; then
+                _ED updating alpine mirror
+                printf "https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main
+\nhttps://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/community
+        " > /etc/apk/repositories
+            fi;
+
+            upgrade
+            install wget curl
+        fi;
+    }
   
     install_setupEx() {
         local extraArgs=""
@@ -1547,7 +1590,9 @@ setupEX() {
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";  
-    else install_setupEx; 
+    else
+        if $(hasValueq "$containerAdd"); then source_setupEx; fi; 
+        install_setupEx; 
     fi;
 }
 
