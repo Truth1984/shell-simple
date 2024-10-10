@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.10.3
+    echo 7.10.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1572,6 +1572,7 @@ setupEX() {
 
             upgrade
             install wget curl
+            setup
         fi;
     }
   
