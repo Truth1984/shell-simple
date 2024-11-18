@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.10.8
+    echo 7.10.9
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2688,7 +2688,7 @@ search() {
         done
         # depth
         if ! $(hasValueq $depth); then depth=7; fi;
-        AG_ARGS="$AG_ARGS --depth=$depth"
+        AG_ARGS="$AG_ARGS --depth $depth"
         # show with line
         if ! $(hasValueq "$show"); then AG_ARGS="$AG_ARGS --files-with-matches";
         else AG_ARGS="$AG_ARGS --context $show"; fi;
