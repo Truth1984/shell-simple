@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.11.2
+    echo 7.11.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1662,12 +1662,14 @@ help(){
     local name=$(parseGet help_data n name _);
     local update=$(parseGet help_data u update upgrade);
     local version=$(parseGet help_data v version);
+    local edit=$(parseGet help_data e edit);
     local help=$(parseGet help_data h help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,_ \t\t (string) \t grep functions with name\n'
     helpmsg+='\t-u,--update,--upgrade \t () \t\t upgrade current script\n'
     helpmsg+='\t-v,--version \t\t (string) \t display current version\n'
+    helpmsg+='\t-e,--edit \t\t () \t\t edit the file\n'
     helpmsg+='\t-h,--help \t\t (string) \t display help message\n'
 
     update_help() {
@@ -1682,6 +1684,10 @@ help(){
         exec $tmpfile setup &
     }
 
+    edit_help() {
+        edit
+    }
+
     list_help() {
         if ! [[ -z $1 ]]; then compgen -A function | grep $1; else compgen -A function; fi;
     }
@@ -1690,6 +1696,7 @@ help(){
     elif $(hasValueq "$name"); then list_help $name;
     elif $(hasValueq "$update"); then $(update_help);
     elif $(hasValueq "$version"); then echo $(version);
+    elif $(hasValueq "$edit"); then $(edit_help);
     else $(list_help); 
     fi;
     
@@ -1792,7 +1799,7 @@ logfile() {
     perform_logfile() {
 
         if ! $(hasValue "$line"); then line=20; fi;
-        if ! $(hasValue $file); then return $(_ERC "file destination not specified"); else file=$(realpath $file); fi;
+        if ! $(hasValue $file); then return $(_ERC "file destination not specified"); else file=$(eval echo "$file"); fi;
 
         if $(hasValue $command); then 
             string=$(shiftto "-c|--command" $@);
