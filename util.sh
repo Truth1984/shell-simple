@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.11.1
+    echo 7.11.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1792,7 +1792,7 @@ logfile() {
     perform_logfile() {
 
         if ! $(hasValue "$line"); then line=20; fi;
-        if ! $(hasValue $file); then return $(_ERC "file destination not specified"); fi;
+        if ! $(hasValue $file); then return $(_ERC "file destination not specified"); else file=$(realpath $file); fi;
 
         if $(hasValue $command); then 
             string=$(shiftto "-c|--command" $@);
