@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.10.9
+    echo 7.11.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -118,6 +118,30 @@ parseArg() {
             parse_result[$_target]=$line
         done < /dev/stdin
     fi; 
+}
+
+# only parse first arguments
+# -h a b c -h ddd -> -h:a b c
+parseArg1() {
+    local -n parse_result=$1;
+    local _target="_";
+    local intake="true"; 
+
+    for i in "${@:2}"; do
+        if [[ "$i" =~ ^"-" ]]; then
+            _target=$(echo "$i" | sed 's/^\s*-*//')
+            if [[ -z "${parse_result[$_target]}" ]]; then
+                parse_result[$_target]=' '
+                intake="true"
+            else
+                intake="false"
+            fi
+        else
+            if [[ "$intake" == "true" ]]; then
+                parse_result[$_target]="${parse_result[$_target]}$i "
+            fi
+        fi
+    done
 }
 
 # (declare -A Option, ...keys): string
@@ -1047,16 +1071,34 @@ decrypt() {
     gpg --batch --yes --passphrase "$_U2_GPG_PW" "$@"
 }
 
-# shiftto "-p|--pattern" "-p abc" -> "abc"
+# shiftto "-p|--pattern" "-p abc -p d" -> "abc -p d"
 shiftto() {
     local pattern="$1"
     local input="${@:2}"
     local regex="(^|[[:space:]])($pattern)([[:space:]]+|$)"
 
     _ED pattern {$pattern} input {$input}
-    if [[ "$input" =~ $regex ]]; then
-        local remaining="${input#*"${BASH_REMATCH[0]}"}"
+    local last_match=$(echo "$input" | grep -o -E "$regex" | tail -n 1)    
+    if [[ -n "$last_match" ]]; then
+        local remaining="${input#*"${last_match}"}"
         _EC ${remaining#*${BASH_REMATCH[2]}}
+    else
+        return $(_ERC "pattern not found")
+    fi
+}
+
+# shifttolast "-p|--pattern" "-p abc -p d" -> "d"
+shifttolast() {
+    local pattern="$1"
+    local input="${@:2}"
+    local regex="(^|[[:space:]])($pattern)([[:space:]]+|$)"
+
+    _ED pattern {$pattern} input {$input}
+    local last_match=$(echo "$input" | grep -o -E "$regex" | tail -n 1)
+    if [[ -n "$last_match" ]]; then
+        local remaining="${input#*"${last_match}"}"
+        local last_word=$(echo "$remaining" | awk '{$1=""; print $0}' | xargs)
+        _EC "${last_word##* }"
     else
         return $(_ERC "pattern not found")
     fi
@@ -1727,6 +1769,53 @@ port() {
     elif $(hasValueq "$dockerPort"); then docker_port $dockerPort;
     elif $(hasValueq "$infoPort"); then info_port $infoPort;
     else process_port;
+    fi;
+}
+
+# auto log rotation 
+logfile() {
+    declare -A logfile_data; parseArg1 logfile_data $@;
+    local file=$(parseGet logfile_data f file);
+    local line=$(parseGet logfile_data l line);
+    local message=$(parseGet logfile_data m message);
+    local command=$(parseGet logfile_data c command);
+    local command2=$(parseGet logfile_data c2 command2);
+    local help=$(parseGet logfile_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-f,--file \t (string) \t file destination that you want to log to \n'
+    helpmsg+='\t-l,--line \t (int) \t\t number of lines to keep in the file \n'
+    helpmsg+='\t-m,--message \t (string) \t message to put in a log \n'
+    helpmsg+='\t-c,--command \t (string) \t command to operate, log result to file \n'
+    helpmsg+='\t-c2,--command2 \t (string) \t command to operate, include 2>&1, log result to file \n'
+
+    perform_logfile() {
+
+        if ! $(hasValue "$line"); then line=20; fi;
+        if ! $(hasValue $file); then return $(_ERC "file destination not specified"); fi;
+
+        if $(hasValue $command); then 
+            string=$(shiftto "-c|--command" $@);
+            content=$($string); 
+        fi;
+        
+        if $(hasValue $command2); then 
+            string=$(shiftto "-c2|--command2" $@);
+            content=$($string 2>&1); 
+        fi;
+
+        if $(hasValue $message); then 
+            content=$(shiftto "-m|--message" $@); 
+        fi;
+
+        echo $content >> $file
+        temp_file=$(mktemp)  
+        tail -n $line $file > "$temp_file"  
+        mv "$temp_file" $file
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";
+    else perform_logfile $@; 
     fi;
 }
 
