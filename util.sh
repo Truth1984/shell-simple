@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.11.3
+    echo 7.11.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1787,6 +1787,7 @@ logfile() {
     local message=$(parseGet logfile_data m message);
     local command=$(parseGet logfile_data c command);
     local command2=$(parseGet logfile_data c2 command2);
+    local timestamp=$(parseGet logfile_data t time);
     local help=$(parseGet logfile_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -1795,6 +1796,7 @@ logfile() {
     helpmsg+='\t-m,--message \t (string) \t message to put in a log \n'
     helpmsg+='\t-c,--command \t (string) \t command to operate, log result to file \n'
     helpmsg+='\t-c2,--command2 \t (string) \t command to operate, include 2>&1, log result to file \n'
+    helpmsg+='\t-t,--time \t () \t\t add timestamp \n'
 
     perform_logfile() {
 
@@ -1813,6 +1815,10 @@ logfile() {
 
         if $(hasValue $message); then 
             content=$(shiftto "-m|--message" $@); 
+        fi;
+
+        if $(hasValue "$timestamp"); then 
+            content="$(_UTILDATE); $content"; 
         fi;
 
         echo $content >> $file
