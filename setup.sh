@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo SCRIPT_VERSION=1.4.1
+echo SCRIPT_VERSION=1.4.2
 
 if [[ -z "$(command -v u2)" ]]; then
     ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup && source ~/.bash_mine
@@ -20,6 +20,8 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
         if $(u2 os -c apk); then u2 install the_silver_searcher; fi;
         if $(u2 os -c apt); then u2 install software-properties-common silversearcher-ag; fi;
         if $(u2 os -c yum); then u2 install redhat-lsb-core epel-release the_silver_searcher; fi;
+
+        NO_SWAP=true; 
 
     elif ! $(u2 os -c win); then
 
@@ -60,7 +62,7 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
     echo "_U2_INIT_DEP=1" >> $HOME/.bash_env
 fi;
 
-if $(u os linux); then
+if ! $(u hasValueq $NO_SWAP) && $(u os linux); then
     u _ED swap check
     if swapon --show | grep -q '^'; then
         u _ED "Swap is already enabled."
