@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo SCRIPT_VERSION=1.4.0
+echo SCRIPT_VERSION=1.4.1
 
 if [[ -z "$(command -v u2)" ]]; then
     ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup && source ~/.bash_mine
@@ -58,6 +58,21 @@ if ! $(u2 hasValue $_U2_INIT_DEP); then
     fi;
 
     echo "_U2_INIT_DEP=1" >> $HOME/.bash_env
+fi;
+
+if $(u os linux); then
+    u _ED swap check
+    if swapon --show | grep -q '^'; then
+        u _ED "Swap is already enabled."
+    else
+        u _ED "No swap found. Creating a 4 GB swap file on /swap"
+        if ! $(u has -p /swap); then sudo dd if=/dev/zero of=/swap bs=1M count=4096; fi;
+        sudo chmod 600 /swap
+        sudo mkswap /swap
+        sudo swapon /swap
+        u _ED "Swap created, writing to fstab"
+        echo '/swap none swap sw 0 0' | sudo tee -a /etc/fstab
+    fi; 
 fi;
 
 # ./setup docker

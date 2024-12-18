@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.11.4
+    echo 7.11.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1803,21 +1803,21 @@ logfile() {
         if ! $(hasValue "$line"); then line=20; fi;
         if ! $(hasValue $file); then return $(_ERC "file destination not specified"); else file=$(eval echo "$file"); fi;
 
-        if $(hasValue $command); then 
+        if $(hasValueq $command); then 
             string=$(shiftto "-c|--command" $@);
             content=$($string); 
         fi;
         
-        if $(hasValue $command2); then 
+        if $(hasValueq $command2); then 
             string=$(shiftto "-c2|--command2" $@);
             content=$($string 2>&1); 
         fi;
 
-        if $(hasValue $message); then 
+        if $(hasValueq $message); then 
             content=$(shiftto "-m|--message" $@); 
         fi;
 
-        if $(hasValue "$timestamp"); then 
+        if $(hasValueq "$timestamp"); then 
             content="$(_UTILDATE); $content"; 
         fi;
 
@@ -1924,7 +1924,7 @@ _web() {
     local help=$(parseGet _web_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-p,--port,_ \t (int) \t open server port, default port 3000\n'
+    helpmsg+='\t-p,--port,_ \t (int) \t\t open server port, default port 3000\n'
     helpmsg+='\t-m,--message \t (string) \t message to display \n'
     helpmsg+='\t-r,--redirect \t (string) \t redirect to target URL \n'
     helpmsg+='\t-d,--dir \t (string) \t directory server with bun default "." \n'
@@ -2673,14 +2673,16 @@ calc() {
 mount() {
     declare -A mount_data; parseArg mount_data $@;
     local info=$(parseGet mount_data i info _);
+    local mountTo=$(parseGet mount_data m mount);
     local unmounted=$(parseGet mount_data I uminfo);
     local checkDir=$(parseGet mount_data c check);
     local help=$(parseGet mount_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-i,--info,_ \t (string?) \t information of target mounting device\n'
-    helpmsg+='\t-I,--uminfo \t () \t\t find mounted devices \n'
-    helpmsg+='\t-c,--check \t (string) \t check if dir has mounted info\n'
+    helpmsg+='\t-i,--info,_ \t (string?) \t\t information of target mounting device\n'
+    helpmsg+='\t-m,--mount \t (string,string) \t mount (source) devices to (target) folder \n'
+    helpmsg+='\t-I,--uminfo \t () \t\t\t find mounted devices \n'
+    helpmsg+='\t-c,--check \t (string) \t\t check if dir has mounted info\n'
 
     unset -f mount;
     MOUNT=$(which mount);
@@ -2693,6 +2695,32 @@ mount() {
         fi;
         if $(hasCmd lsblk); then 
             lsblk -f
+        fi;
+    }
+
+    mount_mount() {
+        local source=$1
+        local target=$2
+        if [[ "$source" != /dev/* ]]; then source="/dev/$source"; fi;
+
+        if ! $(hasValueq $source); then return $(_ERC "source does not exist"); fi;
+        if ! $(has -p $source); then return $(_ERC "{$source} does not exist"); fi;
+        if ! $(hasValueq $target); then return $(_ERC "target does not exist"); fi;
+        
+        confirm=$(u prompt mounting source {$source} to target {$target} \(N/y?\) )
+        if [[ $confirm = 1 ]]; then  
+            fsType=$(lsblk -no FSTYPE "$source")
+            if ! [ "$fs_type" == "ext4" ]; then return $(_ERC "source {$source} file type is {$fsType}, use mkfs.ext4 first"); fi;
+
+            sudo $MOUNT "$source" "$target"
+            if ! $MOUNT | grep -q "$target"; then return $(_ERC "Failed to mount {$source} at {$target}."); fi;
+
+            confirm=$(u prompt writing to fstab \(N/y?\) )
+            if [[ $confirm = 1 ]]; then  
+                if ! grep -q "$source" /etc/fstab; then return $(_ERC "source {$source} is already in /etc/fstab."); fi;
+                echo "$source $target $fsType defaults 0 2" | sudo tee -a /etc/fstab
+                u _ED {"$source $target $fsType defaults 0 2"} added to fstab 
+            fi; 
         fi;
     }
 
@@ -2718,7 +2746,8 @@ mount() {
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
-    elif $(hasValueq "$info"); then info_mount $mount;
+    elif $(hasValueq "$info"); then info_mount $info;
+    elif $(hasValueq "$mountTo"); then mount_mount $mountTo;
     elif $(hasValueq "$unmounted"); then unmounted_mount $unmounted;
     elif $(hasValueq "$checkDir"); then check_mount $checkDir;
     else general_mount; 
