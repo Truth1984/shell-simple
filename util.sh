@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.11.6
+    echo 7.12.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1032,6 +1032,27 @@ install() {
     fi;
 }
 
+# container clean install
+installC() {
+    local prefix="" m=$(os -p)
+    if $(os -c linux) && $(hasCmd sudo); then prefix="sudo"; fi;
+
+    if [ "$m" = "apk" ]; then eval $(_EC "$prefix apk add --no-cache $@ && apk cache clean");
+    elif [ "$m" = "yum" ]; then eval $(_EC "$prefix yum install -y $@  && yum clean all && rm -rf /var/cache/yum");
+    elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $@ && apt-get clean && find /var/lib/apt/lists/ -type f ! -name 'sources.list' -delete"); 
+    fi;
+}
+
+# container cleanup
+cleanup() {
+    local m=$(os -p)
+
+    if [ "$m" = "apk" ]; then eval $(_EC "apk cache clean && rm -rf /tmp/*");
+    elif [ "$m" = "yum" ]; then eval $(_EC "yum autoremove -y && yum clean all && rm -rf /var/cache/yum /tmp/*");
+    elif [ "$m" = "apt" ]; then eval $(_EC "apt-get autoremove -y && apt-get clean && find /var/lib/apt/lists/ -type f ! -name 'sources.list' -delete && rm -rf /tmp/* /var/tmp/*"); 
+    fi;
+}
+
 rmpkg() {
     local prefix="" m=$(os -p)
     if $(os -c linux) && $(hasCmd sudo); then prefix="sudo"; fi;
@@ -1618,7 +1639,11 @@ setupEX() {
             fi;
 
             upgrade
-            install wget curl ca-certificates
+            defaultPKG="wget curl ca-certificates"
+            if $(hasValueq $containerAdd); then 
+                _ED "use {installC} to install & {cleanup} for final cleanup"
+                installC $defaultPKG; 
+            else install $defaultPKG; fi;
             setup
             if $(has -f /etc/apt/sources.list); then sed -i 's|http://|https://|g' /etc/apt/sources.list; fi; 
         fi;
