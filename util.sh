@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.12.1
+    echo 7.12.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1577,7 +1577,7 @@ setup() {
     cp $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
     cp $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u
     $_U2_Storage_Dir_Bin/u2 _ED Current Version: $($_U2_Storage_Dir_Bin/u2 version)
-    if [ -w /usr/bin ] && $(has -d /usr/bin); then exec cp -f $(_SCRIPTPATHFULL) /usr/bin/u 2>/dev/null; fi;
+    if [ -w /usr/bin ] && $(has -d /usr/bin); then cp -f $(_SCRIPTPATHFULL) /usr/bin/u 2>/dev/null; fi;
 }
 
 setupEX() {
@@ -1639,7 +1639,7 @@ setupEX() {
             fi;
 
             upgrade
-            defaultPKG="wget curl ca-certificates"
+            defaultPKG="wget curl ca-certificates bash"
             if $(hasValueq $containerAdd); then 
                 _ED "use {installC} to install & {cleanup} for final cleanup"
                 installC $defaultPKG; 
