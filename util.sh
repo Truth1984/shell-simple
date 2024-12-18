@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.12.0
+    echo 7.12.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1037,9 +1037,9 @@ installC() {
     local prefix="" m=$(os -p)
     if $(os -c linux) && $(hasCmd sudo); then prefix="sudo"; fi;
 
-    if [ "$m" = "apk" ]; then eval $(_EC "$prefix apk add --no-cache $@ && apk cache clean");
-    elif [ "$m" = "yum" ]; then eval $(_EC "$prefix yum install -y $@  && yum clean all && rm -rf /var/cache/yum");
-    elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $@ && apt-get clean && find /var/lib/apt/lists/ -type f ! -name 'sources.list' -delete"); 
+    if [ "$m" = "apk" ]; then eval $(_EC "$prefix apk add --no-cache $@");
+    elif [ "$m" = "yum" ]; then eval $(_EC "$prefix yum install -y $@");
+    elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $@"); 
     fi;
 }
 
