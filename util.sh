@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.12.2
+    echo 7.12.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1626,9 +1626,9 @@ setupEX() {
 \ndeb-src http://mirrors.163.com/debian/ $codename-updates main contrib non-free
 \ndeb http://mirrors.163.com/debian/ $codename-backports main contrib non-free
 \ndeb-src http://mirrors.163.com/debian/ $codename-backports main contrib non-free
-\ndeb http://mirrors.163.com/debian-security $codename/updates main contrib non-free
-\ndeb-src http://mirrors.163.com/debian-security $codename/updates main contrib non-free
-        " > /etc/apt/sources.list
+\ndeb http://mirrors.163.com/debian-security/ $codename-security main contrib non-free
+\ndeb-src http://mirrors.163.com/debian-security/ $codename-security main contrib non-free
+" > /etc/apt/sources.list
             fi;
 
             if grep -q "ID=alpine" /etc/os-release ; then
