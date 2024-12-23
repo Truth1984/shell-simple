@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.12.3
+    echo 7.12.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1812,7 +1812,6 @@ logfile() {
     local message=$(parseGet logfile_data m message);
     local command=$(parseGet logfile_data c command);
     local command2=$(parseGet logfile_data c2 command2);
-    local timestamp=$(parseGet logfile_data t time);
     local help=$(parseGet logfile_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -1821,32 +1820,31 @@ logfile() {
     helpmsg+='\t-m,--message \t (string) \t message to put in a log \n'
     helpmsg+='\t-c,--command \t (string) \t command to operate, log result to file \n'
     helpmsg+='\t-c2,--command2 \t (string) \t command to operate, include 2>&1, log result to file \n'
-    helpmsg+='\t-t,--time \t () \t\t add timestamp \n'
 
     perform_logfile() {
 
-        if ! $(hasValue "$line"); then line=20; fi;
+        if ! $(hasValue "$line"); then line=50; fi;
         if ! $(hasValue $file); then return $(_ERC "file destination not specified"); else file=$(eval echo "$file"); fi;
+        local indicator=""
 
         if $(hasValueq $command); then 
             string=$(shiftto "-c|--command" $@);
-            content=$($string); 
+            indicator="-c, <$string>"
+            content=$(eval "$string"); 
         fi;
         
         if $(hasValueq $command2); then 
             string=$(shiftto "-c2|--command2" $@);
-            content=$($string 2>&1); 
+            indicator="-c2, <$string>"
+            content=$(eval "$string" 2>&1); 
         fi;
 
         if $(hasValueq $message); then 
+            indicator="--message"
             content=$(shiftto "-m|--message" $@); 
         fi;
 
-        if $(hasValueq "$timestamp"); then 
-            content="$(_UTILDATE); $content"; 
-        fi;
-
-        echo $content >> $file
+        echo "$(_UTILDATE),$indicator; $content" >> $file
         temp_file=$(mktemp)  
         tail -n $line $file > "$temp_file"  
         mv "$temp_file" $file
