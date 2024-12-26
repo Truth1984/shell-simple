@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.13.2
+    echo 7.13.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -221,7 +221,13 @@ _promptArray() {
 promptString() {
     local prompter="$@"
     read -p "$prompter"$'\n' responseString
-    echo $responseString
+    echo "$responseString"
+}
+
+promptSecret() {
+    local prompter="$@"
+    read -s -p "$prompter"$'\n' responseString
+    echo "$responseString"
 }
 
 # $1:question $2...:select options; i.e. Choose? i1 i2 i3
