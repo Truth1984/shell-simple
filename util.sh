@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.12.4
+    echo 7.13.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -152,13 +152,13 @@ parseGet() {
 }
 
 pathGetFull() {
-    local path=$(cd "$(dirname "$1")" || exit; pwd)
-    local file=$(basename "$1")
+    local path=$(cd "$(dirname "$@")" || exit; pwd)
+    local file=$(basename "$@")
 
     if [ "$file" = ".." ]; then
         _EC "$(dirname "$path")"
     else
-        _EC  "$path/$file"
+        _EC "$path/$file"
     fi
 }
 
@@ -299,7 +299,7 @@ has() {
     declare -A has_data; parseArg has_data $@;
 
     if [ "$_target" = "_" ]; then 
-        return $(! [[ -z $1 ]]);
+        return $(! [[ -z $1 ]]); 
     fi;
 
     parseGetQ() {
@@ -341,27 +341,32 @@ has() {
     }
 
     dir_has() {
-        if [ -d "$@" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+        local lpath="$@"
+        if [ -d "$lpath" ]; then return $(_RC 0 $lpath); else return $(_RC 1 $lpath); fi;
     }
 
     dir_Q_has() {
-        [ -d "$@" ];
+        local lpath="$@"
+        [ -d "$lpath" ];
     }
 
     file_has() {
-        if [ -f "$@" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+        local lpath="$@"
+        if [ -f "$lpath" ]; then return $(_RC 0 $lpath); else return $(_RC 1 $lpath); fi;
     }
 
     file_Q_has() {
-        [ -f "$@" ];
+        [ -f "$lpath" ];
     }
 
     path_has() {
-        if [ -e "$@" ]; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
+        local lpath="$@"
+        if [ -e "$lpath" ]; then return $(_RC 0 $lpath); else return $(_RC 1 $lpath); fi;
     }
 
     path_Q_has() {
-        [ -e "$@" ];
+        local lpath="$@"
+        [ -e "$lpath" ];
     }
 
     env_has() {
@@ -786,16 +791,16 @@ trash() {
     local trashInfoName="_U2_TRASH_INFO"
 
     put_trash() {
-        local input=$@
+        local input="$@"
         if ! $(hasValueq $input); then return $(_ERC "to trash path not specified"); fi; 
-        local inputPath=$(pathGetFull $input)
-        if ! $(has --Path $inputPath); then return $(_ERC "input path {$inputPath} not exist"); fi;
+        local inputPath=$(pathGetFull "$input")
+        if ! $(has --Path "$inputPath"); then return $(_ERC "input path {$inputPath} not exist"); fi;
         local uid="$(uuid)"
         local trashDir=$(trimArgs $TP / $uid)
-        local size=$(du -sh $inputPath | awk '{print $1}')
+        local size=$(du -sh "$inputPath" | awk '{print $1}')
         local infoDir=$(trimArgs $trashDir / $trashInfoName)
         mkdir -p $trashDir
-        mv -fv $inputPath $trashDir
+        mv -fv "$inputPath" $trashDir
         printf "uuid=$uid \noriginalDir=$inputPath \ndtime=$(date +'%Y-%m-%d %H:%M:%S')\nsize=$size\n" > $infoDir
     }
 
@@ -974,7 +979,7 @@ trash() {
     }
     
     if $(hasValueq "$help"); then printf "$helpmsg"; 
-    elif $(hasValueq "$path"); then put_trash $path; 
+    elif $(hasValueq "$path"); then put_trash $@; 
     elif $(hasValueq "$list"); then list_trash $list; 
     elif $(hasValueq "$restore"); then restore_trash $restore; 
     elif $(hasValueq "$indexDir"); then index_trash $indexDir; 
@@ -2413,7 +2418,7 @@ docker() {
             fi;
 
             d2name=$dname;
-            if $(string -c "$dname" "/"); then d2name=$(echo $dname | sed 's/\//-/g; s/:/-V-/g'); fi;
+            if $(string -c "$dname" "/"); then d2name="$(echo $dname | sed 's/\//-/g; s/:/-V-/g')-SDC"; fi;
             _ED docker exporting $d2name from $dname
             $DOCKER save -o $d2name.tar $dname
         fi;
@@ -2895,6 +2900,9 @@ case "$1" in
                 $@
             ;;
         esac
+    ;;
+    pathGetFull)
+        pathGetFull "${@:2}"
     ;;
     prompt)
         prompt "${@:2}"
