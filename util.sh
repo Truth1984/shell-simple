@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.13.3
+    echo 7.13.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1970,7 +1970,12 @@ _web() {
         local lip=$(ip -P)
         if $(hasCmd bun); then
             _ED Starting bun server on $lip:$webPort 
-            bun -e "Bun.serve({port: $webPort,async fetch(req) {console.log(req);try{return new Response(JSON.stringify({ method: req.method, url: req.url, headers: req.headers, body: await req.text()}))}catch(e){console.log(e);}},})"
+
+            if $(hasValueq $webMessage); then 
+                bun -e "Bun.serve({port: $webPort,async fetch(req) {console.log(req);try{return new Response('$webMessage',{ status: 200 })}catch(e){console.log(e);}},})"
+            else
+                bun -e "Bun.serve({port: $webPort,async fetch(req) {console.log(req);try{return new Response(JSON.stringify({ method: req.method, url: req.url, headers: req.headers, body: await req.text()}))}catch(e){console.log(e);}},})"
+            fi; 
             return
         fi;
 
