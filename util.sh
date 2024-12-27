@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.13.4
+    echo 7.14.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1103,6 +1103,20 @@ decrypt() {
     gpg --batch --yes --passphrase "$_U2_GPG_PW" "$@"
 }
 
+# (gpg .sh file url) -> run local content 
+decryptURL() {
+    source ~/.bash_env
+    if ! $(hasCmd gpg); then return $(_ERC "gpg not found"); fi;
+    if ! $(hasValueq $@); then return $(_ERC "No URL provided"); fi;
+    
+    local encrypted_content=$(get "$@");
+    if ! $(hasValueq $_U2_GPG_PW); then _U2_GPG_PW=$(promptSecret "Please enter your GPG passphrase: "); fi; 
+
+    local decrypted_content=$(echo "$encrypted_content" | gpg --batch --yes --passphrase "$_U2_GPG_PW" -d 2>/dev/null)
+    if [ $? -ne 0 ]; then return $(_ERC "Decryption failed. Please check your passphrase."); fi;
+    eval "$decrypted_content"
+}
+
 # shiftto "-p|--pattern" "-p abc -p d" -> "abc -p d"
 shiftto() {
     local pattern="$1"
@@ -2016,7 +2030,7 @@ _web() {
         if ! $(hasValueq $servePath); then servePath="."; fi;
         
         local lip=$(ip -P)
-        _ED Starting bun file server on $lip:$webPort with directory: \'$servePath\'
+        _ED Starting bun file server on $lip:$webPort with path: \'$servePath\'
 
         bun -e " Bun.serve({ port: $webPort, fetch(req) {
         const url = new URL(req.url);
