@@ -1527,6 +1527,41 @@ quick() {
     fi;
 }
 
+# (filePath, content) or (filePath) < content
+# writeTo "example.txt" "Line 1" "Line 2"
+# writeTo "example.txt" < input.txt
+writeTo() {
+    local filePath="$1"
+    shift 
+    local lockfile="/tmp/$(basename "$filePath").lock"
+    local timeout=10  
+    local waitTime=1 
+    local elapsed=0  
+
+    exec 200>"$lockfile"
+
+    while ! ln "$lockfile" "$lockfile.lock" 2>/dev/null; do
+        if [ "$elapsed" -ge "$timeout" ]; then
+            return $(_ERC "Could not acquire lock after $timeout seconds for $filePath")
+        fi
+        sleep "$waitTime" 
+        elapsed=$((elapsed + waitTime))
+    done
+
+    if [ "$#" -gt 0 ]; then
+        for content in "$@"; do
+            echo "$content" >> "$filePath"
+        done
+    else
+        while IFS= read -r line; do
+            echo "$line" >> "$filePath"
+        done
+    fi;
+
+    rm "$lockfile.lock"
+    exec 200>&-
+}
+
 subdir() {
     declare -A subdir_data; parseArg subdir_data $@;
     local perform=$(parseGet subdir_data p perform);
@@ -2926,6 +2961,9 @@ case "$1" in
                 $@
             ;;
         esac
+    ;;
+    writeTo)
+        writeTo "${@:2}"
     ;;
     pathGetFull)
         pathGetFull "${@:2}"
