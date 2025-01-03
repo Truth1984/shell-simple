@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.14.7
+    echo 7.15.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1527,39 +1527,33 @@ quick() {
     fi;
 }
 
-# (filePath, content) or (filePath) < content
-# writeTo "example.txt" "Line 1" "Line 2"
-# writeTo "example.txt" < input.txt
-writeTo() {
-    local filePath="$1"
-    shift 
-    local lockfile="/tmp/$(basename "$filePath").lock"
-    local timeout=10  
-    local waitTime=1 
-    local elapsed=0  
+# acquire the lock
+# if ! _LON "$file"; then return $(_ERC "failed"); fi;
+# _LOFF "$file"
+_LON() {
+    local lockfile="/tmp/$(basename "$1").lock"
+    local timeout=10
+    local waitTime=1
+    local elapsed=0
 
     exec 200>"$lockfile"
 
     while ! ln "$lockfile" "$lockfile.lock" 2>/dev/null; do
         if [ "$elapsed" -ge "$timeout" ]; then
-            return $(_ERC "Could not acquire lock after $timeout seconds for $filePath")
+             return $(_ERC "Could not acquire lock after $timeout seconds for $filePath")
         fi
-        sleep "$waitTime" 
+        sleep "$waitTime"
         elapsed=$((elapsed + waitTime))
     done
+    _ED "lock acquired + {$lockfile}"
+}
 
-    if [ "$#" -gt 0 ]; then
-        for content in "$@"; do
-            echo "$content" >> "$filePath"
-        done
-    else
-        while IFS= read -r line; do
-            echo "$line" >> "$filePath"
-        done
-    fi;
-
+# release the lock
+_LOFF() {
+    local lockfile="/tmp/$(basename "$1").lock"
     rm "$lockfile.lock"
     exec 200>&-
+    _ED "lock released - {$lockfile}"
 }
 
 subdir() {
@@ -1905,10 +1899,14 @@ logfile() {
             content=$(shiftto "-m|--message" $@); 
         fi;
 
+        if ! _LON "$file"; then return $(_ERC "failed"); fi;
+
         echo "$(_UTILDATE),$indicator; $content" >> $file
         temp_file=$(mktemp)  
         tail -n $line $file > "$temp_file"  
         mv "$temp_file" $file
+        
+        _LOFF "$file"
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";
@@ -2961,9 +2959,6 @@ case "$1" in
                 $@
             ;;
         esac
-    ;;
-    writeTo)
-        writeTo "${@:2}"
     ;;
     pathGetFull)
         pathGetFull "${@:2}"
