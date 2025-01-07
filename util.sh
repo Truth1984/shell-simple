@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.15.1
+    echo 7.16.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2664,42 +2664,62 @@ dc() {
     fi;
 }
 
-# -t,--target,_ (string)
-# -d,--dest (string)
-tar() { 
-    declare -A tar_data; parseArg tar_data $@;
-    local target=$(parseGet tar_data t target _);
-    local dest=$(parseGet tar_data d dest);
-    local help=$(parseGet tar_data help);
+zip() {
+    declare -A zip_data; parseArg zip_data $@;
+    local target=$(parseGet zip_data t target _);
+    local dest=$(parseGet zip_data d dest);
+    local show=$(parseGet zip_data s show l ls);
+    local tozip=$(parseGet zip_data z zip);
+    local ext=$(parseGet zip_data e ext);
+    local unzip=$(parseGet zip_data u unzip);
+    local help=$(parseGet zip_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-t,--target,_ \t (string) \t target to perform operation\n'
-    helpmsg+='\t-d,--dest \t (string) \t when zip, dest loc: default to plaintime.tar; when unzip, dest loc: unzip to target dir \n'
+    helpmsg+='\t-t,--target,_ \t\t (string) \t target to perform smort operation\n'
+    helpmsg+='\t-d,--dest \t\t (string) \t when zip, dest loc: default to plaintime.zip; when unzip, dest loc: unzip to target dir \n'
+    helpmsg+='\t-s,--show,-l,--ls \t (string) \t show content of zip\n'
+    helpmsg+='\t-z,--zip \t\t (strings) \t zip the target files\n'
+    helpmsg+='\t-e,--ext \t\t (string) \t extension to zip to, default: zip\n'
+    helpmsg+='\t-u,--unzip \t\t (string) \t unzip the target file\n'
 
-    action_tar() {
-        if ! $(hasValueq "$target"); then return $(_ERC "target undefined"); fi;
+    if ! $(hasValueq $ext); then ext="zip"; fi;
 
-        unset -f tar;
-        TAR=$(which tar);
-        unset -f file;
-        FILE=$(which file);
-    
-        local toZip=false;
-        if $(trimArgs "$target" | grep -q " "); then toZip=true; 
-        elif ! $($FILE "$target" | grep -q "tar"); then toZip=true; fi;
+    show_zip() {
+        local path=$(pathGetFull $@);
+        7z l $path
+        _ED displayed content of {$path}
+    }
 
-        if $toZip; then 
-            if ! $(hasValueq $dest); then dest="$(dates -P).tar"; fi;
-            $TAR -cf $dest $target;
-        else 
-            if $(hasValueq $dest); then $TAR -xzf $target -C $dest;
-            else $TAR -xvf $target; 
-            fi; 
-        fi;
+    tozip_zip() {
+        local targets="$@"
+        if ! $(hasValueq $dest); then dest="$(dates -P).$ext"; fi;
+        7z a $dest $targets
+        _ED zip folders {$targets} to dest {$dest}
+    }
+
+    unzip_zip() {
+        local targets="$@"
+        if ! $(hasValueq $dest); then dest="$(trimArgs ${targets%.*})_unzip"; fi;
+        7z x $targets -o$dest
+        _ED unzip {$targets} to dest { $dest }
+    }
+
+    smort_zip() {
+        local targets="$@"
+        if ! $(hasValueq "$target"); then return $(_ERC "missing args"); fi;
+
+        local count=0
+        for item in $targets; do count=$((count + 1)); done;
+
+        if [ "$count" -eq 1 ] && $(_ENULL 7z t "$targets"); then unzip_zip "$targets";
+        else tozip_zip "$targets"; fi;
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
-    else action_tar; 
+    elif $(hasValueq "$show"); then show_zip $show; 
+    elif $(hasValueq "$tozip"); then tozip_zip "$tozip"; 
+    elif $(hasValueq "$unzip"); then unzip_zip "$unzip";  
+    else smort_zip "$target"; 
     fi;
 }
 
@@ -2971,6 +2991,9 @@ case "$1" in
     ;;
     promptSelect)
         promptSelect "${@:2}"
+    ;;
+    zip)
+        zip "${@:2}"
     ;;
     *)
         $@
