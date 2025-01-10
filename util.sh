@@ -1542,6 +1542,7 @@ quick() {
             fi
         done
         name=${dir_array[$@]}
+        _ED executing quick {$name}
         exec bash $name
     }
     
