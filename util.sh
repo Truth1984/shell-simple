@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.16.1
+    echo 7.16.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1451,7 +1451,7 @@ retry() {
 }
 
 q(){
-    quick $@
+    if $(string -n $@); then quick -i $@; else quick $@; fi;
 }
 
 quick() {
@@ -1463,6 +1463,7 @@ quick() {
     local display=$(parseGet quick_data c cat display show)
     local remove=$(parseGet quick_data r remove delete);
     local list=$(parseGet quick_data l list);
+    local index=$(parseGet quick_data i index);
     local hasName=$(parseGet quick_data h has);
     local help=$(parseGet quick_data help);
 
@@ -1474,6 +1475,7 @@ quick() {
     helpmsg+='\t-c,--cat,--display,--show \t () \t\t display the content of file\n'
     helpmsg+='\t-r,--remove,--delete \t\t () \t\t remove the target file\n'
     helpmsg+='\t-l,--list \t\t\t () \t\t list total quick command\n'
+    helpmsg+='\t-i,--index \t\t\t () \t\t directly perform action via index\n'
 
     name=$(echo $name | sed 's/ *//')
     targetFile="$_U2_Storage_Dir_Quick/$name"
@@ -1497,6 +1499,7 @@ quick() {
         done
         local profile="$(_PROFILE)"
         printf "#!/usr/bin/env bash\nsource $profile\n$sentence\n" > $targetFile
+        ls_quick
     }
 
     run_quick(){
@@ -1514,9 +1517,37 @@ quick() {
     has_quick() {
         return $(hasFile $targetFile);
     }
+
+    ls_quick() {
+        dir_array=()
+        cd $_U2_Storage_Dir_Quick
+        for name in *; do
+            if [[ -e "$name" ]]; then
+                dir_array+=("$name")
+            fi
+        done
+
+        for i in "${!dir_array[@]}"; do
+            echo "[$i]: ${dir_array[$i]}"
+        done
+    }
+
+    index_quick() {
+        if ! $(string -n $@); then return $(_ERC "index not a number"); fi;
+        dir_array=()
+        cd $_U2_Storage_Dir_Quick
+        for name in *; do
+            if [[ -e "$name" ]]; then
+                dir_array+=("$name")
+            fi
+        done
+        name=${dir_array[$@]}
+        exec bash $name
+    }
     
     if $(hasValueq "$help"); then printf "$helpmsg";  
-    elif $(hasValueq "$list"); then ls -a $_U2_Storage_Dir_Quick;
+    elif $(hasValueq "$list"); then ls_quick "$list";
+    elif $(hasValueq "$index"); then index_quick "$index";
     elif ! $(hasValueq "$name"); then return $(_ERC "name not specified"); 
     elif $(hasValueq "$add"); then add_quick "$@";
     elif $(hasValueq "$edit"); then edit_quick "$edit";
