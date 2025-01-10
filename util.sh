@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.16.3
+    echo 7.16.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1543,7 +1543,8 @@ quick() {
         done
         name=${dir_array[$@]}
         _ED executing quick {$name}
-        exec bash $name
+        targetFile="$_U2_Storage_Dir_Quick/$name"
+        run_quick
     }
     
     if $(hasValueq "$help"); then printf "$helpmsg";  
