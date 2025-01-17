@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.16.4
+    echo 7.16.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -452,7 +452,7 @@ stat() {
     elif $(hasValueq "$size"); then size_stats $size; 
     elif $(hasValueq "$modify"); then modify_stats $modify; 
     elif $(hasValueq "$modifyQ"); then modifyQ_stats $modifyQ; 
-    elif $(hasValueq "$full"); then full_stats $full;
+    elif $(hasValueq "$full"); then full_stats $full; 
     fi;
 }
 
@@ -486,7 +486,7 @@ os() {
         elif $(hasCmd dnf); then _EC "dnf";
         elif $(hasCmd choco); then _EC "choco";
         elif $(hasCmd winget); then _EC "winget";
-        else _EC "NONE";
+        else _EC "NONE"; 
         fi;
     }
 
@@ -630,7 +630,7 @@ ip() {
         if $(string -e "$version" 6); then wgetArg="--inet6-only --prefer-family=IPv6" curlArg="--ipv6"; fi;
         if $(hasCmd wget); then wget -qO- $wgetArg "$url";
             elif $(hasCmd curl); then curl -s -X $curlArg GET "$url";
-        fi;
+        fi; 
         echo ""
     }
 
@@ -1369,10 +1369,9 @@ get() {
         curlEx+=" -A \"$useragent\""
         wgetEx+=" --user-agent=\"$useragent\""
         
-        for heads in "${userHeaders[@]}"
-        do
-        curlEx+=" -H \"$heads\""
-        wgetEx+=" --header=\"$heads\""
+        for heads in "${userHeaders[@]}"; do
+            curlEx+=" -H \"$heads\""
+            wgetEx+=" --header=\"$heads\""
         done
     fi;
 
@@ -1888,7 +1887,7 @@ port() {
     elif $(hasValueq "$processPort"); then process_port $processPort;
     elif $(hasValueq "$dockerPort"); then docker_port $dockerPort;
     elif $(hasValueq "$infoPort"); then info_port $infoPort;
-    else process_port;
+    else process_port; 
     fi;
 }
 
@@ -2033,16 +2032,16 @@ gitclone() {
 _web() {
     declare -A _web_data; parseArg _web_data $@;
     local webPort=$(parseGet _web_data p port _);
-    local webMessage=$(parseGet _web_data m message);
+    local webMessage=$(parseGet _web_data m message s string);
     local webRedirect=$(parseGet _web_data r redirect)
     local webDirectory=$(parseGet _web_data d dir);
     local help=$(parseGet _web_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-p,--port,_ \t (int) \t\t open server port, default port 3000\n'
-    helpmsg+='\t-m,--message \t (string) \t message to display \n'
-    helpmsg+='\t-r,--redirect \t (string) \t redirect to target URL \n'
-    helpmsg+='\t-d,--dir \t (string) \t directory server with bun default "." \n'
+    helpmsg+='\t-p,--port,_ \t\t\t (int) \t\t open server port, default port 3000\n'
+    helpmsg+='\t-m,--message,-s,--string \t (string) \t message to display \n'
+    helpmsg+='\t-r,--redirect \t\t\t (string) \t redirect to target URL \n'
+    helpmsg+='\t-d,--dir \t\t\t (string) \t directory server with bun default "." \n'
 
     if ! $(hasValue $webPort); then webPort=3000; fi;
     if ! $(hasValue $webMessage); then webMessage="web message"; fi;
@@ -2070,6 +2069,7 @@ _web() {
 
     redirect_web() {
         local webcmd="" weblocation=$@
+        local lip=$(ip -P)
 
         if ! $(hasValueq $weblocation); then return $(_ERC "web redirect url not defined"); fi;
         
@@ -2079,7 +2079,7 @@ _web() {
         if [[ $weblocation != http://* && $weblocation != https://* ]]; then weblocation="http://$weblocation"; fi;
         
         if $(hasCmd bun); then 
-            _ED Starting bun server redirect on port:$webPort to location: $weblocation
+            _ED Starting bun server redirect on $lip:$webPort to location: $weblocation
             bun -e "Bun.serve({port: $webPort,async fetch(req){console.log(req);return Response.redirect(\"$weblocation\", 301);}})"
             return
         fi;
@@ -2087,7 +2087,6 @@ _web() {
         if $(os mac); then webcmd="nc -l $webPort -k";
         else webcmd="nc -l -p $webPort -k"; fi;
 
-        local lip=$(ip -P)
         _ED Starting to redirect on $lip:$webPort to location: $weblocation, as \' nc $reHost $rePort \'
         echo -e "HTTP/1.1 301 Moved Permanently\r\nLocation: $weblocation\r\n\r\n" | $webcmd > >(nc $reHost $rePort)
     }
@@ -2232,7 +2231,7 @@ service() {
         local serviceName=$(_fetch_service $@)
         if $(hasCmd systemctl); then systemctl stop $serviceName;
         elif $(hasCmd rc-service); then rc-service stop $serviceName;
-        else _ED "SKIP, LIMITED" 
+        else _ED "SKIP, LIMITED"; 
         fi; 
     }
 
@@ -2244,7 +2243,7 @@ service() {
         elif $(hasCmd rc-service); then 
             rc-service stop $serviceName;
             rc-service start $serviceName; 
-        else _ED "SKIP, LIMITED"
+        else _ED "SKIP, LIMITED"; 
         fi; 
     }
 
@@ -2252,7 +2251,7 @@ service() {
         local serviceName=$(_fetch_service $@)
         if $(hasCmd systemctl); then systemctl start $serviceName && systemctl enable $serviceName;
         elif $(hasCmd rc-update); then rc-service start $serviceName && rc-update add $serviceName default; 
-        else _ED "SKIP, LIMITED"
+        else _ED "SKIP, LIMITED"; 
         fi; 
     }
 
@@ -2260,7 +2259,7 @@ service() {
         local serviceName=$(_fetch_service $@)
         if $(hasCmd systemctl); then systemctl stop $serviceName || systemctl disable $serviceName;
         elif $(hasCmd rc-update); then rc-service stop $serviceName || rc-update del $serviceName default; 
-        else _ED "SKIP, LIMITED"
+        else _ED "SKIP, LIMITED"; 
         fi; 
     }
 
