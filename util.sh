@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.16.6
+    echo 7.16.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1113,8 +1113,11 @@ decryptURL() {
     download "$@" "$tmpfile";
     if ! $(hasValueq $_U2_GPG_PW); then _U2_GPG_PW=$(promptSecret "Please enter your GPG passphrase: "); fi; 
     local decrypted_content=$(gpg --batch --yes --passphrase "$_U2_GPG_PW" --decrypt < $tmpfile);
-    rm -f $tmpfile 
-    if [ $? -ne 0 ]; then return $(_ERC "Decryption failed. Please check your passphrase."); fi;
+    if [ $? -ne 0 ]; then 
+        rm -f $tmpfile 
+        return $(_ERC "Decryption failed. Please check your passphrase.")
+    fi;
+    rm -f $tmpfile
     eval "$decrypted_content"
 }
 
