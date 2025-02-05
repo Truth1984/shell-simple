@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.16.9
+    echo 7.18.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2857,9 +2857,10 @@ mount() {
         
         confirm=$(u prompt mounting source {$source} to target {$target} \(N/y?\) )
         if [[ $confirm = 1 ]]; then  
-            fsType=$(lsblk -no FSTYPE "$source")
-            if ! [ "$fs_type" == "ext4" ]; then return $(_ERC "source {$source} file type is {$fsType}, use mkfs.ext4 first"); fi;
-
+            fsType=$(lsblk -no FSTYPE "$source");
+            acceptedTypes=("ext2" "ext3" "ext4" "vfat" "ntfs" "exfat" "xfs" "btrfs");
+            if [[ ! " ${acceptedTypes[@]} " =~ " ${fsType} " ]]; then return $(_ERC "source {$source} file type is {$fsType},not accepted, use mkfs.ext4 first"); fi; 
+            
             sudo $MOUNT "$source" "$target"
             if ! $MOUNT | grep -q "$target"; then return $(_ERC "Failed to mount {$source} at {$target}."); fi;
 
