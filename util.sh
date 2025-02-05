@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.18.0
+    echo 8.0.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2144,8 +2144,8 @@ network() {
     helpmsg+='\t-d,--dns \t () \t\t show current dns \n'
   
     dns_network() {
-        if $(u os mac); then scutil --dns; 
-        elif $(u hasCmdq resolvectl); then resolvectl dns; 
+        if $(os mac); then scutil --dns; 
+        elif $(hasCmdq resolvectl); then resolvectl dns; 
         else cat /etc/resolv.conf; fi;
     }
 
@@ -2764,36 +2764,135 @@ zip() {
     fi;
 }
 
-extra() { 
-    declare -A extra_data; parseArg extra_data $@;
-    local large=$(parseGet extra_data large);
-    local tree=$(parseGet extra_data tree pstree);
-    local clone=$(parseGet extra_data clone);
-    local copy=$(parseGet extra_data c copy);
-    local help=$(parseGet extra_data help);
+syscheck() {
+    declare -A syscheck_data; parseArg syscheck_data $@;
+    local check=$(parseGet syscheck_data c check _);
+    local large=$(parseGet syscheck_data l large);
+    local help=$(parseGet syscheck_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t--large \t\t (string, int) \t large file finder, define [ path=".", length=20 ]\n'
-    helpmsg+='\t--tree,--pstree \t () \t\t display pstree\n'
-    helpmsg+='\t--clone \t () \t\t clone u to target dir\n'
-    helpmsg+='\t-c,--copy \t () \t\t copy content to clipboard\n'
-    
-    large_extra() {
+    helpmsg+='\t-c,--check,_ \t () \t\t check current system status, threshold=90\n'
+    helpmsg+='\t-l,--large \t (string, int) \t large file finder, define [ path=".", length=20 ]\n'
+
+    large_syscheck() {
         local largeDir=$1 largeLength=$2
         if ! $(hasValueq $largeDir); then largeDir="."; fi;
         if ! $(hasValueq $largeLength); then largeLength=20; fi;
         du -ahx $largeDir | sort -rh | head -n $largeLength
     }
 
+    check_syscheck() {
+        if ! $(string -n $check); then check=90; fi;
+        if $(os mac); then
+
+            _ED checking volume +
+
+            while IFS= read -r line; do
+            volumePercent=$(echo "$line" | awk '{print $5}' | sed 's/%//');
+            volumeName=$(echo "$line" | awk '{print $1}');
+            if [ "$volumePercent" -ge "$check" ]; then
+                _ERC "Critical alert: $volumeName is at $volumePercent% usage."
+                large_syscheck $volumeName
+            fi; 
+            done < <(df -h | grep '^/dev/disk' | grep -v '/System'); 
+
+            _ED checking memory +
+
+            memLine=$(top -l 1 | grep "PhysMem:"); 
+            usedMem=$(echo "$memLine" | awk '{print $2}' | sed 's/[^0-9]//g'); 
+            unusedMem=$(echo "$memLine" | awk '{print $(NF-1)}' | sed 's/[^0-9]//g'); 
+            totalMem=$(echo "$usedMem + $unusedMem" | bc); 
+            if [ "$totalMem" -gt 0 ]; then
+                memUsage=$(echo "($usedMem * 100) / $totalMem" | bc); 
+                if [ "$memUsage" -ge "$check" ]; then
+                    _ERC "Critical alert: Memory usage is at ${memUsage}% (Used: ${usedMem}M, Total: ${totalMem}M)."; 
+                    process --mem
+                fi; 
+            fi; 
+
+            _ED checking CPU +
+
+            cores=$(sysctl -n hw.ncpu); 
+            loadAvg=$(uptime | awk -F'load averages:' '{print $2}' | awk '{print $2}'); 
+            cpuUsage=$(echo "scale=0; ($loadAvg / $cores) * 100 / 1" | bc); 
+            if [ "$cpuUsage" -ge "$check" ]; then
+                _ERC "Critical alert: CPU load is at ${cpuUsage}% (Current 5min average: ${loadAvg}, Cores: ${cores})."; 
+                process --cpu
+            fi; 
+
+        elif $(os linux); then
+
+            _ED checking volume +
+
+            while IFS= read -r line; do
+                volumePercent=$(echo "$line" | awk '{print $5}' | sed 's/%//');
+                volumeName=$(echo "$line" | awk '{print $1}');
+                if [ "$volumePercent" -ge "$check" ]; then
+                    _ERC "Critical alert: $volumeName is at $volumePercent% usage."
+                    large_syscheck $volumeName
+                fi;
+            done < <(df -h | grep '^/dev/' | grep -v '/boot'); 
+
+            _ED checking memory +
+
+            memInfo=$(free | awk '/Mem:/ {print $3, $2}'); 
+            usedMem=$(echo "$memInfo" | awk '{print $1}'); 
+            totalMem=$(echo "$memInfo" | awk '{print $2}'); 
+            memUsage=$(echo "($usedMem * 100) / $totalMem" | bc); 
+            if [ "$memUsage" -ge "$check" ]; then
+                _ERC "Critical alert: Memory usage is at $memUsage%."; 
+                process --mem
+            fi; 
+
+            _ED checking CPU +
+
+            cores=$(nproc); 
+            loadAvg=$(uptime | awk -F'load average:' '{print $2}' | cut -d',' -f2 | tr -d ' '); 
+            cpuUsage=$(echo "scale=0; ($loadAvg / $cores) * 100 / 1" | bc); 
+            if [ "$cpuUsage" -ge "$check" ]; then
+                _ERC "Critical alert: CPU load is at ${cpuUsage}% (Current 5min average: ${loadAvg}, Cores: ${cores})."; 
+                process --cpu
+            fi; 
+
+            _ED checking docker +
+
+            if $(hasCmd docker); then 
+                if $(docker | grep -q restart); then 
+                    _ERC "Critical alert: docker container keep restarting";
+                    docker -p restart
+                fi; 
+            fi;  
+
+        fi; 
+
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";
+    elif $(hasValueq "$large"); then large_syscheck $large; 
+    else check_syscheck $check; 
+    fi;
+}
+
+extra() { 
+    declare -A extra_data; parseArg extra_data $@;
+    local tree=$(parseGet extra_data tree pstree);
+    local clone=$(parseGet extra_data clone);
+    local copy=$(parseGet extra_data c copy);
+    local help=$(parseGet extra_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t--tree,--pstree \t () \t\t display pstree\n'
+    helpmsg+='\t--clone \t () \t\t clone u to target dir\n'
+    helpmsg+='\t-c,--copy \t () \t\t copy content to clipboard\n'    
+
     tree_extra() {
-        if $(os -c mac); then pstree; 
-        else ps auxwwf; fi;
+        if $(os -c mac); then pstree; else ps auxwwf; fi;
     }
 
     clone_extra() {
-        local location=$1
-        if ! $(hasValueq $location); then location="."; fi;
-        cp $(u _SCRIPTPATHFULL) $location
+        local location=$1; 
+        if ! $(hasValueq $location); then location="."; fi; 
+        cp $(_SCRIPTPATHFULL) $location; 
     }
 
     copy_extra() {
@@ -2806,7 +2905,6 @@ extra() {
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";
-    elif $(hasValueq "$large"); then large_extra $large;
     elif $(hasValueq "$tree"); then tree_extra $tree; 
     elif $(hasValueq "$clone"); then clone_extra $clone; 
     elif $(hasValueq "$copy"); then copy_extra "$@"; 
@@ -2814,8 +2912,8 @@ extra() {
 }
 
 calc() {
-    local equation=$(_EC "$@") 
-    _EC $(echo "scale=8; $equation" | bc | sed -E 's/([0-9]*\.[0-9]*[1-9])0*$/\1/; s/^\.+/0./')
+    local equation=$(_EC "$@"); 
+    _EC $(echo "scale=8; $equation" | bc | sed -E 's/([0-9]*\.[0-9]*[1-9])0*$/\1/; s/^\.+/0./');
 }
 
 mount() {
@@ -2855,7 +2953,7 @@ mount() {
         if ! $(has -p $source); then return $(_ERC "{$source} does not exist"); fi;
         if ! $(hasValueq $target); then return $(_ERC "target does not exist"); fi;
         
-        confirm=$(u prompt mounting source {$source} to target {$target} \(N/y?\) )
+        confirm=$(prompt mounting source {$source} to target {$target} \(N/y?\) )
         if [[ $confirm = 1 ]]; then  
             fsType=$(lsblk -no FSTYPE "$source");
             acceptedTypes=("ext2" "ext3" "ext4" "vfat" "ntfs" "exfat" "xfs" "btrfs");
@@ -2864,11 +2962,11 @@ mount() {
             sudo $MOUNT "$source" "$target"
             if ! $MOUNT | grep -q "$target"; then return $(_ERC "Failed to mount {$source} at {$target}."); fi;
 
-            confirm=$(u prompt writing to fstab \(N/y?\) )
+            confirm=$(prompt writing to fstab \(N/y?\) )
             if [[ $confirm = 1 ]]; then  
                 if ! grep -q "$source" /etc/fstab; then return $(_ERC "source {$source} is already in /etc/fstab."); fi;
                 echo "$source $target $fsType defaults 0 2" | sudo tee -a /etc/fstab
-                u _ED {"$source $target $fsType defaults 0 2"} added to fstab 
+                _ED {"$source $target $fsType defaults 0 2"} added to fstab 
             fi; 
         fi;
     }
