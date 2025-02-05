@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 7.16.7
+    echo 7.16.9
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -362,6 +362,7 @@ has() {
     }
 
     file_Q_has() {
+        local lpath="$@"
         [ -f "$lpath" ];
     }
 
@@ -1906,14 +1907,14 @@ logfile() {
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-f,--file \t (string) \t file destination that you want to log to \n'
-    helpmsg+='\t-l,--line \t (int) \t\t number of lines to keep in the file \n'
+    helpmsg+='\t-l,--line \t (int) \t\t loose check mode, number of lines to keep in the file \n'
     helpmsg+='\t-m,--message \t (string) \t message to put in a log \n'
     helpmsg+='\t-c,--command \t (string) \t command to operate, log result to file \n'
     helpmsg+='\t-c2,--command2 \t (string) \t command to operate, include 2>&1, log result to file \n'
 
     perform_logfile() {
 
-        if ! $(hasValue "$line"); then line=50; fi;
+        if ! $(hasValue "$line"); then line=1000; fi;
         if ! $(hasValue $file); then return $(_ERC "file destination not specified"); else file=$(eval echo "$file"); fi;
         local indicator=""
 
@@ -1936,12 +1937,17 @@ logfile() {
 
         if ! _LON "$file"; then return $(_ERC "failed"); fi;
 
+        if $(has -F $file); then fileLine=$(wc -l < $file); else fileLine=0; fi; 
+        _ED loose mode enabled, file line {$fileLine}, max {$line} 
         echo "$(_UTILDATE),$indicator; $content" >> $file
-        temp_file=$(mktemp)  
-        tail -n $line $file > "$temp_file"  
-        mv "$temp_file" $file
-        
-        _LOFF "$file"
+        if (( fileLine > line )); then 
+            limit=$(( line / 2 )); 
+            _ED limit reached, trimming to {$limit}
+            temp_file=$(mktemp);  
+            tail -n $limit $file > "$temp_file";  
+            mv "$temp_file" $file; 
+        fi; 
+        _LOFF "$file"; 
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";
