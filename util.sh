@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.0.2
+    echo 8.0.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2151,9 +2151,9 @@ network() {
 
     display_network() {
         if $(hasCmd nethogs) && ! $(hasValueq "$v2"); then 
-            nethogs -C || nethogs
+            nethogs -C || nethogs; 
         elif $(hasCmd iftop); then
-            iftop -b -P
+            iftop -b -P; 
         fi
     }
 
@@ -2792,7 +2792,7 @@ syscheck() {
             volumeName=$(echo "$line" | awk '{print $1}');
             if [ "$volumePercent" -ge "$check" ]; then
                 _ERC "Critical alert: $volumeName is at $volumePercent% usage."
-                large_syscheck $volumeName
+                large_syscheck $volumeName; 
             fi; 
             done < <(df -h | grep '^/dev/disk' | grep -v '/System'); 
 
@@ -2806,7 +2806,7 @@ syscheck() {
                 memUsage=$(echo "($usedMem * 100) / $totalMem" | bc); 
                 if [ "$memUsage" -ge "$check" ]; then
                     _ERC "Critical alert: Memory usage is at ${memUsage}% (Used: ${usedMem}M, Total: ${totalMem}M)."; 
-                    process --mem
+                    process --mem; 
                 fi; 
             fi; 
 
@@ -2817,7 +2817,7 @@ syscheck() {
             cpuUsage=$(echo "scale=0; ($loadAvg / $cores) * 100 / 1" | bc); 
             if [ "$cpuUsage" -ge "$check" ]; then
                 _ERC "Critical alert: CPU load is at ${cpuUsage}% (Current 5min average: ${loadAvg}, Cores: ${cores})."; 
-                process --cpu
+                process --cpu; 
             fi; 
 
         elif $(os linux); then
@@ -2829,7 +2829,7 @@ syscheck() {
                 volumeName=$(echo "$line" | awk '{print $1}');
                 if [ "$volumePercent" -ge "$check" ]; then
                     _ERC "Critical alert: $volumeName is at $volumePercent% usage."
-                    large_syscheck $volumeName
+                    large_syscheck $volumeName; 
                 fi;
             done < <(df -h | grep '^/dev/' | grep -v '/boot'); 
 
@@ -2841,7 +2841,7 @@ syscheck() {
             memUsage=$(echo "($usedMem * 100) / $totalMem" | bc); 
             if [ "$memUsage" -ge "$check" ]; then
                 _ERC "Critical alert: Memory usage is at $memUsage%."; 
-                process --mem
+                process --mem; 
             fi; 
 
             _ED checking CPU +
@@ -2851,16 +2851,14 @@ syscheck() {
             cpuUsage=$(echo "scale=0; ($loadAvg / $cores) * 100 / 1" | bc); 
             if [ "$cpuUsage" -ge "$check" ]; then
                 _ERC "Critical alert: CPU load is at ${cpuUsage}% (Current 5min average: ${loadAvg}, Cores: ${cores})."; 
-                process --cpu
+                process --cpu; 
             fi; 
 
             _ED checking docker +
 
-            if $(hasCmd docker); then 
-                if $(docker | grep -q restart); then 
-                    _ERC "Critical alert: docker container keep restarting";
-                    docker -p restart
-                fi; 
+            if $(hasCmd docker) && $(docker | grep -q restart); then 
+                _ERC "Critical alert: docker container keep restarting"
+                docker -p restart; 
             fi;  
 
         fi; 
