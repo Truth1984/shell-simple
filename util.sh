@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.0.3
+    echo 8.1.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -265,18 +265,13 @@ hasFile() {
 
 # (cmdName): bool
 hasCmd() {
-    if command -v "$1" > /dev/null 2>&1; then
-        if [[ "$(type -t "$1")" != "function" ]]; then return $(_RC 0 $@); fi; 
-    fi;
-    return $(_RC 1 $@);
+    env -i bash -c "command -v '$1'" >/dev/null 2>&1 && return $(_RC 0 $@) || return $(_RC 1 $@);
 }
+
 
 # (cmdName): bool
 hasCmdq() {
-    if command -v "$1" > /dev/null 2>&1; then
-        if [[ "$(type -t "$1")" != "function" ]]; then return 0; fi; 
-    fi;
-    return 1 
+    env -i bash -c "command -v '$1'" >/dev/null 2>&1 && return 0 || return 1;
 }
 
 # (envName): bool
@@ -1797,7 +1792,7 @@ help(){
         fi;
 
         chmod 777 $tmpfile 
-        exec $tmpfile setup &
+        exec $tmpfile setup 
     }
 
     edit_help() {
