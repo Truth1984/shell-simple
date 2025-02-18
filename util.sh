@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.1.4
+    echo 8.1.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1251,7 +1251,7 @@ _REQHelper() {
 # -q,--quiet disable verbose
 post() {
     declare -A post_data; parseArg post_data $@;
-    local url=$(parseGet post_data u url _);
+    local url=$(parseGet post_data u url _ D dns C curl W wget q quiet);
     local json=$(parseGet post_data j json);
     local string=$(parseGet post_data s string);
     local DNS=$(parseGet post_data D dns);
@@ -1333,7 +1333,7 @@ post() {
 # -q,--quiet disable verbose
 get() {
     declare -A get_data; parseArg get_data $@;
-    local url=$(parseGet get_data u url _);
+    local url=$(parseGet get_data u url _ D dns C curl W wget q quiet);
     local run=$(parseGet get_data r run);
     local DNS=$(parseGet get_data D dns);
     local CURL=$(parseGet get_data C curl);
@@ -2073,18 +2073,18 @@ _web() {
 
     redirect_web() {
         local webcmd="" weblocation=$@
-        local lip=$(ip -P)
+        local lip=$(ip -P); 
 
         if ! $(hasValueq $weblocation); then return $(_ERC "web redirect url not defined"); fi;
         
-        local reHost=$(echo "$weblocation" | sed -E 's#^(https?://)?([^:/]+).*#\1\2#')
-        local rePort=$(echo "$weblocation" | sed -E 's#^.*:([0-9]+)$#\1#')
+        local reHost=$(echo "$weblocation" | sed -E 's#^(https?://)?([^:/]+).*#\1\2#'); 
+        local rePort=$(echo "$weblocation" | sed -E 's#^.*:([0-9]+)$#\1#'); 
 
         if [[ $weblocation != http://* && $weblocation != https://* ]]; then weblocation="http://$weblocation"; fi;
         
         if $(hasCmd bun); then 
             _ED Starting bun server redirect on $lip:$webPort to location: $weblocation
-            bun -e "Bun.serve({port: $webPort,async fetch(req){console.log(req);return Response.redirect(\"$weblocation\", 301);}})"
+            bun -e "Bun.serve({port: $webPort,async fetch(req){console.log(req);return Response.redirect(\"$weblocation\", 301);}})"; 
             return
         fi;
 
@@ -2773,7 +2773,7 @@ syscheck() {
         local largeDir=$1 largeLength=$2
         if ! $(hasValueq $largeDir); then largeDir="."; fi;
         if ! $(hasValueq $largeLength); then largeLength=20; fi;
-        du -ahx $largeDir | sort -rh | head -n $largeLength
+        du -ahx $largeDir | sort -rh | head -n $largeLength; 
     }
 
     check_syscheck() {
@@ -2952,13 +2952,13 @@ mount() {
             acceptedTypes=("ext2" "ext3" "ext4" "vfat" "ntfs" "exfat" "xfs" "btrfs");
             if [[ ! " ${acceptedTypes[@]} " =~ " ${fsType} " ]]; then return $(_ERC "source {$source} file type is {$fsType},not accepted, use mkfs.ext4 first"); fi; 
             
-            sudo $MOUNT "$source" "$target"
+            sudo $MOUNT "$source" "$target"; 
             if ! $MOUNT | grep -q "$target"; then return $(_ERC "Failed to mount {$source} at {$target}."); fi;
 
-            confirm=$(prompt writing to fstab \(N/y?\) )
+            confirm=$(prompt writing to fstab \(N/y?\) );
             if [[ $confirm = 1 ]]; then  
                 if ! grep -q "$source" /etc/fstab; then return $(_ERC "source {$source} is already in /etc/fstab."); fi;
-                echo "$source $target $fsType defaults 0 2" | sudo tee -a /etc/fstab
+                echo "$source $target $fsType defaults 0 2" | sudo tee -a /etc/fstab; 
                 _ED {"$source $target $fsType defaults 0 2"} added to fstab 
             fi; 
         fi;
@@ -3047,26 +3047,25 @@ search() {
     helpmsg+='\t-D,--depth \t (int) \t\t search depth, default 7\n'
 
     _load_args() {
-        AG_ARGS=""
-        # ignore
+        AG_ARGS="";
+
         local preIgnoreList="$ignore;node_modules;.git;package-lock.json;"
         IFS=';' read -ra elements <<< "$preIgnoreList"
         
         for element in "${elements[@]}"; do
             element="${element#"${element%%[![:space:]]*}"}"
             element="${element%"${element##*[![:space:]]}"}"
-            if $(hasValueq $element); then AG_ARGS="$AG_ARGS --ignore $element"; fi;
-        done
-        # depth
+            if $(hasValueq $element); then AG_ARGS="$AG_ARGS --ignore $element"; fi; 
+        done; 
+
         if ! $(hasValueq $depth); then depth=7; fi;
-        AG_ARGS="$AG_ARGS --depth $depth"
-        # show with line
+        AG_ARGS="$AG_ARGS --depth $depth"; 
+ 
         if ! $(hasValueq "$show"); then AG_ARGS="$AG_ARGS --files-with-matches";
         else AG_ARGS="$AG_ARGS --context $show"; fi;
 
         if $(hasValueq $hidden); then AG_ARGS="$AG_ARGS --hidden"; fi;
-        # extra
-        AG_ARGS="$AG_ARGS --follow --noheading --column"
+        AG_ARGS="$AG_ARGS --follow --noheading --column"; 
     }
 
     content_search() {
