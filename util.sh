@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.1.9
+    echo 8.1.10
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1667,7 +1667,7 @@ setup() {
     cp $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u2
     cp $(_SCRIPTPATHFULL) $_U2_Storage_Dir_Bin/u
     $_U2_Storage_Dir_Bin/u2 _ED Current Version: $($_U2_Storage_Dir_Bin/u2 version)
-    if [ -w /usr/bin ] && $(has -d /usr/bin); then exec cp -f $(_SCRIPTPATHFULL) /usr/bin/u 2>/dev/null; fi;
+    if [ -w /usr/bin ] && $(has -d /usr/bin); then exec cp -f $_U2_Storage_Dir_Bin/u /usr/bin/u 2>/dev/null; fi;
 }
 
 setupEX() {
