@@ -265,13 +265,13 @@ hasFile() {
 
 # (cmdName): bool
 hasCmd() {
-    env -i bash -c "command -v '$1'" >/dev/null 2>&1 && return $(_RC 0 $@) || return $(_RC 1 $@);
+    env -i "$(command -v bash)" -c "command -v '$1'" >/dev/null 2>&1 && return $(_RC 0 $@) || return $(_RC 1 $@);
 }
 
 
 # (cmdName): bool
 hasCmdq() {
-    env -i bash -c "command -v '$1'" >/dev/null 2>&1 && return 0 || return 1;
+    env -i "$(command -v bash)" -c "command -v '$1'" >/dev/null 2>&1 && return 0 || return 1;
 }
 
 # (envName): bool
