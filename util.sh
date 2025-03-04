@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.1.12
+    echo 8.1.13
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -3025,6 +3025,9 @@ _strict() {
     '
 }
 
+sf() {
+    search -s $@
+}
 
 # -c,--content,_
 # -p,--path (bool) search path only
@@ -3035,7 +3038,7 @@ _strict() {
 search() { 
     declare -A search_data; parseArg search_data $@;
     local content=$(parseGet search_data c content _);
-    local path=$(parseGet search_data p path);
+    local path=$(parseGet search_data p path n name);
     local base=$(parseGet search_data b base);
     local show=$(parseGet search_data s show);
     local hidden=$(parseGet search_data h hidden);
@@ -3044,13 +3047,13 @@ search() {
     local help=$(parseGet search_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-c,--content,_ \t (string) \t content to search \n'
-    helpmsg+='\t-p,--path \t (string) \t search for file or folder name only\n'
-    helpmsg+='\t-b,--base \t (string) \t base directory to search in, default "."\n'
-    helpmsg+='\t-s,--show \t (int) \t\t show n(*_2) lines of surrounding context\n'
-    helpmsg+='\t-h,--hidden \t () \t\t search hidden folder\n'
-    helpmsg+='\t-i,--ignore \t (string) \t ignore list, use ";" as delimiter \n'
-    helpmsg+='\t-D,--depth \t (int) \t\t search depth, default 7\n'
+    helpmsg+='\t-c,--content,_ \t\t (string) \t content to search \n'
+    helpmsg+='\t-p,--path,-n,--name \t (string) \t search for file or folder name only\n'
+    helpmsg+='\t-b,--base \t\t (string) \t base directory to search in, default "."\n'
+    helpmsg+='\t-s,--show \t\t (int) \t\t show n(*_2) lines of surrounding context\n'
+    helpmsg+='\t-h,--hidden \t\t () \t\t search hidden folder\n'
+    helpmsg+='\t-i,--ignore \t\t (string) \t ignore list, use ";" as delimiter \n'
+    helpmsg+='\t-D,--depth \t\t (int) \t\t search depth, default 7\n'
 
     _load_args() {
         AG_ARGS="";
