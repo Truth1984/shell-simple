@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.1.13
+    echo 8.1.14
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2045,6 +2045,7 @@ _web() {
     local webMessage=$(parseGet _web_data m message s string);
     local webRedirect=$(parseGet _web_data r redirect)
     local webDirectory=$(parseGet _web_data d dir);
+    local webHtml=$(parseGet _web_data h html w web);
     local help=$(parseGet _web_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -2052,6 +2053,7 @@ _web() {
     helpmsg+='\t-m,--message,-s,--string \t (string) \t message to display \n'
     helpmsg+='\t-r,--redirect \t\t\t (string) \t redirect to target URL \n'
     helpmsg+='\t-d,--dir \t\t\t (string) \t directory server with bun default "." \n'
+    helpmsg+='\t-h,--html,-w,--web \t\t\t (string) \t html server with bun default "index.html" \n'
 
     if ! $(hasValue $webPort); then webPort=3000; fi;
     if ! $(hasValue $webMessage); then webMessage="web message"; fi;
@@ -2117,9 +2119,26 @@ _web() {
         ).catch(() => new Response('Not Found', { status: 404 }));},});"
     }
 
+    html_web() {
+        local servePath=$@
+        if ! $(hasValueq $servePath); then servePath="."; fi;
+
+        local lip=$(ip -P)
+        _ED Starting bun html server on $lip:$webPort with path: \'$servePath\'
+
+        bun -e "Bun.serve({port: $webPort, fetch(req) {
+        const url = new URL(req.url); 
+        const filePath = require('path').resolve(\`$servePath\`, url.pathname.slice(1) || 'index.html'); 
+        return require('fs/promises').stat(filePath).then(stats => stats.isDirectory() 
+            ? require('fs/promises').readFile(require('path').join(filePath, 'index.html')).then(content => new Response(content, {headers: {'Content-Type': 'text/html'}})) 
+            : require('fs/promises').readFile(filePath).then(content => new Response(content, {headers: {'Content-Type': 'text/html'}}))
+        ).catch(() => new Response('Not Found', {status: 404}));}});"
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$webRedirect"); then redirect_web $webRedirect;
     elif $(hasValueq "$webDirectory"); then directory_web $webDirectory;
+    elif $(hasValueq "$webHtml"); then html_web $webHtml;
     else server_web; 
     fi;
 }
