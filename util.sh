@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.1.14
+    echo 8.1.15
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1483,8 +1483,7 @@ quick() {
     targetFile="$_U2_Storage_Dir_Quick/$name"
 
     edit_quick(){
-        if $(hasCmd code); then code $targetFile;
-        elif $(hasCmd nano); then nano $targetFile;
+        if $(hasCmd nano); then nano $targetFile;
         elif $(hasCmd vi); then vi $targetFile; fi;
     }
 
