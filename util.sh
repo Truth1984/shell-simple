@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.2.3
+    echo 8.2.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -3118,6 +3118,7 @@ search() {
 
     minute_search() {
         if ! $(hasValueq $base); then base="."; fi;
+        local results=();
         local sequence=$(echo $@ | xargs);
         minute=$(echo $sequence | awk '{print $1}');
         tops=$(echo $sequence | awk '{print $2}');
@@ -3125,13 +3126,22 @@ search() {
         if ! $(hasValueq $tops); then tops="20"; fi; 
 
         _ED searching base {$base} top {$tops} minute {$minute}
-        
-        find $base -type f -mmin -$minute -not -path "*/node_modules/*" -not -path "*/.git/*" -exec stat -f "%N %m" {} + | sort -n -r | head -n $tops |
-        while read -r line; do
-            filepath=$(echo "$line" | awk '{print $1}');
-            searchTime=$(echo "$line" | awk '{$1=""; print $0}' | xargs);
-            formatDate=$(dates -q $searchTime);
-            echo "$formatDate - $filepath";
+
+        if $(os mac); then 
+            while IFS= read -r line; do 
+                results+=("$line");
+            done < <(find $base -type f -mmin -$minute -not -path "*/node_modules/*" -not -path "*/.git/*" -exec stat -f '%m %N' {} \; | sort -n -r | head -n $tops); 
+        else 
+            while IFS= read -r line; do 
+                results+=("$line");
+            done < <(find $base -type f -mmin -$minute -not -path "*/node_modules/*" -not -path "*/.git/*" -exec stat -c '%Y %n' {} \; | sort -n -r | head -n $tops); 
+        fi;
+
+        for entry in "${results[@]}"; do
+            timestamp=$(echo "$entry" | awk '{print $1}');
+            name=$(echo "$entry" | awk '{$1=""; print $0}' | sed 's/^ //');
+            formated=$(dates -q $timestamp);
+            echo "$formated - $name";
         done
     }
 
