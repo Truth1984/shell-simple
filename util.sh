@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.1.15
+    echo 8.2.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -86,6 +86,13 @@ _ED() {
     fi;
 }
 
+# echo array
+_EA() {
+    _ED printing array {$1}
+    local -n print_data=$1;
+    for i in "${!print_data[@]}"; do printf '[%s]: %s\n' "$i" "${print_data[$i]}"; done; 
+}
+
 # echo to file descriptor 2
 _E2() {
     $@ >&2
@@ -148,6 +155,12 @@ parseArg1() {
 parseGet() {
     local -n parse_get=$1;
     for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then _EC "${parse_get[$i]}" && return $(_RC 0 $@); fi; done;
+    return 1;
+}
+
+parseGetQ() {
+    local -n parse_get=$1;
+    for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then echo "${parse_get[$i]}"; fi; done;
     return 1;
 }
 
@@ -303,12 +316,6 @@ has() {
         return $(! [[ -z $1 ]]); 
     fi;
 
-    parseGetQ() {
-        local -n parse_get=$1;
-        for i in ${@:2:$#}; do if ! [[ -z ${parse_get[$i]} ]]; then echo "${parse_get[$i]}" && return 0; fi; done;
-        return 1;
-    }
-
     local cmd=$(parseGet has_data c cmd command);
     local cmdQ=$(parseGetQ has_data C Cmd Command);
     local dir=$(parseGet has_data d dir);
@@ -407,7 +414,7 @@ stat() {
     declare -A stats_data; parseArg stats_data $@;
     local size=$(parseGet stats_data s size _);
     local modify=$(parseGet stats_data m modify);
-    local modifyQ=$(parseGet stats_data M modifyQ)
+    local modifyQ=$(parseGet stats_data M modifyQ);
     local full=$(parseGet stats_data f full);
     local help=$(parseGet stats_data help);
 
@@ -651,7 +658,8 @@ ip() {
 
 dates() {
     declare -A date_data; parseArg date_data $@;
-    local parse=$(parseGet date_data p parse _)
+    local parse=$(parseGet date_data p parse _);
+    local parseQ=$(parseGetQ date_data p parse _ q quiet);
     local dateTime=$(parseGet date_data D Datetime);
     local dateLong=$(parseGet date_data l long);
     local dateOnly=$(parseGet date_data d date);
@@ -671,6 +679,7 @@ dates() {
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--parse,_ \t\t () \t\t parse date from string, can use "now"\n'
+    helpmsg+='\t-q,--quiet \t\t () \t\t parse date quiet from string, can use "now"\n'
     helpmsg+='\t-D,--Datetime, \t\t () \t\t date as datetime format\n'
     helpmsg+='\t-l,--long \t\t () \t\t date as long format\n'
     helpmsg+='\t-d,--date \t\t () \t\t date only format of date\n'
@@ -695,9 +704,9 @@ dates() {
         fi;
     }
 
-    if ! $(hasValueq $parse); then time=$(date +%s);
-    else time=$(parse_dates $parse); fi; 
-    if ! $(hasValueq $time); then return $(_ERC "time parsing error"); fi;
+    if ! $(hasValueq $parseQ); then time=$(date +%s);
+    else time=$(parse_dates $parseQ); fi; 
+    if ! $(hasValueq $time); then return $(_ERC "time parsing error, time missing"); fi;
 
     toFormat_dates() {
         echo $($DATE -d "@$time" +"$1")
@@ -3062,6 +3071,7 @@ search() {
     local hidden=$(parseGet search_data h hidden);
     local ignore=$(parseGet search_data i ignore);
     local depth=$(parseGet search_data D depth);
+    local minute=$(parseGet search_data m minute)
     local help=$(parseGet search_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -3072,6 +3082,7 @@ search() {
     helpmsg+='\t-h,--hidden \t\t () \t\t search hidden folder\n'
     helpmsg+='\t-i,--ignore \t\t (string) \t ignore list, use ";" as delimiter \n'
     helpmsg+='\t-D,--depth \t\t (int) \t\t search depth, default 7\n'
+    helpmsg+='\t-m,--minute \t\t (int) \t\t search top Y changed file in last X minutes, default [30,20]\n'
 
     _load_args() {
         AG_ARGS="";
@@ -3105,9 +3116,29 @@ search() {
         eval $(_EC ag $AG_ARGS -g "$@" $base)
     }
 
+    minute_search() {
+        if ! $(hasValueq $base); then base="."; fi;
+        local sequence=$(echo $@ | xargs);
+        minute=$(echo $sequence | awk '{print $1}');
+        tops=$(echo $sequence | awk '{print $2}');
+        if ! $(hasValueq $minute); then minute="30"; fi;
+        if ! $(hasValueq $tops); then tops="20"; fi; 
+
+        _ED searching base {$base} top {$tops} minute {$minute}
+        
+        find $base -type f -mmin -$minute -not -path "*/node_modules/*" -not -path "*/.git/*" -exec stat -f "%N %m" {} + | sort -n -r | head -n $tops |
+        while read -r line; do
+            filepath=$(echo "$line" | awk '{print $1}');
+            searchTime=$(echo "$line" | awk '{$1=""; print $0}' | xargs);
+            formatDate=$(dates -q $searchTime);
+            echo "$formatDate - $filepath";
+        done
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq $path); then path_search "$path";
-    else content_search "$content";
+    elif $(hasValueq "$minute"); then minute_search "$minute"; 
+    else content_search "$content"; 
     fi;
 }
 
