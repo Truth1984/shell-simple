@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.2.5
+    echo 8.2.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2904,12 +2904,16 @@ extra() {
     local tree=$(parseGet extra_data tree pstree);
     local clone=$(parseGet extra_data clone);
     local copy=$(parseGet extra_data c copy);
+    local strict=$(parseGet extra_data eval strict);
+    local current=$(parseGet extra_data cd current currentdir)
     local help=$(parseGet extra_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t--tree,--pstree \t () \t\t display pstree\n'
-    helpmsg+='\t--clone \t () \t\t clone u to target dir\n'
-    helpmsg+='\t-c,--copy \t () \t\t copy content to clipboard\n'    
+    helpmsg+='\t--tree,--pstree \t\t () \t\t display pstree\n'
+    helpmsg+='\t--clone \t\t\t () \t\t clone u to target dir\n'
+    helpmsg+='\t-c,--copy \t\t\t () \t\t copy content to clipboard\n'  
+    helpmsg+='\t--strict,--eval \t\t () \t\t bash: to use strict\n'
+    helpmsg+='\t--cd,--current,--currentdir \t () \t\t bash: to find current dir\n'  
 
     tree_extra() {
         if $(os -c mac); then pstree; else ps auxwwf; fi;
@@ -2930,10 +2934,20 @@ extra() {
         else _ERC "copy content failed"; fi;
     }
 
+    strict_extra() {
+        echo 'eval $(u _strict "$@");'
+    }
+
+    currentDir_extra() {
+        echo 'DIR="$(eval "$(u _PATH)");"'
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$tree"); then tree_extra $tree; 
     elif $(hasValueq "$clone"); then clone_extra $clone; 
     elif $(hasValueq "$copy"); then copy_extra "$@"; 
+    elif $(hasValueq "$strict"); then strict_extra $strict; 
+    elif $(hasValueq "$current"); then currentDir_extra $current; 
     fi;
 }
 
