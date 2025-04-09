@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.2.6
+    echo 8.2.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -3057,7 +3057,7 @@ _strict() {
         local function_name="$1";
         
         if _function_exists "$function_name"; then
-            "$function_name";
+            "$@";
         else
             u _ERC "Function {$function_name} not found.";
         fi;
