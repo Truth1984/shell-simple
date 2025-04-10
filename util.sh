@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.2.7
+    echo 8.2.8
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -804,15 +804,18 @@ trash() {
     put_trash() {
         local input="$@"
         if ! $(hasValueq $input); then return $(_ERC "to trash path not specified"); fi; 
-        local inputPath=$(pathGetFull "$input")
-        if ! $(has --Path "$inputPath"); then return $(_ERC "input path {$inputPath} not exist"); fi;
-        local uid="$(uuid)"
-        local trashDir=$(trimArgs $TP / $uid)
-        local size=$(du -sh "$inputPath" | awk '{print $1}')
-        local infoDir=$(trimArgs $trashDir / $trashInfoName)
-        mkdir -p $trashDir
-        mv -fv "$inputPath" $trashDir
-        printf "uuid=$uid \noriginalDir=$inputPath \ndtime=$(date +'%Y-%m-%d %H:%M:%S')\nsize=$size\n" > $infoDir
+
+        for file in $input; do
+            inputPath=$(pathGetFull "$file")
+            if ! $(has --Path "$inputPath"); then return $(_ERC "input path {$inputPath} not exist"); fi;
+            local uid="$(uuid)"
+            local trashDir=$(trimArgs $TP / $uid)
+            local size=$(du -sh "$inputPath" | awk '{print $1}')
+            local infoDir=$(trimArgs $trashDir / $trashInfoName)
+            mkdir -p $trashDir
+            mv -fv "$inputPath" $trashDir
+            printf "uuid=$uid \noriginalDir=$inputPath \ndtime=$(date +'%Y-%m-%d %H:%M:%S')\nsize=$size\n" > $infoDir
+        done
     }
 
     loadArray() {
@@ -990,7 +993,7 @@ trash() {
     }
     
     if $(hasValueq "$help"); then printf "$helpmsg"; 
-    elif $(hasValueq "$path"); then put_trash $@; 
+    elif $(hasValueq "$path"); then put_trash "$@"; 
     elif $(hasValueq "$list"); then list_trash $list; 
     elif $(hasValueq "$restore"); then restore_trash $restore; 
     elif $(hasValueq "$indexDir"); then index_trash $indexDir; 
