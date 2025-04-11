@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.2.8
+    echo 8.3.9
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -970,7 +970,7 @@ trash() {
 
         for ((i=0; i<$length; i++)); do     
             if $(hasValueq ${folder_data[${i}_uuid]}); then
-                rmTarget=$(trimArgs $TP / $uuid)
+                rmTarget=$(trimArgs $TP / ${folder_data[${i}_uuid]})
                 _ED removing $rmTarget
                 rm -rf $rmTarget
             fi;
@@ -1832,9 +1832,36 @@ help(){
 
 # --- EXTRA ---
 
-# (string) as path
-open() {
-    if $(os mac); then /usr/bin/open $@; elif $(os win); then start $@; else xdg-open $@; fi;
+open() { 
+    declare -A open_data; parseArg open_data $@;
+    local target=$(parseGet open_data t target _);
+    local app=$(parseGet open_data a app);
+    local help=$(parseGet open_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-t,--target,_ \t (string) \t open target\n'
+    helpmsg+='\t-a,--app \t (string) \t open app by given partial name\n'
+   
+    target_open() {
+        if $(os mac); then /usr/bin/open $@; elif $(os win); then start $@; else xdg-open $@; fi;
+    }
+
+    app_open() {
+        if $(os mac); then
+            name=$(trimArgs $@);
+            pattern="*$name*.app"
+            app_path=$(find /Applications -maxdepth 1 -iname "$pattern" | head -n 1)
+
+            if [ -z "$app_path" ]; then return $(_ERC "Error, No matching application found {$pattern}"); fi;
+            _ED "Opening application: {$app_path}"
+            /usr/bin/open "$app_path"
+        fi;
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$target"); then target_open "$target"; 
+    elif $(hasValueq "$app"); then app_open "$app"; 
+    fi;
 }
 
 # portscan
