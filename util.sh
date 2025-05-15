@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.4.0
+    echo 8.4.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1436,7 +1436,7 @@ get() {
 download() {
     local url=$1 filename="${@:2}"
     if $(hasCmd curl); then
-        if $(hasValue $filename); then curl $url -v --output $filename; else curl -v -O $url; fi;
+        if $(hasValue $filename); then curl $url -v -L --output $filename; else curl -v -L -O $url; fi;
     elif $(hasCmd wget); then
         local wgetEx=""
         if ! $(os -c alpine); then wgetEx=" -d"; fi;
