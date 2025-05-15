@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.3.9
+    echo 8.4.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1396,7 +1396,7 @@ get() {
         local url=$(echo "$remain" | awk '{print $1}'); exArgs=$(echo "$remain" | cut -d' ' -f2-);
         curlCmd(){
             tmpfile=$(mktemp)
-            curl -s $url -o $tmpfile
+            curl -sSL $url -o $tmpfile
             _ED download finish, executing bash: url {$url} args {$exArgs}
             if [[ "$exArgs" == -* ]]; then bash $tmpfile $exArgs;
             else bash $tmpfile "$exArgs"; fi;
@@ -1804,7 +1804,7 @@ help(){
         _ED Current Version: $(version)
         local updateUrl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"
         local tmpfile=$(mktemp)
-        if $(hasCmd curl); then curl $updateUrl --output $tmpfile
+        if $(hasCmd curl); then curl -sSL $updateUrl --output $tmpfile
         elif $(hasCmd wget); then wget -O $tmpfile $updateUrl
         fi;
 
@@ -1822,7 +1822,7 @@ help(){
 
     if $(hasValueq "$help"); then printf "$helpmsg";  
     elif $(hasValueq "$name"); then list_help $name;
-    elif $(hasValueq "$update"); then $(update_help);
+    elif $(hasValueq "$update"); then update_help $update;
     elif $(hasValueq "$version"); then echo $(version);
     elif $(hasValueq "$edit"); then edit_help;
     else $(list_help); 
