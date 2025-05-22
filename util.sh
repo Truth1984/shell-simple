@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.4.1
+    echo 8.4.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2399,7 +2399,9 @@ process() {
             pid $name
             _ED killing pid $name;
             kill $name 
-        else pkill -e $name; fi;
+        else 
+            if $(os mac); then pkill $name; else pkill -e $name; fi; 
+        fi;
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";
