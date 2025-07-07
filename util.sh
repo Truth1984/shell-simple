@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.4.2
+    echo 8.4.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2352,6 +2352,7 @@ process() {
     local sortCPU=$(parseGet process_data s cpu);
     local sortMEM=$(parseGet process_data S mem);
     local parent=$(parseGet process_data p parent);
+    local hasit=$(parseGet process_data h has);
     local line=$(parseGet process_data l line);
     local kill=$(parseGet process_data k kill);
     local help=$(parseGet process_data help);
@@ -2361,6 +2362,7 @@ process() {
     helpmsg+='\t-s,--cpu \t () \t\t sort process by cpu and mem\n'
     helpmsg+='\t-S,--mem \t () \t\t sort process by mem and cpu \n'
     helpmsg+='\t-p,--parent \t (int) \t\t find parent process until reach 1 \n'
+    helpmsg+='\t-h,--has \t (string) \t\t check if process exist \n'
     helpmsg+='\t-k,--kill \t (string/uid) \t pkill process via name or uid \n'
     helpmsg+='\t-l,--line \t (int) \t\t sort process line to output, default to 10 \n'
 
@@ -2393,6 +2395,17 @@ process() {
         done
     }
 
+    has_process() {
+        local name=$@;
+        result=$(pgrep "$name")
+
+        if $(hasValueq $result); then
+            return $(_RC 0 "{$name} has pid {$result}")
+        else
+            return $(_ERC "does not exist")
+        fi;
+    }
+
     kill_process() {
         local name=$@;
         if $(string -n $name); then 
@@ -2408,6 +2421,7 @@ process() {
     elif $(hasValueq "$sortCPU"); then sortcpu_process $sortcpu_process;
     elif $(hasValueq "$sortMEM"); then sortmem_process $sortMEM; 
     elif $(hasValueq "$parent"); then parent_process $parent;
+    elif $(hasValueq "$hasit"); then has_process $hasit;
     elif $(hasValueq "$kill"); then kill_process $grepInfo;
     else info_process $grepInfo; 
     fi;
