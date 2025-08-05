@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.4.3
+    echo 8.4.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -3113,7 +3113,7 @@ _strict() {
 }
 
 sf() {
-    search -s $@
+    search $@ -s
 }
 
 # -c,--content,_
@@ -3168,12 +3168,14 @@ search() {
 
     content_search() {
         _load_args
-        eval $(_EC ag $AG_ARGS "$@" $base)
+        contentString=$(echo "$@" | xargs)
+        eval $(_EC ag $AG_ARGS "\"$contentString\"" $base)
     }
 
     path_search() {
         _load_args
-        eval $(_EC ag $AG_ARGS -g "$@" $base)
+        contentString=$(echo "$@" | xargs)
+        eval $(_EC ag $AG_ARGS -g "\"$contentString\"" $base)
     }
 
     minute_search() {
