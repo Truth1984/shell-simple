@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.4.5
+    echo 8.5.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -184,6 +184,7 @@ trimArgs() {
 }
 
 # takes in question, and return 1 as yes, 2 as no, default as 0
+# Return int if entered int
 prompt() {
     local prompter="$@"
     read -p "$prompter"$'\n' response
@@ -1886,12 +1887,14 @@ port() {
     local processPort=$(parseGet port_data p port process _);
     local dockerPort=$(parseGet port_data d docker);
     local infoPort=$(parseGet port_data i info);
+    local killPort=$(parseGet port_data k kill);
     local help=$(parseGet port_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--port,--process,_ \t (string) \t use port number or process name to grep port info\n'
     helpmsg+='\t-d,--docker \t\t (string) \t use port number or process name to grep docker port info\n'
     helpmsg+='\t-i,--info \t\t (int) \t find info with target port number \n'
+    helpmsg+='\t-k,--kill \t\t (int) \t find pid of target port, and kill it \n'
 
     process_port() {
         local grepTarget="$1"
@@ -1924,12 +1927,27 @@ port() {
         if $(hasCmd lsof); then infoResult="$infoResult\n---lsof---\n$(lsof -i :$portNum)\n"; fi;
         echo -e "$infoResult"
     }
+
+    kill_port() {
+        local portNum="$1" pidNum=""
+        if ! $(hasValue $portNum); then return $(_ERC "port number not specified"); fi;
+    
+        if $(os linux); then pidNum=$(netstat -tlnp 2>/dev/null | grep ":$portNum " | awk -F '[ /]' '{print $7}' | head -n1);
+        elif $(os mac); then pidNum=$(lsof -nP -iTCP:"$portNum" -sTCP:LISTEN 2>/dev/null | awk 'NR>1 {print $2; exit}');
+        elif $(os win); then pidNum=$(netstat -ano | grep ":$portNum " | awk '{print $5}' | head -n1); fi; 
+        
+        if ! $(hasValue $pidNum); then return $(_ERC "pid missing, port number not found"); fi;
+        pid $pidNum;
+        promptResult=$(prompt "kill pid {$pidNum} ? (N/y)");
+        if [ "$promptResult" -eq 1 ]; then process -k $pidNum; fi;
+    }
     
 
     if $(hasValueq "$help"); then printf "$helpmsg";  
     elif $(hasValueq "$processPort"); then process_port $processPort;
     elif $(hasValueq "$dockerPort"); then docker_port $dockerPort;
     elif $(hasValueq "$infoPort"); then info_port $infoPort;
+    elif $(hasValueq "$killPort"); then kill_port $killPort;
     else process_port; 
     fi;
 }
@@ -2618,7 +2636,7 @@ docker() {
         if ! $(hasValueq $PID); then return $(_ERC "process pid not found"); fi;
         local pspid=$(ps aux | grep $PID);
         boolNum=$(prompt "kill target process: $pspid");
-        if [ boolNum -eq 1 ]; then 
+        if [ "$boolNum" -eq 1 ]; then 
             _ED killing pid $PID
             kill -9 $PID
             _ED stoping container $name
