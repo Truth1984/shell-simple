@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.5.8
+    echo 8.5.9
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2629,7 +2629,7 @@ docker() {
         dirName=$(password)
         _ED downloading $name to ~/.application/$dirName
         mkdir ~/.application/$dirName
-        . ~/.application/DDO.sh ~/.application/$dirName
+        ~/.application/DDO.sh ~/.application/$dirName $name
 
         _ED importing $name to docker
         tar -cC ~/.application/$dirName . | docker load && rm -rf ~/.application/$dirName
