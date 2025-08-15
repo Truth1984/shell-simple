@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.6.0
+    echo 8.6.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1796,6 +1796,7 @@ help(){
     declare -A help_data; parseArg help_data $@;
     local name=$(parseGet help_data n name _);
     local update=$(parseGet help_data u update upgrade);
+    local updateForce=$(parseGet help_data U Update);
     local version=$(parseGet help_data v version);
     local edit=$(parseGet help_data e edit);
     local help=$(parseGet help_data h help);
@@ -1803,13 +1804,20 @@ help(){
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,_ \t\t (string) \t grep functions with name\n'
     helpmsg+='\t-u,--update,--upgrade \t () \t\t upgrade current script\n'
+    helpmsg+='\t-U,--Update \t\t () \t\t upgrade current script from source\n'
     helpmsg+='\t-v,--version \t\t (string) \t display current version\n'
     helpmsg+='\t-e,--edit \t\t () \t\t edit the file\n'
     helpmsg+='\t-h,--help \t\t (string) \t display help message\n'
 
     update_help() {
         _ED Current Version: $(version)
-        local updateUrl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"
+        local updateUrl;
+        if $(hasValueq "$update"); then 
+            updateUrl="https://hub.gitmirror.com/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh"
+        else 
+            updateUrl="https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh"
+        fi; 
+
         local tmpfile=$(mktemp)
         if $(hasCmd curl); then curl -sSL $updateUrl --output $tmpfile
         elif $(hasCmd wget); then wget -O $tmpfile $updateUrl
@@ -1830,6 +1838,7 @@ help(){
     if $(hasValueq "$help"); then printf "$helpmsg";  
     elif $(hasValueq "$name"); then list_help $name;
     elif $(hasValueq "$update"); then update_help $update;
+    elif $(hasValueq "$updateForce"); then update_help $updateForce;
     elif $(hasValueq "$version"); then echo $(version);
     elif $(hasValueq "$edit"); then edit_help;
     else $(list_help); 
