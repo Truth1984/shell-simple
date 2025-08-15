@@ -2630,6 +2630,7 @@ docker() {
         _ED downloading $name to ~/.application/$dirName
         mkdir ~/.application/$dirName
         ~/.application/DDO.sh ~/.application/$dirName $name
+        if [ $? -ne 0 ]; then rm -rf ~/.application/$dirName && return $(_ERC "download failed"); fi; 
 
         _ED importing $name to docker
         tar -cC ~/.application/$dirName . | docker load && rm -rf ~/.application/$dirName
