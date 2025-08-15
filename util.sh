@@ -1771,7 +1771,7 @@ setupEX() {
 
         source_setupEx
 
-        setupURL="https://raw.gitmirror.com/Truth1984/shell-simple/main/setup.sh" 
+        setupURL="https://hub.gitmirror.com/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" 
         get -r $setupURL "$extraArgs"
     }
 
