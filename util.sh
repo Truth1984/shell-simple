@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.5.7
+    echo 8.5.8
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2459,6 +2459,7 @@ docker() {
     local log=$(parseGet docker_data l log);
     local livelog=$(parseGet docker_data L live);
     local tars=$(parseGet docker_data t tar save);
+    local downs=$(parseGet docker_data d download);
     local clean=$(parseGet docker_data c clean);
     local pids=$(parseGet docker_data P pid);
     local kills=$(parseGet docker_data k kill);
@@ -2477,6 +2478,7 @@ docker() {
     helpmsg+='\t-l,--log \t (string) \t enter name to log details\n'
     helpmsg+='\t-L,--live \t (string) \t enter name to view log live\n'
     helpmsg+='\t-t,--tar,--save \t (string) \t enter x.tar to load, enter container name to export x.tar\n'
+    helpmsg+='\t-d,--download \t (string) \t download offline and import file by using [name:tag] \n'
     helpmsg+='\t-c,--clean \t (string) \t clean docker volume\n'
     helpmsg+='\t-P,--pid \t (int) \t\t enter pid of process to find target docker container\n'
     helpmsg+='\t-k,--kill \t (int) \t\t enter name or id to kill process and stop container\n'
@@ -2616,6 +2618,25 @@ docker() {
         fi;
     }
 
+    down_docker() {
+        local name="$@";
+        if ! $(has -f ~/.application/DDO.sh); then
+            _ED downloading docker_download_offline.sh
+            download https://hub.gitmirror.com/https://raw.githubusercontent.com/moby/moby/master/contrib/download-frozen-image-v2.sh ~/.application/DDO.sh
+            chmod 777 ~/.application/DDO.sh 
+        fi;
+      
+        dirName=$(password)
+        _ED downloading $name to ~/.application/$dirName
+        mkdir ~/.application/$dirName
+        . ~/.application/DDO.sh ~/.application/$dirName
+
+        _ED importing $name to docker
+        tar -cC ~/.application/$dirName . | docker load && rm -rf ~/.application/$dirName
+
+        _ED importing complete
+    }
+
     clean_docker() {
         $DOCKER system prune --volumes
     }
@@ -2657,6 +2678,7 @@ docker() {
     elif $(hasValueq "$log"); then log_docker $log;
     elif $(hasValueq "$livelog"); then livelog_docker $livelog;
     elif $(hasValueq "$tars"); then tar_docker $tars;
+    elif $(hasValueq "$downs"); then down_docker $downs;
     elif $(hasValueq "$clean"); then clean_docker $clean;
     elif $(hasValueq "$pids"); then pid_docker $pids; 
     elif $(hasValueq "$kills"); then kill_docker $kills; 
