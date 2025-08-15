@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.5.9
+    echo 8.6.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1096,8 +1096,8 @@ password() {
 }
 
 encrypt() {
-    source ~/.bash_env
-    if ! $(hasCmd gpg); then return $(_ERC "gpg not found"); fi;
+    if ! $(hasCmd gpg); then return $(_ERC "gpg not found"); fi; 
+    if ! $(hasValueq $_U2_GPG_PW); then source ~/.bash_env; fi;
     if ! $(hasValueq $_U2_GPG_PW); then return $(_ERC "_U2_GPG_PW not present or set in bash_env"); fi;
     _ED using gpg to encrypt {$@}
 
@@ -1105,8 +1105,8 @@ encrypt() {
 }
 
 decrypt() {
-    source ~/.bash_env
     if ! $(hasCmd gpg); then return $(_ERC "gpg not found"); fi;
+    if ! $(hasValueq $_U2_GPG_PW); then source ~/.bash_env; fi;
     if ! $(hasValueq $_U2_GPG_PW); then return $(_ERC "_U2_GPG_PW not present or set in bash_env"); fi;
     _ED using gpg to decrypt {$@}
     gpg --batch --yes --passphrase "$_U2_GPG_PW" "$@"
@@ -1114,20 +1114,26 @@ decrypt() {
 
 # (gpg .sh file url) -> run local content 
 decryptURL() {
-    source ~/.bash_env
+    if ! $(hasValueq $_U2_GPG_PW); then source ~/.bash_env; fi;
     if ! $(hasCmd gpg); then return $(_ERC "gpg not found"); fi;
     if ! $(hasValueq $@); then return $(_ERC "No URL provided"); fi;
     
     local tmpfile=$(mktemp);
+    local decryptedFile;
+    if $(os mac); then decryptedFile=$(gmktemp --suffix=".sh"); else decryptedFile=$(mktemp --suffix=".sh"); fi;
+
     download "$@" "$tmpfile";
     if ! $(hasValueq $_U2_GPG_PW); then _U2_GPG_PW=$(promptSecret "Please enter your GPG passphrase: "); fi; 
-    local decrypted_content=$(gpg --batch --yes --passphrase "$_U2_GPG_PW" --decrypt < $tmpfile);
-    if [ $? -ne 0 ]; then 
-        rm -f $tmpfile 
-        return $(_ERC "Decryption failed. Please check your passphrase.")
-    fi;
+
+    if ! gpg --batch --yes --passphrase "$_U2_GPG_PW" --decrypt < "$tmpfile" > "$decryptedFile"; then
+        rm -f "$tmpfile" "$decryptedFile"
+        return $(_ERC "Decryption failed. Please check your passphrase."); 
+    fi; 
+
     rm -f $tmpfile
-    eval "$decrypted_content"
+    chmod 777 $decryptedFile
+    . $decryptedFile
+    rm -f $decryptedFile
 }
 
 # shiftto "-p|--pattern" "-p abc -p d" -> "abc -p d"
