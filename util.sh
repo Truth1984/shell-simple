@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.6.1
+    echo 8.6.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -785,6 +785,7 @@ trash() {
     local list=$(parseGet trash_data l list);
     local indexDir=$(parseGet trash_data i index);
     local restore=$(parseGet trash_data r restore);
+    local restoreIndex=$(parseGet trash_data R restoreindex);
     local clean=$(parseGet trash_data c clean);
     local delete=$(parseGet trash_data d delete);
     local purge=$(parseGet trash_data P purge);
@@ -795,6 +796,7 @@ trash() {
     helpmsg+='\t-l,--list \t (string) \t list infos on current input path, default to list all\n'
     helpmsg+='\t-i,--index \t (number) \t input index number and get target trash dir\n'
     helpmsg+='\t-r,--restore \t (string) \t restore folder depends on current path\n'
+    helpmsg+='\t-R,--restoreindex \t (string) \t restore folder depends on index\n'
     helpmsg+='\t-c,--clean \t (number) \t clean trash older than 3 month, default 7890000 \n'
     helpmsg+='\t-d,--delete \t () \t choose a trash and delete it \n'
     helpmsg+='\t-P,--purge \t () \t\t remove all trash from trash path\n'
@@ -913,6 +915,22 @@ trash() {
         mv -i $(trimArgs $targetTrashDir "/*") "$(dirname "$original_dir")"
     }
 
+    restoreIndex_trash() {
+        local indexTrash=$1
+        loadArray   
+
+        if $(hasValueq $indexTrash); then response=$indexTrash;
+        else printTrashList && response=$(prompt "which one to restore ? [index:0]"); fi;
+
+        if ! $(hasValueq ${folder_data[${response}_uuid]}); then return $(_ERC "index:$response does not exit"); fi;
+        uuid=${folder_data[${response}_uuid]}
+        original_dir=${folder_data[${response}_original_dir]}
+
+        targetTrashDir=$(trimArgs $TP / $uuid) 
+        mv $(trimArgs $targetTrashDir / $trashInfoName) /tmp
+        mv -i $(trimArgs $targetTrashDir "/*") "$(dirname "$original_dir")"
+    }
+
     delete_trash() {
         local dir=$1
         if ! $(hasValueq $dir); then dir="."; fi;
@@ -997,14 +1015,13 @@ trash() {
     elif $(hasValueq "$path"); then put_trash "$@"; 
     elif $(hasValueq "$list"); then list_trash $list; 
     elif $(hasValueq "$restore"); then restore_trash $restore; 
+    elif $(hasValueq "$restoreIndex"); then restoreIndex_trash $restoreIndex; 
     elif $(hasValueq "$indexDir"); then index_trash $indexDir; 
     elif $(hasValueq "$clean"); then clean_trash $clean; 
     elif $(hasValueq "$delete"); then delete_trash $delete;
     elif $(hasValueq "$purge"); then purge_trash $purge; 
     fi;
 }
-
-
 
 # (...?pkgname)
 ## package update, or general update
