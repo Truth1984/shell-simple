@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.6.2
+    echo 8.6.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2132,7 +2132,7 @@ _web() {
     local webPort=$(parseGet _web_data p port _);
     local webMessage=$(parseGet _web_data m message s string);
     local webRedirect=$(parseGet _web_data r redirect)
-    local webDirectory=$(parseGet _web_data d dir);
+    local webDirectory=$(parseGet _web_data d dir f file);
     local webHtml=$(parseGet _web_data h html w web);
     local help=$(parseGet _web_data help);
 
@@ -2140,8 +2140,8 @@ _web() {
     helpmsg+='\t-p,--port,_ \t\t\t (int) \t\t open server port, default port 3000\n'
     helpmsg+='\t-m,--message,-s,--string \t (string) \t message to display \n'
     helpmsg+='\t-r,--redirect \t\t\t (string) \t redirect to target URL \n'
-    helpmsg+='\t-d,--dir \t\t\t (string) \t directory server with bun default "." \n'
-    helpmsg+='\t-h,--html,-w,--web \t\t\t (string) \t html server with bun default "index.html" \n'
+    helpmsg+='\t-d,--dir,-f,--file \t\t (string) \t directory or file server with bun default "." \n'
+    helpmsg+='\t-h,--html,-w,--web \t\t (string) \t html server with bun default "index.html" \n'
 
     if ! $(hasValue $webPort); then webPort=3000; fi;
     if ! $(hasValue $webMessage); then webMessage="web message"; fi;
@@ -2198,13 +2198,27 @@ _web() {
         local lip=$(ip -P)
         _ED Starting bun file server on $lip:$webPort with path: \'$servePath\'
 
-        bun -e " Bun.serve({ port: $webPort, fetch(req) {
+        bun -e "Bun.serve({ port: $webPort, fetch(req) {
+        const { readdir, stat } = require('fs/promises');
+        const { resolve, normalize, join } = require('path');
         const url = new URL(req.url);
-        const filePath = require('path').resolve(\`$servePath\`, url.pathname.slice(1));
-        return require('fs/promises').stat(filePath).then(stats => stats.isDirectory() 
-            ? require('fs/promises').readdir(filePath).then(files => Promise.all(files.map(file => require('fs/promises').stat(require('path').join(filePath, file)).then(stats=>stats.isDirectory() ? file + '/' : file))).then(formattedFiles => new Response(formattedFiles.join('\n'))))
-            : require('fs/promises').readFile(filePath).then(content => new Response(content, { headers: { 'Content-Disposition':'attachment; filename=\"'+url.pathname.split('/').pop()+'\"' } }))
-        ).catch(() => new Response('Not Found', { status: 404 }));},});"
+        const rawPath = decodeURIComponent(url.pathname);
+        const root = resolve(\`$servePath\`);
+        const fsPath = resolve(join(root, rawPath.slice(1)));
+        if (!fsPath.startsWith(normalize(root))) return new Response('Forbidden', { status: 403 });
+
+        return stat(fsPath).then(s => {
+            if (s.isDirectory()) {
+            return readdir(fsPath).then(files => Promise.all(files.map(async f => (await stat(join(fsPath, f))).isDirectory() ? f+'/' : f))).then(list => new Response(list.join('\\n'), { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }));
+            } else if (s.isFile()) {
+            const file = Bun.file(fsPath);
+            const headers = { 'Content-Type': file.type || 'application/octet-stream' };
+            return new Response(file.stream(), { status: 200, headers });
+            } else {
+            return new Response('Unsupported', { status: 415 });
+            }
+        }).catch(()=> new Response('Not Found', { status: 404 }));
+        }})"
     }
 
     html_web() {
