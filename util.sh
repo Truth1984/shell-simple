@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.6.3
+    echo 8.6.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1811,7 +1811,7 @@ edit(){
 
 help(){    
     declare -A help_data; parseArg help_data $@;
-    local name=$(parseGet help_data n name _);
+    local name=$(parseGet help_data n name l list_);
     local update=$(parseGet help_data u update upgrade);
     local updateForce=$(parseGet help_data U Update);
     local version=$(parseGet help_data v version);
@@ -1819,7 +1819,7 @@ help(){
     local help=$(parseGet help_data h help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
-    helpmsg+='\t-n,--name,_ \t\t (string) \t grep functions with name\n'
+    helpmsg+='\t-n,--name,-l,--list,_ \t (string) \t grep functions with name\n'
     helpmsg+='\t-u,--update,--upgrade \t () \t\t upgrade current script\n'
     helpmsg+='\t-U,--Update \t\t () \t\t upgrade current script from source\n'
     helpmsg+='\t-v,--version \t\t (string) \t display current version\n'
@@ -1849,11 +1849,11 @@ help(){
     }
 
     list_help() {
-        if ! [[ -z $1 ]]; then compgen -A function | grep $1; else compgen -A function; fi;
+        if $(hasValueq $@); then compgen -A function | grep $@; else compgen -A function; fi;
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";  
-    elif $(hasValueq "$name"); then list_help $name;
+    elif $(hasValueq "$name"); then list_help "$name";
     elif $(hasValueq "$update"); then update_help $update;
     elif $(hasValueq "$updateForce"); then update_help $updateForce;
     elif $(hasValueq "$version"); then echo $(version);
