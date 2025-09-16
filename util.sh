@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.6.5
+    echo 8.6.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2234,7 +2234,7 @@ _web() {
 
         bun -e "Bun.serve({port: $webPort, fetch(req) {
         const url = new URL(req.url); 
-        const filePath = require('path').resolve(\`$servePath\`, url.pathname.slice(1) || 'index.html'); 
+        const filePath = require('path').resolve(\`$servePath\`, url.pathname.slice(1)); 
         return require('fs/promises').stat(filePath).then(stats => stats.isDirectory() 
             ? require('fs/promises').readFile(require('path').join(filePath, 'index.html')).then(content => new Response(content, {headers: {'Content-Type': 'text/html'}})) 
             : require('fs/promises').readFile(filePath).then(content => new Response(content, {headers: {'Content-Type': 'text/html'}}))
