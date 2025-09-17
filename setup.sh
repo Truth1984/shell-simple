@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo SCRIPT_VERSION=1.5.2
+echo SCRIPT_VERSION=1.5.3
 
 if [[ -z "$(command -v u2)" ]]; then
     ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup && source ~/.bash_mine
@@ -117,6 +117,8 @@ fi;
 if $(u2 string -c "$@" "pm2") || $ALL; then 
     if ! $(u2 hasCmd pm2); then 
         bun i -g pm2
+        pm2 install pm2-logrotate
+        pm2 set pm2-logrotate:rotateInterval "0 0 1 * *"
         pm2 startup
     fi; 
 fi;
