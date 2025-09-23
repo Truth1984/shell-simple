@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.6.6
+    echo 8.6.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -3042,7 +3042,7 @@ extra() {
     local clone=$(parseGet extra_data clone);
     local copy=$(parseGet extra_data c copy);
     local strict=$(parseGet extra_data eval strict);
-    local current=$(parseGet extra_data cd current currentdir)
+    local current=$(parseGet extra_data cd current currentdir);
     local help=$(parseGet extra_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
@@ -3050,7 +3050,7 @@ extra() {
     helpmsg+='\t--clone \t\t\t () \t\t clone u to target dir\n'
     helpmsg+='\t-c,--copy \t\t\t () \t\t copy content to clipboard\n'  
     helpmsg+='\t--strict,--eval \t\t () \t\t bash: to use strict\n'
-    helpmsg+='\t--cd,--current,--currentdir \t () \t\t bash: to find current dir\n'  
+    helpmsg+='\t--cd,--current,--currentdir \t () \t\t bash: assign current script path to DIR\n'  
 
     tree_extra() {
         if $(os -c mac); then pstree; else ps auxwwf; fi;
@@ -3076,7 +3076,7 @@ extra() {
     }
 
     currentDir_extra() {
-        echo 'DIR="$(eval "$(u _PATH)");"'
+        echo 'DIR="$(eval "$(u _PATH)")"'
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";
