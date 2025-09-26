@@ -4,7 +4,7 @@
 
 # (): string
 version() {
-    echo 8.6.7
+    echo 8.6.8
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1494,6 +1494,16 @@ retry() {
 
 q(){
     if $(string -n $@); then quick -i $@; else quick $@; fi;
+}
+
+## quick add, $name, $script
+qa() {
+    local profile="$(_PROFILE)"
+    local name=$(echo $1 | sed 's/ *//')
+    targetFile="$_U2_Storage_Dir_Quick/$name"
+    
+    printf "#!/usr/bin/env bash\nsource $profile\n${*:2}\n" > $targetFile
+    quick -l
 }
 
 quick() {
