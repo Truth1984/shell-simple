@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
+# Project: shell-simple
 # Author: Awada.Z
 
 # (): string
 version() {
-    echo 8.6.8
+    echo 8.6.10
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1830,7 +1831,7 @@ help(){
     local updateForce=$(parseGet help_data U Update);
     local version=$(parseGet help_data v version);
     local edit=$(parseGet help_data e edit);
-    local help=$(parseGet help_data h help);
+    local helpInfo=$(parseGet help_data h help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,-l,--list,_ \t (string) \t grep functions with name\n'
@@ -1866,13 +1867,13 @@ help(){
         if $(hasValueq $@); then compgen -A function | grep $@; else compgen -A function; fi;
     }
 
-    if $(hasValueq "$help"); then printf "$helpmsg";  
+    if $(hasValueq "$helpInfo"); then printf "$helpmsg";  
     elif $(hasValueq "$name"); then list_help "$name";
     elif $(hasValueq "$update"); then update_help $update;
     elif $(hasValueq "$updateForce"); then update_help $updateForce;
     elif $(hasValueq "$version"); then echo $(version);
     elif $(hasValueq "$edit"); then edit_help;
-    else $(list_help); 
+    else list_help $@; 
     fi;
     
 }
@@ -2247,7 +2248,11 @@ _web() {
         const filePath = require('path').resolve(\`$servePath\`, url.pathname.slice(1)); 
         return require('fs/promises').stat(filePath).then(stats => stats.isDirectory() 
             ? require('fs/promises').readFile(require('path').join(filePath, 'index.html')).then(content => new Response(content, {headers: {'Content-Type': 'text/html'}})) 
-            : require('fs/promises').readFile(filePath).then(content => new Response(content, {headers: {'Content-Type': 'text/html'}}))
+            : require('fs/promises').readFile(filePath).then(content => {
+                const ext = require('path').extname(filePath);
+                const types = {'.html':'text/html','.json':'application/json','.js':'application/javascript','.css':'text/css'};
+                return new Response(content, {headers: {'Content-Type': types[ext] || 'text/plain'}});
+            })
         ).catch(() => new Response('Not Found', {status: 404}));}});"
     }
 
