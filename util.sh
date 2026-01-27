@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.6.10
+    echo 8.7.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1379,7 +1379,6 @@ post() {
 get() {
     declare -A get_data; parseArg get_data $@;
     local url=$(parseGet get_data u url _ D dns C curl W wget q quiet);
-    local run=$(parseGet get_data r run);
     local DNS=$(parseGet get_data D dns);
     local CURL=$(parseGet get_data C curl);
     local WGET=$(parseGet get_data W wget);
@@ -1389,7 +1388,6 @@ get() {
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-u,--url,_ \t (string) \t url of the target\n'
-    helpmsg+='\t-r,--run \t (string) \t run the script from url, can pass extra command, should be at the end\n'
     helpmsg+='\t-D,--dns \t () \t\t use DNS over HTTPS to request website\n'
     helpmsg+='\t-C,--curl \t () \t\t use curl\n'
     helpmsg+='\t-W,--wget \t () \t\t use wget\n'
@@ -1419,31 +1417,6 @@ get() {
         done
     fi;
 
-    # exArgs starts with "-"" will not be passed as whole string
-    script_get() {
-        remain=$(shiftto "-r|--run" $@); 
-        local url=$(echo "$remain" | awk '{print $1}'); exArgs=$(echo "$remain" | cut -d' ' -f2-);
-        curlCmd(){
-            tmpfile=$(mktemp)
-            curl -sSL $url -o $tmpfile
-            _ED download finish, executing bash: url {$url} args {$exArgs}
-            if [[ "$exArgs" == -* ]]; then bash $tmpfile $exArgs;
-            else bash $tmpfile "$exArgs"; fi;
-            rm -f $tmpfile
-        }
-        wgetCmd(){
-            local wgetEx=""
-            if ! $(os -c alpine); then wgetEx=" -d"; fi;
-            tmpfile=$(mktemp)
-            wget $wgetEx -O $tmpfile $url
-            _ED download finish, executing bash: url {$url} args {$exArgs}
-            if [[ "$exArgs" == -* ]]; then bash $tmpfile $exArgs;
-            else bash $tmpfile "$exArgs"; fi;
-            rm -f $tmpfile
-        }
-        _REQHelper
-    }
-
     url_get(){
         local url=$1
         curlCmd(){
@@ -1456,7 +1429,6 @@ get() {
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
-    elif $(hasValueq "$run"); then script_get $@;
     elif $(hasValueq "$url"); then url_get $url; 
     fi;
 }
@@ -1464,6 +1436,7 @@ get() {
 # (url, outputFileName?)
 download() {
     local url=$1 filename="${@:2}"
+    if ! $(hasValueq $url); then return $(_ERC "URL missing"); fi;
     if $(hasCmd curl); then
         if $(hasValue $filename); then curl $url -v -L --output $filename; else curl -v -L -O $url; fi;
     elif $(hasCmd wget); then
@@ -1471,6 +1444,44 @@ download() {
         if ! $(os -c alpine); then wgetEx=" -d"; fi;
         if $(hasValue $filename); then wget $wgetEx -O $filename $url; else wget $wgetEx $url; fi; 
     fi;
+}
+
+# (url, outputFileName?)
+download-git() {
+    local url=$1 filename="${@:2}"
+    if ! $(hasValueq $url); then return $(_ERC "URL missing"); fi;
+    
+    URLS=("https://fastgit.cc/$url" "http://gh.ddlc.top/$url" "http://ghfast.top/$url" "https://ghproxy.monkeyray.net/$url" "https://cdn.akaere.online/$url" "http://down.npee.cn/?$url");
+
+    for git_url in "${URLS[@]}"; do
+        if $(hasCmd curl); then
+            if $(hasValue $filename); then 
+                if curl $git_url -v -L --output $filename 2>/dev/null; then
+                    return $(_RC 0 "Downloaded from $git_url");
+                fi
+            else
+                if curl -v -L -O $git_url 2>/dev/null; then
+                    return $(_RC 0 "Downloaded from $git_url");
+                fi
+            fi
+        elif $(hasCmd wget); then
+            local wgetEx=""
+            if ! $(os -c alpine); then wgetEx=" -d"; fi;
+            if $(hasValue $filename); then
+                if wget $wgetEx -O $filename $git_url 2>/dev/null; then
+                    return $(_RC 0 "Downloaded from $git_url");
+                fi
+            else
+                if wget $wgetEx $git_url 2>/dev/null; then
+                    return $(_RC 0 "Downloaded from $git_url");
+                fi
+            fi
+        else
+            return $(_ERC "Neither curl nor wget found");
+        fi
+    done
+    
+    return $(_ERC "All download attempts failed");
 }
 
 # (string)
@@ -1802,9 +1813,14 @@ setupEX() {
         _ED extraArgs: "$extraArgs"
 
         source_setupEx
+   
+        local tmpfile=$(mktemp);
 
-        setupURL="https://hub.gitmirror.com/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" 
-        get -r $setupURL "$extraArgs"
+        download-git "https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/setup.sh" $tmpfile
+
+        chmod 777 $tmpfile 
+        args=($extraArgs)
+        bash "$tmpfile" "${args[@]}"
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";  
@@ -1828,7 +1844,6 @@ help(){
     declare -A help_data; parseArg help_data $@;
     local name=$(parseGet help_data n name l list_);
     local update=$(parseGet help_data u update upgrade);
-    local updateForce=$(parseGet help_data U Update);
     local version=$(parseGet help_data v version);
     local edit=$(parseGet help_data e edit);
     local helpInfo=$(parseGet help_data h help);
@@ -1836,24 +1851,15 @@ help(){
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,-l,--list,_ \t (string) \t grep functions with name\n'
     helpmsg+='\t-u,--update,--upgrade \t () \t\t upgrade current script\n'
-    helpmsg+='\t-U,--Update \t\t () \t\t upgrade current script from source\n'
     helpmsg+='\t-v,--version \t\t (string) \t display current version\n'
     helpmsg+='\t-e,--edit \t\t () \t\t edit the file\n'
     helpmsg+='\t-h,--help \t\t (string) \t display help message\n'
 
     update_help() {
         _ED Current Version: $(version)
-        local updateUrl;
-        if $(hasValueq "$update"); then 
-            updateUrl="https://hub.gitmirror.com/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh"
-        else 
-            updateUrl="https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh"
-        fi; 
+        local tmpfile=$(mktemp);
 
-        local tmpfile=$(mktemp)
-        if $(hasCmd curl); then curl -sSL $updateUrl --output $tmpfile
-        elif $(hasCmd wget); then wget -O $tmpfile $updateUrl
-        fi;
+        download-git "https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" $tmpfile
 
         chmod 777 $tmpfile 
         exec $tmpfile setup 
@@ -1870,7 +1876,6 @@ help(){
     if $(hasValueq "$helpInfo"); then printf "$helpmsg";  
     elif $(hasValueq "$name"); then list_help "$name";
     elif $(hasValueq "$update"); then update_help $update;
-    elif $(hasValueq "$updateForce"); then update_help $updateForce;
     elif $(hasValueq "$version"); then echo $(version);
     elif $(hasValueq "$edit"); then edit_help;
     else list_help $@; 
@@ -2687,7 +2692,7 @@ docker() {
         local name="$@";
         if ! $(has -f ~/.application/DDO.sh); then
             _ED downloading docker_download_offline.sh
-            download https://hub.gitmirror.com/https://raw.githubusercontent.com/moby/moby/master/contrib/download-frozen-image-v2.sh ~/.application/DDO.sh
+            download-git "https://raw.githubusercontent.com/moby/moby/master/contrib/download-frozen-image-v2.sh" ~/.application/DDO.sh
             chmod 777 ~/.application/DDO.sh 
         fi;
       

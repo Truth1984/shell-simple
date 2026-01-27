@@ -3,7 +3,8 @@
 echo SCRIPT_VERSION=1.5.4
 
 if [[ -z "$(command -v u2)" ]]; then
-    ssurl="https://raw.gitmirror.com/Truth1984/shell-simple/main/util.sh"; if $(command -v curl &> /dev/null); then curl $ssurl -o util.sh; elif $(command -v wget &> /dev/null); then wget -O util.sh $ssurl; fi; chmod 777 util.sh && ./util.sh setup && source ~/.bash_mine
+    URLS=("https://fastgit.cc/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" "http://gh.ddlc.top/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" "http://ghfast.top/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" "https://ghproxy.monkeyray.net/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" "https://cdn.akaere.online/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" "http://down.npee.cn/?https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh"); for url in "${URLS[@]}"; do if command -v curl >/dev/null 2>&1 && curl -sSL "$url" -o util.sh 2>/dev/null; then echo "Downloaded from $url" && break; elif command -v wget >/dev/null 2>&1 && wget -O util.sh "$url" 2>/dev/null; then echo "Downloaded from $url" && break; fi; done; [ -f util.sh ] && chmod +x util.sh && ./util.sh setupEX || (echo "Download failed" && exit 1)
+    source ~/.bash_mine
 fi;
 
 if [[ -z "$(command -v u2)" ]]; then echo u2 not setup correctly && exit 1; fi;
