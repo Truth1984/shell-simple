@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.0
+    echo 8.7.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -626,7 +626,12 @@ ip() {
             ethernet=$(ipconfig getifaddr en1)
             wifi=$(ipconfig getifaddr en0)
             if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet; 
-            else _ED wifi && _EC $wifi; fi;
+            else _ED wifi && _EC $wifi; fi; 
+        elif $(os -c win); then
+            ethernet=$(ipconfig | awk '/Ethernet adapter/ {f=1} /IPv4/ {if(f) print $NF; f=0}')
+            wifi=$(ipconfig | awk '/Wireless LAN adapter/ {f=1} /IPv4/ {if(f) print $NF; f=0}')
+            if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
+            else _ED wifi && _EC $wifi; fi; 
         fi;
     }
 
@@ -2152,16 +2157,18 @@ _web() {
     local webPort=$(parseGet _web_data p port _);
     local webMessage=$(parseGet _web_data m message s string);
     local webRedirect=$(parseGet _web_data r redirect)
-    local webDirectory=$(parseGet _web_data d dir f file);
+    local webDirectory=$(parseGet _web_data d dir);
     local webHtml=$(parseGet _web_data h html w web);
+    local webFileServer=$(parseGet _web_data f fs file);
     local help=$(parseGet _web_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--port,_ \t\t\t (int) \t\t open server port, default port 3000\n'
     helpmsg+='\t-m,--message,-s,--string \t (string) \t message to display \n'
     helpmsg+='\t-r,--redirect \t\t\t (string) \t redirect to target URL \n'
-    helpmsg+='\t-d,--dir,-f,--file \t\t (string) \t directory or file server with bun default "." \n'
+    helpmsg+='\t-d,--dir \t\t\t (string) \t directory or file server with bun default "." \n'
     helpmsg+='\t-h,--html,-w,--web \t\t (string) \t html server with bun default "index.html" \n'
+    helpmsg+='\t-f,--fs,--file \t\t\t (string) \t temporary file or text server \n'
 
     if ! $(hasValue $webPort); then webPort=3000; fi;
     if ! $(hasValue $webMessage); then webMessage="web message"; fi;
@@ -2261,10 +2268,26 @@ _web() {
         ).catch(() => new Response('Not Found', {status: 404}));}});"
     }
 
+    fileserver_web() {
+        local lip=$(ip -P)
+        _ED Starting bun html server on $lip:$webPort
+
+        bun -e "const generateId=()=>Date.now().toString(36)+Math.random().toString(36).substring(2,6);const store=new Map();const TTL=120*60*1000;
+        setInterval(()=>{for(const[id,d] of store)if(d.expiresAt<Date.now())store.delete(id);},60000);const fmtTTL=(ms)=>\`\${Math.floor(ms/60000)}m \${Math.floor((ms%60000)/1000)}s\`;
+        const esc=(s)=>s.replace(/[&<>]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
+        Bun.serve({port:$webPort,async fetch(req){const p=new URL(req.url).pathname;if(p==='/'&&req.method==='GET')return new Response(\`<!DOCTYPE html><h2>Temporary Placeholder</h2><form action=\"/submit\" method=\"POST\" enctype=\"multipart/form-data\"><p>Text: <textarea name=\"text\" rows=\"5\" cols=\"50\"></textarea></p><p>File: <input type=\"file\" name=\"file\"></p><button>Create</button></form><a href=\"/list\">View all</a>\`,{headers:{'Content-Type':'text/html'}});
+            if(p==='/submit'&&req.method==='POST'){const fd=await req.formData();const text=fd.get('text'),file=fd.get('file');let content,contentType,originalName;if(file?.size){content=Buffer.from(await file.arrayBuffer());contentType=file.type||'application/octet-stream';originalName=file.name;}else if(text?.trim()){content=text;contentType='text/plain';}else return new Response('Provide text or file.',{status:400});const now=Date.now(),id=generateId();store.set(id,{content,contentType,originalName,createdAt:now,expiresAt:now+TTL});return Response.redirect('/list',302);}
+            if(p.startsWith('/p/')){const data=store.get(p.slice(3));if(!data)return new Response('Not found.',{status:404});if(Date.now()>data.expiresAt){store.delete(p.slice(3));return new Response('Expired.',{status:410});}if(data.contentType==='text/plain')return new Response(\`<pre>\${esc(data.content)}</pre><a href=\"/list\">View all</a> <a href=\"/\">Create</a>\`,{headers:{'Content-Type':'text/html'}});const h={'Content-Type':data.contentType};if(data.originalName)h['Content-Disposition']=\`attachment; filename=\"\${encodeURIComponent(data.originalName)}\"\`;return new Response(data.content,{headers:h});}
+            if(p==='/list'&&req.method==='GET'){const now=Date.now();const entries=[...store.entries()].filter(([,e])=>e.expiresAt>now).sort(([,a],[,b])=>b.createdAt-a.createdAt);const rows=entries.map(([id,e])=>\`<tr><td>\${fmtTTL(e.expiresAt-now)}</td><td><a href=\"/p/\${id}\">\${e.contentType==='text/plain'?esc(e.content.slice(0,100)):esc(e.originalName||'file')}</a></td></tr>\`).join('');return new Response(\`<a href=\"/\">Create new</a><h2>Active (\${entries.length})</h2><table border=\"1\">\${rows||'<tr><td>None.</td></tr>'}</table>\`,{headers:{'Content-Type':'text/html'}});}
+            return new Response('Not found',{status:404});}
+        });"
+    }
+
     if $(hasValueq "$help"); then printf "$helpmsg";
     elif $(hasValueq "$webRedirect"); then redirect_web $webRedirect;
     elif $(hasValueq "$webDirectory"); then directory_web $webDirectory;
     elif $(hasValueq "$webHtml"); then html_web $webHtml;
+    elif $(hasValueq "$webFileServer"); then fileserver_web $webFileServer;
     else server_web; 
     fi;
 }
