@@ -2272,15 +2272,23 @@ _web() {
         local lip=$(ip -P)
         _ED Starting bun html server on $lip:$webPort
 
-        bun -e "const generateId=()=>Date.now().toString(36)+Math.random().toString(36).substring(2,6);const store=new Map();const TTL=120*60*1000;
-        setInterval(()=>{for(const[id,d] of store)if(d.expiresAt<Date.now())store.delete(id);},60000);const fmtTTL=(ms)=>\`\${Math.floor(ms/60000)}m \${Math.floor((ms%60000)/1000)}s\`;
-        const esc=(s)=>s.replace(/[&<>]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
-        Bun.serve({port:$webPort,async fetch(req){const p=new URL(req.url).pathname;if(p==='/'&&req.method==='GET')return new Response(\`<!DOCTYPE html><h2>Temporary Placeholder</h2><form action=\"/submit\" method=\"POST\" enctype=\"multipart/form-data\"><p>Text: <textarea name=\"text\" rows=\"5\" cols=\"50\"></textarea></p><p>File: <input type=\"file\" name=\"file\"></p><button>Create</button></form><a href=\"/list\">View all</a>\`,{headers:{'Content-Type':'text/html'}});
-            if(p==='/submit'&&req.method==='POST'){const fd=await req.formData();const text=fd.get('text'),file=fd.get('file');let content,contentType,originalName;if(file?.size){content=Buffer.from(await file.arrayBuffer());contentType=file.type||'application/octet-stream';originalName=file.name;}else if(text?.trim()){content=text;contentType='text/plain';}else return new Response('Provide text or file.',{status:400});const now=Date.now(),id=generateId();store.set(id,{content,contentType,originalName,createdAt:now,expiresAt:now+TTL});return Response.redirect('/list',302);}
-            if(p.startsWith('/p/')){const data=store.get(p.slice(3));if(!data)return new Response('Not found.',{status:404});if(Date.now()>data.expiresAt){store.delete(p.slice(3));return new Response('Expired.',{status:410});}if(data.contentType==='text/plain')return new Response(\`<pre>\${esc(data.content)}</pre><a href=\"/list\">View all</a> <a href=\"/\">Create</a>\`,{headers:{'Content-Type':'text/html'}});const h={'Content-Type':data.contentType};if(data.originalName)h['Content-Disposition']=\`attachment; filename=\"\${encodeURIComponent(data.originalName)}\"\`;return new Response(data.content,{headers:h});}
-            if(p==='/list'&&req.method==='GET'){const now=Date.now();const entries=[...store.entries()].filter(([,e])=>e.expiresAt>now).sort(([,a],[,b])=>b.createdAt-a.createdAt);const rows=entries.map(([id,e])=>\`<tr><td>\${fmtTTL(e.expiresAt-now)}</td><td><a href=\"/p/\${id}\">\${e.contentType==='text/plain'?esc(e.content.slice(0,100)):esc(e.originalName||'file')}</a></td></tr>\`).join('');return new Response(\`<a href=\"/\">Create new</a><h2>Active (\${entries.length})</h2><table border=\"1\">\${rows||'<tr><td>None.</td></tr>'}</table>\`,{headers:{'Content-Type':'text/html'}});}
-            return new Response('Not found',{status:404});}
-        });"
+        bun -e "const store=new Map(),TTL=72e5,gen=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5),esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]),fmt=ms=>Math.floor(ms/6e4)+'m '+Math.floor((ms%6e4)/1000)+'s';
+        setInterval(()=>{for(const[k,v]of store)if(v.exp<Date.now())store.delete(k)},6e4);
+        Bun.serve({port:$webPort,async fetch(req){
+        const u=new URL(req.url),p=u.pathname,vId=u.searchParams.get('v'),dId=u.searchParams.get('d'),now=Date.now();
+        if(dId){store.delete(dId);return Response.redirect('/')}
+        if(p==='/s'&&req.method==='POST'){const fd=await req.formData(),t=fd.get('t'),f=fd.get('f');let c,ty,n;
+            if(f?.size){c=Buffer.from(await f.arrayBuffer());ty=f.type;n=f.name}else if(t?.trim()){c=t;ty='text/plain'}else return new Response('Empty');
+            store.set(gen(),{c,ty,n,at:now,exp:now+TTL});return Response.redirect('/')}
+        if(p.startsWith('/dl/')){const d=store.get(p.slice(4));return d?new Response(d.c,{headers:{'Content-Type':d.ty+';charset=utf-8','Content-Disposition':\`attachment;filename=\"\${encodeURIComponent(d.n||'file')}\"\` }}):new Response('404')}
+        const items=[...store.entries()].filter(([,e])=>e.exp>now).sort(([,a],[,b])=>b.at-a.at),cur=vId?store.get(vId):null;
+        const pre=cur?(cur.ty==='text/plain'?'<pre style=\"background:#f8f9fa;padding:12px;border-left:4px solid #007bff;white-space:pre-wrap;font-family:monospace\">'+esc(cur.c)+'</pre>':'<div style=\"text-align:center;padding:20px;border:2px dashed #ccc\"><b>File: '+esc(cur.n)+'</b><br><br><a href=\"/dl/'+vId+'\" style=\"background:#007bff;color:#fff;padding:8px 16px;text-decoration:none;border-radius:4px\">Download</a></div>'):'<p style=\"color:#999\">Select an item</p>';
+        const rows=items.map(([id,e])=>\`<tr><td>\${fmt(e.exp-now)}</td><td>\${esc(e.n||String(e.c).slice(0,20))}</td><td style=\"text-align:right\"><a href=\"/?v=\${id}\">Show</a> | <a href=\"/?d=\${id}\" style=\"color:#dc3545\">Del</a></td></tr>\`).join('');
+        return new Response(\`<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>body{font:14px system-ui,sans-serif;margin:20px;background:#f4f7f6}section{background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px #0002;margin-bottom:20px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}textarea{width:100%;padding:8px;box-sizing:border-box;border:1px solid #ddd}table{width:100%;border-collapse:collapse}td{padding:8px;border-bottom:1px solid #eee}button{background:#28a745;color:#fff;border:none;padding:10px;border-radius:4px;cursor:pointer}</style></head>
+            <body><h3>Dashboard</h3><section><form action=\"/s\" method=\"POST\" enctype=\"multipart/form-data\"><div class=\"grid\"><div><b>1. Text Content</b><textarea name=\"t\" rows=\"4\"></textarea></div>
+            <div><b>2. File Upload</b><br><input type=\"file\" name=\"f\"><br><br><button type=\"submit\">Create Entry</button></div></div></form></section>
+            <div class=\"grid\"><section><b>3. Active Items (\${items.length})</b><table>\${rows||'<tr><td>None</td></tr>'}</table></section>
+            <section><b>4. Preview / Download</b><br>\${pre}</section></div></body></html>\`,{headers:{'Content-Type':'text/html;charset=utf-8'}})}});"
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";
