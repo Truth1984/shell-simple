@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.2
+    echo 8.7.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2168,7 +2168,7 @@ _web() {
     helpmsg+='\t-r,--redirect \t\t\t (string) \t redirect to target URL \n'
     helpmsg+='\t-d,--dir \t\t\t (string) \t directory or file server with bun default "." \n'
     helpmsg+='\t-h,--html,-w,--web \t\t (string) \t html server with bun default "index.html" \n'
-    helpmsg+='\t-f,--fs,--file \t\t\t (string) \t temporary file or text server \n'
+    helpmsg+='\t-f,--fs,--file \t\t\t (int) \t temporary file or text server, pass ttl, default 2h \n'
 
     if ! $(hasValue $webPort); then webPort=3000; fi;
     if ! $(hasValue $webMessage); then webMessage="web message"; fi;
@@ -2269,10 +2269,13 @@ _web() {
     }
 
     fileserver_web() {
-        local lip=$(ip -P)
-        _ED Starting bun html server on $lip:$webPort
+        local lip=$(ip -P);
+        local ttl=$@;
 
-        bun -e "const store=new Map(),TTL=72e5,gen=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5),esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]),fmt=ms=>Math.floor(ms/6e4)+'m '+Math.floor((ms%6e4)/1000)+'s';
+        if ! $(hasValueq $ttl); then ttl="72e5"; fi;
+        _ED Starting bun html server with ttl: $ttl on $lip:$webPort
+
+        bun -e "const store=new Map(),TTL=$ttl,gen=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5),esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]),fmt=ms=>Math.floor(ms/6e4)+'m '+Math.floor((ms%6e4)/1000)+'s';
         setInterval(()=>{for(const[k,v]of store)if(v.exp<Date.now())store.delete(k)},6e4);
         Bun.serve({port:$webPort,async fetch(req){
         const u=new URL(req.url),p=u.pathname,vId=u.searchParams.get('v'),dId=u.searchParams.get('d'),now=Date.now();
