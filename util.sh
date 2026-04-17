@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.3
+    echo 8.7.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -481,56 +481,102 @@ os() {
     helpmsg+='\t-s,--sys \t\t () \t\t get system info, with cpu, mem and disk info\n'
     helpmsg+='\t-b,--bash \t\t () \t\t get bash info, with active one and installed one\n'
 
+    CACHE_FILE="$HOME/.bash_env";
+
+    fetchCacheGet() {
+        local key="$1"
+        grep -E "^${key}=" "$CACHE_FILE" 2>/dev/null | sed "s/^${key}=//" | tr -d "'"
+    }
+
+    fetchCacheSet() {
+        local key="$1" val="$2"
+        if grep -qE "^${key}=" "$CACHE_FILE" 2>/dev/null; then
+            sed -i "s|^${key}=.*|${key}='${val}'|" "$CACHE_FILE"
+        else
+            echo "${key}='${val}'" >> "$CACHE_FILE"
+        fi
+    }
+
+    clearCache() {
+        local key="$1"
+        if [[ -n "$key" ]]; then
+            sed -i "/^${key}=/d" "$CACHE_FILE"
+        else
+            > "$CACHE_FILE"
+        fi
+    }
+
+    # clearCache _u_os_pkgManager
+
     # (): string
     pkgManager_os() {
-        if $(hasCmd yum); then _EC "yum";
-        elif $(hasCmd brew); then _EC "brew";
-        elif $(hasCmd apt); then _EC "apt";
-        elif $(hasCmd apk); then _EC "apk";
-        elif $(hasCmd pacman); then _EC "pacman";
-        elif $(hasCmd dnf); then _EC "dnf";
-        elif $(hasCmd choco); then _EC "choco";
-        elif $(hasCmd winget); then _EC "winget";
-        else _EC "NONE"; 
-        fi;
+        local m;
+        m=$(fetchCacheGet _u_os_pkgManager);
+
+        if [[ -z "$m" ]]; then
+            if $(hasCmd yum); then m="yum";
+            elif $(hasCmd brew); then m="brew";
+            elif $(hasCmd apt); then m="apt";
+            elif $(hasCmd apk); then m="apk";
+            elif $(hasCmd pacman); then m="pacman";
+            elif $(hasCmd dnf); then m="dnf";
+            elif $(hasCmd choco); then m="choco";
+            elif $(hasCmd winget); then m="winget"; 
+            fi; 
+            fetchCacheSet _u_os_pkgManager "$m"; 
+        fi; 
+        if [[ -z "$m" ]]; then _EC 'NONE'; fi;
     }
 
     # (osTrait): bool
     check_os() {
-        case $1 in
-            mac | darwin | macos | apple | osx | brew)
-                if $(hasCmdq uname && uname | grep -q Darwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-            ;;
-            centos | yum)
-                if $(hasCmdq yum); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-            ;;
-            alpine | apk)
-                if $(hasCmdq apk); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-            ;;
-            debian | deb | dpkg)
-                if $(hasCmdq dpkg); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-            ;;
-            ubuntu | apt)
-                if $(hasCmdq apt-get); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-            ;;
-            arch | archlinux | pacman )
-                if $(hasCmdq pacman); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-            ;;
-            redhat | dnf | rhel)
-                if $(hasCmdq dnf); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-            ;;
-            linux)
-                if $(hasCmdq uname) && uname | grep -q Linux; then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-            ;;
-            win | windows)
-                if $(echo "$OSTYPE" | grep -q msys || echo "$OSTYPE" | grep -q cygwin); then return $(_RC 0 $@); else return $(_RC 1 $@); fi;
-            ;;
-            *)
-                if [ "$OSTYPE" = "$1" ]; then return $(_RC 0 $@);
-                else return $(_ERC "Error: not listed, this is actual ostype: $OSTYPE");
-                fi;
-            ;;
-        esac
+        local target="$1" current_os cached_os
+    
+        cached_os=$(fetchCacheGet _u_osType);
+        
+        if [[ -z "$cached_os" ]]; then
+            local os_type
+            if $(hasCmd uname) && uname | grep -q Darwin; then
+                os_type="mac"
+            elif $(hasCmd apt-get); then
+                os_type="debian"
+            elif $(hasCmd dnf); then
+                os_type="fedora"
+            elif $(hasCmd yum); then
+                os_type="centos"
+            elif $(hasCmd pacman); then
+                os_type="arch"
+            elif $(hasCmd apk); then
+                os_type="alpine"
+            elif $(hasCmd brew); then
+                os_type="mac"
+            elif $(echo "$OSTYPE" | grep -qE 'msys|cygwin'); then
+                os_type="windows"
+            elif $(hasCmd uname) && uname | grep -q Linux; then
+                os_type="linux"
+            else
+                os_type="unknown"
+            fi;
+
+            fetchCacheSet _u_osType "$os_type"
+        fi;
+
+        case "$target" in
+            mac | darwin | macos | apple | osx | brew) target="mac" ;;
+            centos | yum) target="centos" ;;
+            alpine | apk) target="alpine" ;;
+            debian | deb | dpkg | ubuntu | apt) target="debian" ;;
+            arch | archlinux | pacman) target="arch" ;;
+            redhat | dnf | rhel | fedora) target="fedora" ;;
+            linux) target="linux" ;;
+            win | windows) target="windows" ;;
+        esac;
+
+        if [[ "$cached_os" == "$target" ]]; then
+            return $(_RC 0 "$@"); 
+        else
+            return $(_RC 1 "$@"); 
+        fi;
     }
 
     info_os() {
@@ -628,10 +674,8 @@ ip() {
             if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet; 
             else _ED wifi && _EC $wifi; fi; 
         elif $(os -c win); then
-            ethernet=$(ipconfig | awk '/Ethernet adapter/ {f=1} /IPv4/ {if(f) print $NF; f=0}')
-            wifi=$(ipconfig | awk '/Wireless LAN adapter/ {f=1} /IPv4/ {if(f) print $NF; f=0}')
-            if $(hasValue $ethernet); then _ED ethernet && _EC $ethernet;
-            else _ED wifi && _EC $wifi; fi; 
+            active_ip=$(ipconfig | grep -a -oE "([0-9]{1,3}\.){3}[0-9]{1,3}" | grep -v "255.255.255.0" | head -n 1);
+            _EC $active_ip; 
         fi;
     }
 
@@ -2285,13 +2329,13 @@ _web() {
             store.set(gen(),{c,ty,n,at:now,exp:now+TTL});return Response.redirect('/')}
         if(p.startsWith('/dl/')){const d=store.get(p.slice(4));return d?new Response(d.c,{headers:{'Content-Type':d.ty+';charset=utf-8','Content-Disposition':\`attachment;filename=\"\${encodeURIComponent(d.n||'file')}\"\` }}):new Response('404')}
         const items=[...store.entries()].filter(([,e])=>e.exp>now).sort(([,a],[,b])=>b.at-a.at),cur=vId?store.get(vId):null;
-        const pre=cur?(cur.ty==='text/plain'?'<pre style=\"background:#f8f9fa;padding:12px;border-left:4px solid #007bff;white-space:pre-wrap;font-family:monospace\">'+esc(cur.c)+'</pre>':'<div style=\"text-align:center;padding:20px;border:2px dashed #ccc\"><b>File: '+esc(cur.n)+'</b><br><br><a href=\"/dl/'+vId+'\" style=\"background:#007bff;color:#fff;padding:8px 16px;text-decoration:none;border-radius:4px\">Download</a></div>'):'<p style=\"color:#999\">Select an item</p>';
+        const pre=cur?(cur.ty==='text/plain'?\`<pre style=\"background:#f8f9fa;padding:12px;border-left:4px solid #007bff;white-space:pre-wrap;font-family:monospace\">\${esc(cur.c)}</pre>\`:'<div style=\"text-align:center;padding:20px;border:2px dashed #ccc\"><b>File: '+esc(cur.n)+'</b><br><br><a href=\"/dl/'+vId+'\" style=\"background:#007bff;color:#fff;padding:8px 16px;text-decoration:none;border-radius:4px\">Download</a></div>'):'<p style=\"color:#999\">Select an item</p>';
         const rows=items.map(([id,e])=>\`<tr><td>\${fmt(e.exp-now)}</td><td>\${esc(e.n||String(e.c).slice(0,20))}</td><td style=\"text-align:right\"><a href=\"/?v=\${id}\">Show</a> | <a href=\"/?d=\${id}\" style=\"color:#dc3545\">Del</a></td></tr>\`).join('');
         return new Response(\`<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>body{font:14px system-ui,sans-serif;margin:20px;background:#f4f7f6}section{background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px #0002;margin-bottom:20px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}textarea{width:100%;padding:8px;box-sizing:border-box;border:1px solid #ddd}table{width:100%;border-collapse:collapse}td{padding:8px;border-bottom:1px solid #eee}button{background:#28a745;color:#fff;border:none;padding:10px;border-radius:4px;cursor:pointer}</style></head>
             <body><h3>Dashboard</h3><section><form action=\"/s\" method=\"POST\" enctype=\"multipart/form-data\"><div class=\"grid\"><div><b>1. Text Content</b><textarea name=\"t\" rows=\"4\"></textarea></div>
             <div><b>2. File Upload</b><br><input type=\"file\" name=\"f\"><br><br><button type=\"submit\">Create Entry</button></div></div></form></section>
             <div class=\"grid\"><section><b>3. Active Items (\${items.length})</b><table>\${rows||'<tr><td>None</td></tr>'}</table></section>
-            <section><b>4. Preview / Download</b><br>\${pre}</section></div></body></html>\`,{headers:{'Content-Type':'text/html;charset=utf-8'}})}});"
+            <section><b>4. Preview / Download</b>\${cur&&cur.ty==='text/plain'?\` <button style=\"background:#6c757d\" onclick=\"var t=document.createElement('textarea');t.value=decodeURIComponent(this.dataset.c);document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();\" data-c=\"\${encodeURIComponent(cur.c)}\">Copy</button>\`:''}<br>\${pre}</section></div></body></html>\`,{headers:{'Content-Type':'text/html;charset=utf-8'}})}});"
     }
 
     if $(hasValueq "$help"); then printf "$helpmsg";
