@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.5
+    echo 8.7.6
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -562,13 +562,13 @@ os() {
         fi;
 
         case "$target" in
+            linux) $(hasCmd uname) && uname | grep -q Linux ;;
             mac | darwin | macos | apple | osx | brew) target="mac" ;;
             centos | yum) target="centos" ;;
             alpine | apk) target="alpine" ;;
             debian | deb | dpkg | ubuntu | apt) target="debian" ;;
             arch | archlinux | pacman) target="arch" ;;
             redhat | dnf | rhel | fedora) target="fedora" ;;
-            linux) target="linux" ;;
             win | windows) target="windows" ;;
         esac;
 
