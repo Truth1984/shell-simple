@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.8
+    echo 8.7.9
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1177,6 +1177,83 @@ decrypt() {
     if ! $(hasValueq $_U2_GPG_PW); then return $(_ERC "_U2_GPG_PW not present or set in bash_env"); fi;
     _ED using gpg to decrypt {$@}
     gpg --batch --yes --passphrase "$_U2_GPG_PW" "$@"
+}
+
+encryptbun() {
+    declare -A encryptbun_data; parseArg encryptbun_data $@;
+    local path=$(parseGet encryptbun_data p path f file);
+    local out=$(parseGet encryptbun_data o output);
+    local help=$(parseGet encryptbun_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-p,--path,-f,--file \t (string) \t file to operate, auto decrypt .encb file\n'
+    helpmsg+='\t-o,--output \t\t (string) \t filename or path to output, has default\n'
+    
+    if ! $(hasCmd bun); then return $(_ERC "bun not found"); fi;
+    if ! $(hasValueq $mode); then mode='e'; fi;
+    
+        
+    perform_encryptbun(){
+        local path=$1; out=$2;
+        bun -e "
+            const password = \"$(promptSecret 'enter your password')\";
+            const input = \"$path\";
+            let output = \"$out\";
+
+            const fs = await import('fs');
+            const crypto = await import('crypto');
+            const path = await import('path');
+
+            // Determine mode based on input file extension
+            const mode = input.endsWith('.encb') ? 'd' : 'e';
+
+            // Determine output path if not provided
+            if (!output) {
+                if (mode === 'e') {
+                    output = input + '.encb';
+                } else {
+                    output = input.replace(/\.encb$/, '');
+                }
+            } else if (fs.statSync(output).isDirectory()) {
+                // If output is a directory, put file in that directory
+                const fileName = mode === 'd' ? input.replace(/\.encb$/, '').split('/').pop() : path.basename(input) + '.encb';
+                output = path.join(output, fileName);
+            }
+
+            // Read input file
+            const data = fs.readFileSync(input);
+
+            if (mode === 'e') {
+                // Encrypt
+                const salt = crypto.randomBytes(16);
+                const key = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+                const iv = crypto.randomBytes(16);
+                const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+                let encrypted = cipher.update(data);
+                encrypted = Buffer.concat([encrypted, cipher.final()]);
+                const result = Buffer.concat([salt, iv, encrypted]);
+                fs.writeFileSync(output, result);
+                console.log('Encrypted to:', output);
+            } else {
+                // Decrypt
+                const salt = data.slice(0, 16);
+                const iv = data.slice(16, 32);
+                const encrypted = data.slice(32);
+                
+                const key = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+                const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+                let decrypted = decipher.update(encrypted);
+                decrypted = Buffer.concat([decrypted, decipher.final()]);
+                
+                fs.writeFileSync(output, decrypted);
+                console.log('Decrypted to:', output);
+            }"
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    else perform_encryptbun $@; 
+    fi;
+    
 }
 
 # (gpg .sh file url) -> run local content 
