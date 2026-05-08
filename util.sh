@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.9
+    echo 8.7.10
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1183,18 +1183,20 @@ encryptbun() {
     declare -A encryptbun_data; parseArg encryptbun_data $@;
     local path=$(parseGet encryptbun_data p path f file);
     local out=$(parseGet encryptbun_data o output);
+    local shenc=$(parseGet encryptbun_data b bash s sh);
     local help=$(parseGet encryptbun_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--path,-f,--file \t (string) \t file to operate, auto decrypt .encb file\n'
     helpmsg+='\t-o,--output \t\t (string) \t filename or path to output, has default\n'
+    helpmsg+='\t-b,--bash,-s,--sh \t (string) \t decrypt .sh.encb and run it\n'
     
     if ! $(hasCmd bun); then return $(_ERC "bun not found"); fi;
-    if ! $(hasValueq $mode); then mode='e'; fi;
-    
         
     perform_encryptbun(){
-        local path=$1; out=$2;
+        if ! $(hasValueq $path); then path=$1; fi;
+        if ! $(hasValueq $out); then out=$2; fi;
+
         bun -e "
             const password = \"$(promptSecret 'enter your password')\";
             const input = \"$path\";
@@ -1250,7 +1252,53 @@ encryptbun() {
             }"
     }
 
+    exec_encryptbun(){
+         bun -e "
+            const password = \"$(promptSecret 'enter your password')\";
+            const input = \"$shenc\".trim();
+
+            const fs = await import('fs');
+            const crypto = await import('crypto');
+
+            if (!input.endsWith('.sh.encb')) {
+                console.error('Error: input must be .sh.encb file');
+                process.exit(1);
+            }
+
+            // Read encrypted file
+            const data = fs.readFileSync(input);
+
+            // Decrypt
+            const salt = data.slice(0, 16);
+            const iv = data.slice(16, 32);
+            const encrypted = data.slice(32);
+
+            const key = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+            const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+            let decrypted = decipher.update(encrypted);
+            decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+            const script = decrypted.toString('utf8');
+
+            // Execute script directly from memory
+            try {
+                const { spawn } = await import('child_process');
+                const proc = spawn('bash', ['-c', script], { stdio: 'inherit' });
+                await new Promise((resolve, reject) => {
+                    proc.on('close', (code) => code === 0 ? resolve() : reject(new Error('Exit code: ' + code)));
+                });
+            } catch (error) {
+                console.error('Execution error:', error.message);
+                process.exit(1);
+            }
+
+            // Overwrite sensitive data in memory
+            decrypted.fill(0);
+            "
+            }
+
     if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$shenc"); then exec_encryptbun "$shenc";
     else perform_encryptbun $@; 
     fi;
     
