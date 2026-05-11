@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.10
+    echo 8.7.11
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1253,17 +1253,12 @@ encryptbun() {
     }
 
     exec_encryptbun(){
-         bun -e "
+        bun -e "
             const password = \"$(promptSecret 'enter your password')\";
             const input = \"$shenc\".trim();
 
             const fs = await import('fs');
             const crypto = await import('crypto');
-
-            if (!input.endsWith('.sh.encb')) {
-                console.error('Error: input must be .sh.encb file');
-                process.exit(1);
-            }
 
             // Read encrypted file
             const data = fs.readFileSync(input);
@@ -1280,10 +1275,14 @@ encryptbun() {
 
             const script = decrypted.toString('utf8');
 
+            const shebang = script.split('\n')[0];
+            const runner = shebang.includes('bun') ? 'bun' : 'bash';
+            const args = shebang.includes('bun') ? ['-e', script] : ['-c', script];
+
             // Execute script directly from memory
             try {
                 const { spawn } = await import('child_process');
-                const proc = spawn('bash', ['-c', script], { stdio: 'inherit' });
+                const proc = spawn(runner, args, { stdio: 'inherit' });
                 await new Promise((resolve, reject) => {
                     proc.on('close', (code) => code === 0 ? resolve() : reject(new Error('Exit code: ' + code)));
                 });
@@ -1295,7 +1294,7 @@ encryptbun() {
             // Overwrite sensitive data in memory
             decrypted.fill(0);
             "
-            }
+    }
 
     if $(hasValueq "$help"); then printf "$helpmsg"; 
     elif $(hasValueq "$shenc"); then exec_encryptbun "$shenc";
