@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.12
+    echo 8.7.13
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1884,11 +1884,15 @@ setup() {
         
         echo 'if [ "$PWD" = "$HOME" ]; then cd Documents; fi;' >> $HOME/.bash_mine
         echo 'PATH=$HOME/.npm_global/bin:'$_U2_Storage_Dir_Bin':$PATH' >> $HOME/.bash_mine
-        echo 'function cdd { _back=$(pwd) && cd "$@" && ls -a; }' >> $HOME/.bash_mine
-        echo 'function cdb { _oldback="$_back" && _back=$(pwd) && cd "$_oldback" && ls -a; }' >> $HOME/.bash_mine
+        
+        if $(os -c mac); then echo 'function _cdls { ls -CFG; }'  >> $HOME/.bash_mine;
+        else echo 'function _cdls { ls -CF --color=auto; }' >> $HOME/.bash_mine; 
+        fi;
+        echo 'function cdd { _back=$(pwd) && cd "$@" && _cdls; }' >> $HOME/.bash_mine
+        echo 'function cdb { _oldback="$_back" && _back=$(pwd) && cd "$_oldback" && _cdls; }' >> $HOME/.bash_mine
         echo '_U_CD_DIR=()' >> $HOME/.bash_mine
-        echo 'function cdr { if ! [[ -z $1 ]]; then cd "$@" && ls -a; fi; _U_CD_DIR+=("$(pwd)"); }' >> $HOME/.bash_mine
-        echo 'function cdt { if [[ -z $1 ]]; then for i in "${!_U_CD_DIR[@]}"; do echo "$i: ${_U_CD_DIR[$i]}"; done; else cd "${_U_CD_DIR[$1]}" && ls -a; fi; }' >> $HOME/.bash_mine
+        echo 'function cdr { if ! [[ -z $1 ]]; then cd "$@" && _cdls; fi; _U_CD_DIR+=("$(pwd)"); }' >> $HOME/.bash_mine
+        echo 'function cdt { if [[ -z $1 ]]; then for i in "${!_U_CD_DIR[@]}"; do echo "$i: ${_U_CD_DIR[$i]}"; done; else cd "${_U_CD_DIR[$1]}" && _cdls; fi; }' >> $HOME/.bash_mine
 
         printf 'export no_proxy=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\nexport NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\n\n' >> $HOME/.bash_mine 
         printf 'if [[ ! -z "$u_proxy" ]] && curl --output /dev/null --silent --head "$u_proxy"; then\n export https_proxy=$u_proxy\n export http_proxy=$u_proxy\n export HTTPS_PROXY=$u_proxy\n export HTTP_PROXY=$u_proxy\nfi;\n'  >> $HOME/.bash_mine
