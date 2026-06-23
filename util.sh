@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.13
+    echo 8.7.16
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -516,6 +516,7 @@ os() {
         if [[ -z "$m" ]]; then
             if $(hasCmd yum); then m="yum";
             elif $(hasCmd brew); then m="brew";
+            elif $(hasCmd port); then m="port";
             elif $(hasCmd apt); then m="apt";
             elif $(hasCmd apk); then m="apk";
             elif $(hasCmd pacman); then m="pacman";
@@ -550,6 +551,8 @@ os() {
                 os_type="alpine"
             elif $(hasCmd brew); then
                 os_type="mac"
+            elif $(hasCmd port); then
+                os_type="mac"
             elif $(echo "$OSTYPE" | grep -qE 'msys|cygwin'); then
                 os_type="windows"
             elif $(hasCmd uname) && uname | grep -q Linux; then
@@ -563,7 +566,7 @@ os() {
 
         case "$target" in
             linux) $(hasCmd uname) && uname | grep -q Linux && cached_os="linux" ;;
-            mac | darwin | macos | apple | osx | brew) target="mac" ;;
+            mac | darwin | macos | apple | osx | brew | port) target="mac" ;;
             centos | yum) target="centos" ;;
             alpine | apk) target="alpine" ;;
             debian | deb | dpkg | ubuntu | apt) target="debian" ;;
@@ -1083,6 +1086,7 @@ upgrade() {
         _ED update packages list
         if [ "$m" = "yum" ]; then eval $(_EC "$prefix yum update -y");
         elif [ "$m" = "brew" ]; then eval $(_EC "brew update");
+        elif [ "$m" = "port" ]; then eval $(_EC "$prefix port upgrade outdated");
         elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get update -y");
         elif [ "$m" = "apk" ]; then eval $(_EC "$prefix apk update");
         elif [ "$m" = "pacman" ]; then eval $(_EC "$prefix pacman -Sy");
@@ -1093,6 +1097,7 @@ upgrade() {
     else
         if [ "$m" = "yum" ]; then eval $(_EC "$prefix yum upgrade -y $@");
         elif [ "$m" = "brew" ]; then eval $(_EC "brew install $@");
+        elif ["$m" = "port" ]; then eval $(_EC "$prefix port upgrade $@");
         elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get upgrade -y $@");
         elif [ "$m" = "apk" ]; then eval $(_EC "$prefix apk upgrade $@");
         elif [ "$m" = "pacman" ]; then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
@@ -1110,6 +1115,7 @@ install() {
 
     if [ "$m" = "yum" ]; then eval $(_EC "$prefix yum install -y $@");
     elif [ "$m" = "brew" ]; then eval $(_EC "HOMEBREW_NO_AUTO_UPDATE=1 brew install $@");
+    elif [ "$m" = "port" ]; then eval $(_EC "sudo port install $@");
     elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get install -y $@");
     elif [ "$m" = "apk" ]; then eval $(_EC "$prefix apk add $@");
     elif [ "$m" = "pacman" ]; then eval $(_EC "$prefix pacman -Syu --noconfirm $@");
@@ -1146,6 +1152,7 @@ rmpkg() {
 
     if [ "$m" = "yum" ]; then eval $(_EC "$prefix yum autoremove -y $@");
     elif [ "$m" = "brew" ]; then eval $(_EC "brew uninstall $@");
+    elif [ "$m" = "port" ]; then eval $(_EC "$prefix port uninstall $@");
     elif [ "$m" = "apt" ]; then eval $(_EC "$prefix DEBIAN_FRONTEND=noninteractive apt-get autoremove -y $@");
     elif [ "$m" = "apk" ]; then eval $(_EC "$prefix apk del $@");
     elif [ "$m" = "pacman" ]; then eval $(_EC "$prefix pacman -Rns --noconfirm $@");
@@ -2113,27 +2120,27 @@ scan() {
 # -i,--info (int)
 port() { 
     declare -A port_data; parseArg port_data $@;
-    local processPort=$(parseGet port_data p port process _);
+    local infoPort=$(parseGet port_data p port process _);
     local dockerPort=$(parseGet port_data d docker);
-    local infoPort=$(parseGet port_data i info);
+    # local infoPort=$(parseGet port_data i info);
     local killPort=$(parseGet port_data k kill);
     local help=$(parseGet port_data help);
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-p,--port,--process,_ \t (string) \t use port number or process name to grep port info\n'
     helpmsg+='\t-d,--docker \t\t (string) \t use port number or process name to grep docker port info\n'
-    helpmsg+='\t-i,--info \t\t (int) \t find info with target port number \n'
+    # helpmsg+='\t-i,--info \t\t (int) \t find info with target port number \n'
     helpmsg+='\t-k,--kill \t\t (int) \t find pid of target port, and kill it \n'
 
     process_port() {
         local grepTarget="$1"
         if ! $(hasValue $grepTarget); then
             if $(os linux); then netstat -plntu;
-            elif $(os mac); then netstat -Watnlv | grep LISTEN | awk '{"ps -o comm= -p " $9 | getline procname; print cred "proto: " $1 " | addr.port: "$4 " | pid: "$9 " | name: " procname;  }' | column -t -s "|";
+            elif $(os mac); then lsof -i -P -n | grep LISTEN | awk '{print "proto: " $5 " | addr.port: " $9 " | pid: " $2 " | name: " $1}' | column -t -s "|"
             elif $(os win); then netstat -bn; fi;
         else 
             if $(os linux); then netstat -plntu | grep $grepTarget; 
-            elif $(os mac); then netstat -Watnlv | grep LISTEN | awk '{"ps -o comm= -p " $9 | getline procname; print cred "proto: " $1 " | addr.port: "$4 " | pid: "$9 " | name: " procname;  }' | column -t -s "|" | grep $grepTarget;
+            elif $(os mac); then lsof -i -P -n | grep LISTEN | awk '{print "proto: " $5 " | addr.port: " $9 " | pid: " $2 " | name: " $1}' | column -t -s "|" | grep "$grepTarget";
             elif $(os win); then netstat -bn | grep $grepTarget; fi; 
         fi;
     }
@@ -2173,7 +2180,6 @@ port() {
     
 
     if $(hasValueq "$help"); then printf "$helpmsg";  
-    elif $(hasValueq "$processPort"); then process_port $processPort;
     elif $(hasValueq "$dockerPort"); then docker_port $dockerPort;
     elif $(hasValueq "$infoPort"); then info_port $infoPort;
     elif $(hasValueq "$killPort"); then kill_port $killPort;
