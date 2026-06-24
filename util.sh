@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.17
+    echo 8.7.18
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1893,9 +1893,7 @@ setup() {
         echo 'if [ "$PWD" = "$HOME" ]; then cd Documents; fi;' >> $HOME/.bash_mine
         echo 'PATH=$HOME/.npm_global/bin:'$_U2_Storage_Dir_Bin':$PATH' >> $HOME/.bash_mine
         
-        if $(os -c mac); then echo 'function _cdls { ls -CFG; }'  >> $HOME/.bash_mine;
-        else echo 'function _cdls { ls -CF --color=auto; }' >> $HOME/.bash_mine; 
-        fi;
+        echo 'function _cdls { ls -CFA --color=auto; }' >> $HOME/.bash_mine; 
         echo 'function cdd { _back=$(pwd) && cd "$@" && _cdls; }' >> $HOME/.bash_mine
         echo 'function cdb { _oldback="$_back" && _back=$(pwd) && cd "$_oldback" && _cdls; }' >> $HOME/.bash_mine
         echo '_U_CD_DIR=()' >> $HOME/.bash_mine
