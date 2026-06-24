@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.16
+    echo 8.7.17
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -526,7 +526,8 @@ os() {
             fi; 
             fetchCacheSet _u_os_pkgManager "$m"; 
         fi; 
-        if [[ -z "$m" ]]; then _EC 'NONE'; fi;
+        if [[ -z "$m" ]]; then _EC 'NONE'; 
+        else _EC "$m"; fi;
     }
 
     # (osTrait): bool
