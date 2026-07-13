@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.18
+    echo 8.7.19
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1901,7 +1901,7 @@ setup() {
         echo 'function cdt { if [[ -z $1 ]]; then for i in "${!_U_CD_DIR[@]}"; do echo "$i: ${_U_CD_DIR[$i]}"; done; else cd "${_U_CD_DIR[$1]}" && _cdls; fi; }' >> $HOME/.bash_mine
 
         printf 'export no_proxy=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\nexport NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16\n\n' >> $HOME/.bash_mine 
-        printf 'if [[ ! -z "$u_proxy" ]] && curl --output /dev/null --silent --head "$u_proxy"; then\n export https_proxy=$u_proxy\n export http_proxy=$u_proxy\n export HTTPS_PROXY=$u_proxy\n export HTTP_PROXY=$u_proxy\nfi;\n'  >> $HOME/.bash_mine
+        printf 'u_proxy=\nif [[ ! -z "$u_proxy" ]] && curl --output /dev/null --silent --head "$u_proxy"; then\n export https_proxy=$u_proxy\n export http_proxy=$u_proxy\n export HTTPS_PROXY=$u_proxy\n export HTTP_PROXY=$u_proxy\nfi;\n'  >> $HOME/.bash_mine
         echo "alias trash='u trash'" >> $HOME/.bash_mine
 
         echo '_U2_GPG_PW=' >> $HOME/.bash_env
