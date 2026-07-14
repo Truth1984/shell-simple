@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.8.2
+    echo 8.9.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1982,6 +1982,126 @@ tmux() {
     fi;
 }
 
+screen() {
+    declare -A screen_data; parseArg screen_data "$@";
+    local attach=$(parseGet screen_data a attach r return _);
+    local detach=$(parseGet screen_data d detach);
+    local ls=$(parseGet screen_data l ls);
+    local choose=$(parseGet screen_data c choose);
+    local kill=$(parseGet screen_data k kill);
+    local help=$(parseGet screen_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-a,--attach,_ \t (string) \t attach to a specific session\n'
+    helpmsg+='\t-r,--return,_ \t (string) \t return (attach) to a specific session\n'
+    helpmsg+='\t-d,--detach \t (flag) \t detach the current client\n'
+    helpmsg+='\t-l,--ls \t (flag) \t list all screen sessions\n'
+    helpmsg+='\t-c,--choose \t (flag) \t choose a session\n'
+    helpmsg+='\t-k,--kill \t (string) \t kill a session (default: current)\n'
+
+    unset -f screen;
+    SCREEN_BIN=$(which screen);
+
+    start_screen() {
+        $SCREEN_BIN 
+    }
+
+    attach_screen() {
+        local sessions=$($SCREEN_BIN -ls 2>/dev/null | awk '/(Detached|Attached)/ {print $1}')
+        
+        if ! $(hasValueq "$sessions"); then
+            start_screen
+            return
+        fi
+        
+        if $(hasValueq "$1"); then
+            $SCREEN_BIN -x "$1" 2>/dev/null || $SCREEN_BIN -r "$1"
+        else
+            $SCREEN_BIN -x 2>/dev/null || $SCREEN_BIN -r
+        fi
+    }
+
+    detach_screen() {
+        if $(hasValueq "$STY"); then
+            $SCREEN_BIN -X detach
+        else
+            $SCREEN_BIN -d
+        fi
+    }
+
+    ls_screen() {
+        $SCREEN_BIN -ls
+    }
+
+    choose_screen() {
+        if $(hasValueq "$STY"); then
+            echo "Already inside a screen session. Use 'Ctrl-A \"' to choose a window."
+        else
+            if $(hasValueq "$1"); then
+                attach_screen "$1";
+                return
+            fi;
+            sessions=$($SCREEN_BIN -ls 2>/dev/null | awk '/(Detached|Attached)/ {print $1}')
+            if $(hasValueq "$sessions"); then
+                selected=$(promptSelect "choose your target session:" "$sessions")
+                attach_screen "$selected"
+            else
+                start_screen
+            fi
+        fi
+    }
+
+    kill_screen() {
+        local target="$1"
+        if ! $(hasValueq $target); then
+            # Default to current session if inside screen
+            target="$STY"
+        fi
+        
+        if ! $(hasValueq $target); then
+            # Only look at Detached/Attached (Dead ones are handled below)
+            sessions=$($SCREEN_BIN -ls 2>/dev/null | awk '/(Detached|Attached)/ {print $1}')
+            if $(hasValueq "$sessions"); then
+                # COUNT LOGIC: If only 1 session, skip the menu and ask directly
+                local count=$(echo "$sessions" | wc -l | tr -d ' ')
+                if [ "$count" -eq 1 ]; then
+                    target="$sessions"
+                else
+                    target=$(promptSelect "choose session to kill:" $sessions)
+                fi
+            fi
+        fi
+
+        if ! $(hasValueq $target); then
+            dead_sessions=$($SCREEN_BIN -ls 2>/dev/null | awk '/Dead/ {print $1}')
+            if $(hasValueq "$dead_sessions"); then
+                screen -wipe
+                return
+            else
+                echo "No target session specified and no active sessions found."
+                return 1
+            fi
+        fi
+
+        # Your exact prompt string preserved
+        promptResult=$(prompt kill session $target? [Y/n]);
+        
+        # Your exact prompt logic preserved
+        if [ "$promptResult" -eq 1 ] || [ "$promptResult" -eq 0 ]; then 
+            $SCREEN_BIN -S "$target" -X quit
+        fi; 
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg";  
+    elif $(hasValueq "$attach"); then attach_screen "$attach"; 
+    elif $(hasValueq "$detach"); then detach_screen; 
+    elif $(hasValueq "$ls"); then ls_screen; 
+    elif $(hasValueq "$choose"); then choose_screen; 
+    elif $(hasValueq "$kill"); then kill_screen "$kill"; 
+    else start_screen; 
+    fi;
+}
+
 # call setup bash beforehand
 setup() {
     local profile="$(_PROFILE)"
@@ -1992,6 +2112,7 @@ setup() {
         touch $HOME/.bash_mine && touch $HOME/.bash_env
         echo 'source $HOME/.bash_mine' >> $profile
         echo 'source $HOME/.bash_env' >> $HOME/.bash_mine
+        printf '%s\n' "mousetrack off" "termcapinfo xterm* ti@:te@" "defscrollback 10000" > $HOME/.screenrc
         
         echo 'if [ "$PWD" = "$HOME" ]; then cd Documents; fi;' >> $HOME/.bash_mine
         echo 'PATH=$HOME/.npm_global/bin:'$_U2_Storage_Dir_Bin':$PATH' >> $HOME/.bash_mine
