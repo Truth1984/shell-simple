@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.8.0
+    echo 8.8.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1900,7 +1900,7 @@ tmux() {
     TMUX_BIN=$(which tmux);
 
     start_tmux() {
-        $TMUX_BIN setw -g mouse on \; new-session
+        $TMUX_BIN set -g mouse on \; set -g set-clipboard on \; bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-selection \; new-session
     }
 
     attach_tmux() {
