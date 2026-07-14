@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.8.1
+    echo 8.8.2
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1630,35 +1630,56 @@ download() {
 # (url, outputFileName?)
 download-git() {
     local url=$1 filename="${@:2}"
-    if ! $(hasValueq $url); then return $(_ERC "URL missing"); fi;
+    local start_index=${GITINDEX:-0}
+    if ! $(hasValueq "$url"); then return $(_ERC "URL missing"); fi;
     
+    # Your array of URLs
     URLS=("https://fastgit.cc/$url" "http://gh.ddlc.top/$url" "http://ghfast.top/$url" "https://ghproxy.monkeyray.net/$url" "https://cdn.akaere.online/$url" "http://down.npee.cn/?$url");
+    local len=${#URLS[@]}
+    
+    if (( len == 0 )); then return $(_ERC "URLS array is empty"); fi;
+    
+    if (( start_index < 0 || start_index >= len )); then
+        return $(_ERC "GITINDEX $start_index is out of bounds (valid: 0 to $((len - 1)))");
+    fi
 
-    for git_url in "${URLS[@]}"; do
-        if $(hasCmd curl); then
-            if $(hasValue $filename); then 
-                if curl $git_url -v -L --output $filename 2>/dev/null; then
+    local downloader=""
+    local wgetEx=""
+    if $(hasCmd curl); then
+        downloader="curl"
+    elif $(hasCmd wget); then
+        downloader="wget"
+        if ! $(os -c alpine); then wgetEx=" -d"; fi;
+    else
+        return $(_ERC "Neither curl nor wget found");
+    fi
+
+    for (( i=0; i<len; i++ )); do
+        # Calculate current index with wrap-around
+        local current_index=$(( (start_index + i) % len ))
+        local git_url="${URLS[$current_index]}"
+        
+  
+        if [[ "$downloader" == "curl" ]]; then
+            if $(hasValue "$filename"); then 
+                if curl "$git_url" -v -L --output "$filename" 2>/dev/null; then
                     return $(_RC 0 "Downloaded from $git_url");
                 fi
             else
-                if curl -v -L -O $git_url 2>/dev/null; then
+                if curl -v -L -O "$git_url" 2>/dev/null; then
                     return $(_RC 0 "Downloaded from $git_url");
                 fi
             fi
-        elif $(hasCmd wget); then
-            local wgetEx=""
-            if ! $(os -c alpine); then wgetEx=" -d"; fi;
-            if $(hasValue $filename); then
-                if wget $wgetEx -O $filename $git_url 2>/dev/null; then
+        elif [[ "$downloader" == "wget" ]]; then
+            if $(hasValue "$filename"); then
+                if wget $wgetEx -O "$filename" "$git_url" 2>/dev/null; then
                     return $(_RC 0 "Downloaded from $git_url");
                 fi
             else
-                if wget $wgetEx $git_url 2>/dev/null; then
+                if wget $wgetEx "$git_url" 2>/dev/null; then
                     return $(_RC 0 "Downloaded from $git_url");
                 fi
             fi
-        else
-            return $(_ERC "Neither curl nor wget found");
         fi
     done
     
@@ -2115,7 +2136,7 @@ help(){
 
     local helpmsg="${FUNCNAME[0]}:\n"
     helpmsg+='\t-n,--name,-l,--list,_ \t (string) \t grep functions with name\n'
-    helpmsg+='\t-u,--update,--upgrade \t () \t\t upgrade current script\n'
+    helpmsg+='\t-u,--update,--upgrade \t (number) \t upgrade current script with index {0}\n'
     helpmsg+='\t-v,--version \t\t (string) \t display current version\n'
     helpmsg+='\t-e,--edit \t\t () \t\t edit the file\n'
     helpmsg+='\t-h,--help \t\t (string) \t display help message\n'
@@ -2123,6 +2144,8 @@ help(){
     update_help() {
         _ED Current Version: $(version)
         local tmpfile=$(mktemp);
+
+        if $(hasValueq $@); then GITINDEX=$(trimArgs $@); fi;
 
         download-git "https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" $tmpfile
 
