@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.7.19
+    echo 8.8.0
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -1877,6 +1877,88 @@ subdir() {
     elif $(hasValueq "$action"); then perform_subdir $action; 
     fi;
     
+}
+
+tmux() {
+    declare -A tmux_data; parseArg tmux_data $@;
+    local attach=$(parseGet tmux_data a attach r return _);
+    local detach=$(parseGet tmux_data d detach);
+    local ls=$(parseGet tmux_data l ls);
+    local choose=$(parseGet tmux_data c choose);
+    local kill=$(parseGet tmux_data k kill);
+    local help=$(parseGet tmux_data help);
+
+    local helpmsg="${FUNCNAME[0]}:\n"
+    helpmsg+='\t-a,--attach,_ \t (string) \t attach to a specific session\n'
+    helpmsg+='\t-r,--return,_ \t (string) \t return (attach) to a specific session\n'
+    helpmsg+='\t-d,--detach \t (flag) \t detach the current client\n'
+    helpmsg+='\t-l,--ls \t (flag) \t list all tmux sessions\n'
+    helpmsg+='\t-c,--choose \t (flag) \t choose a session (like Ctrl-b s)\n'
+    helpmsg+='\t-k,--kill \t (string) \t kill a session (default: current)\n'
+
+    unset -f tmux;
+    TMUX_BIN=$(which tmux);
+
+    start_tmux() {
+        $TMUX_BIN setw -g mouse on \; new-session
+    }
+
+    attach_tmux() {
+        if $(hasValueq $1); then
+            $TMUX_BIN attach-session -t "$1"
+        else
+            $TMUX_BIN attach-session
+        fi
+    }
+
+    detach_tmux() {
+        $TMUX_BIN detach-client
+    }
+
+    ls_tmux() {
+        $TMUX_BIN list-sessions
+    }
+
+    choose_tmux() {
+        if $(hasValueq "$TMUX"); then
+            $TMUX_BIN choose-tree -s
+        else
+            if $(hasValueq $1); then
+                attach_tmux $1;
+                return
+            fi;
+            sessions=$($TMUX_BIN list-sessions -F "#{session_name}" 2>/dev/null)
+            if $(hasValueq "$sessions"); then
+                selected=$(promptSelect "choose your target session:" $sessions)
+                attach_tmux "$selected"
+            else
+                start_tmux
+            fi
+        fi
+    }
+
+    kill_tmux() {
+        local target="$1"
+        if ! $(hasValueq $target); then
+            # Default to current session if no name is provided
+            target=$($TMUX_BIN display-message -p '#S')
+        fi
+        if $(hasValueq $target); then 
+            promptResult=$(prompt kill session $target? [Y/n]);
+            if [ "$promptResult" -eq 1 ] || [ "$promptResult" -eq 0 ]; then 
+                $TMUX_BIN kill-session -t "$target"; 
+            fi; 
+        fi;
+    }
+
+    if $(hasValueq "$help"); then printf "$helpmsg"; 
+    elif $(hasValueq "$attach"); then attach_tmux "$attach"; 
+    elif $(hasValueq "$detach"); then detach_tmux; 
+    elif $(hasValueq "$ls"); then ls_tmux; 
+    elif $(hasValueq "$choose"); then choose_tmux "$choose"; 
+    elif $(hasValueq "$kill"); then kill_tmux "$kill"; 
+    else start_tmux; 
+    fi;
 }
 
 # call setup bash beforehand
