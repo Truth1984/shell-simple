@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-    echo 8.9.0
+    echo 8.9.1
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2003,6 +2003,9 @@ screen() {
     SCREEN_BIN=$(which screen);
 
     start_screen() {
+        if $(hasValueq "$STY"); then
+            return $(_ERC "Already inside a screen session. Call screen from the host")
+        fi
         $SCREEN_BIN 
     }
 
@@ -2014,7 +2017,7 @@ screen() {
             return
         fi
         
-        if $(hasValueq "$1"); then
+        if $(hasValueq $1); then
             $SCREEN_BIN -x "$1" 2>/dev/null || $SCREEN_BIN -r "$1"
         else
             $SCREEN_BIN -x 2>/dev/null || $SCREEN_BIN -r
@@ -2035,7 +2038,7 @@ screen() {
 
     choose_screen() {
         if $(hasValueq "$STY"); then
-            echo "Already inside a screen session. Use 'Ctrl-A \"' to choose a window."
+            return $(_ERC "Already inside a screen session. Use 'Ctrl-A \"' to choose a window.");
         else
             if $(hasValueq "$1"); then
                 attach_screen "$1";
