@@ -1,66 +1,66 @@
 #!/usr/bin/env bash
 
-echo SCRIPT_VERSION=1.5.4
+echo SCRIPT_VERSION=1.6.0
 
-if [[ -z "$(command -v u2)" ]]; then
+if [[ -z "$(command -v u)" ]]; then
     URLS=("https://fastgit.cc/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" "http://gh.ddlc.top/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" "http://ghfast.top/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" "https://ghproxy.monkeyray.net/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" "https://cdn.akaere.online/https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh" "http://down.npee.cn/?https://raw.githubusercontent.com/Truth1984/shell-simple/refs/heads/main/util.sh"); for url in "${URLS[@]}"; do if command -v curl >/dev/null 2>&1 && curl -sSL "$url" -o util.sh 2>/dev/null; then echo "Downloaded from $url" && break; elif command -v wget >/dev/null 2>&1 && wget -O util.sh "$url" 2>/dev/null; then echo "Downloaded from $url" && break; fi; done; [ -f util.sh ] && chmod +x util.sh && ./util.sh setupEX || (echo "Download failed" && exit 1)
     source ~/.bash_mine
 fi;
 
-if [[ -z "$(command -v u2)" ]]; then echo u2 not setup correctly && exit 1; fi;
+if [[ -z "$(command -v u)" ]]; then echo u not setup correctly && exit 1; fi;
 
 source $HOME/.bash_env
 
-if ! $(u2 hasValue $_U2_INIT_DEP); then
+if ! $(u hasValue $_u_INIT_DEP); then
 
-    if ! $(u2 string -c "$@" "container"); then u2 upgrade; fi;
+    if ! $(u string -c "$@" "container"); then u upgrade; fi;
 
-    if $(u2 string -c "$@" "container"); then
-        u2 installC nano make psmisc net-tools coreutils screen
+    if $(u string -c "$@" "container"); then
+        u installC nano make psmisc net-tools coreutils screen
 
-        if $(u2 os -c apk); then u2 installC the_silver_searcher; fi;
-        if $(u2 os -c apt); then u2 installC software-properties-common silversearcher-ag; fi;
-        if $(u2 os -c yum); then u2 installC redhat-lsb-core epel-release the_silver_searcher; fi;
+        if $(u os -c apk); then u installC the_silver_searcher; fi;
+        if $(u os -c apt); then u installC software-properties-common silversearcher-ag; fi;
+        if $(u os -c yum); then u installC redhat-lsb-core epel-release the_silver_searcher; fi;
 
         NO_SWAP=true; 
 
-    elif ! $(u2 os -c win); then
+    elif ! $(u os -c win); then
 
-        u2 install wget curl nano git make psmisc net-tools nethogs coreutils sudo screen tcpdump iftop gnupg tmux
+        u install wget curl nano git make psmisc net-tools nethogs coreutils sudo screen tcpdump iftop gnupg tmux shfmt
 
-        if $(u2 os -c yum); then
-            u2 install redhat-lsb-core epel-release the_silver_searcher udisks2 openssh-server openssh-clients p7zip
+        if $(u os -c yum); then
+            u install redhat-lsb-core epel-release the_silver_searcher udisks2 openssh-server openssh-clients p7zip
         fi;
 
-        if $(u2 os -c apk); then
-            u2 install the_silver_searcher openrc openssh p7zip util-linux
+        if $(u os -c apk); then
+            u install the_silver_searcher openrc openssh p7zip util-linux
         fi;
         
-        if $(u2 os -c apt); then
-            u2 install software-properties-common silversearcher-ag udisks2 openssh-server openssh-client p7zip-full
+        if $(u os -c apt); then
+            u install software-properties-common silversearcher-ag udisks2 openssh-server openssh-client p7zip-full
         fi;
 
-        if $(u2 os -c brew); then 
+        if $(u os -c brew); then 
             if [ ! -d /usr/local/sbin ]; then 
                 sudo mkdir /usr/local/sbin && sudo chmod 777 /usr/local/sbin
                 echo 'export PATH=/usr/local/sbin:$PATH' >> $HOME/.bashrc
             fi;
-            u2 install the_silver_searcher pstree openssh p7zip
+            u install the_silver_searcher pstree openssh p7zip
         fi;
 
     fi;
 
-    if $(u2 hasFile /etc/resolv.conf) && ! $(u2 hasContent /etc/resolv.conf 1.0.0.1); then
+    if $(u hasFile /etc/resolv.conf) && ! $(u hasContent /etc/resolv.conf 1.0.0.1); then
         sudo sh -c "printf 'nameserver\t1.0.0.1\n' >> /etc/resolv.conf"
         sudo sh -c "printf 'nameserver\t8.8.8.8\n' >> /etc/resolv.conf"
         sudo sh -c "printf 'nameserver\t8.8.4.4\n' >> /etc/resolv.conf"
     fi;
 
-    if $(u2 hasFile /etc/systemd/resolved.conf) && ! $(u2 hasContent /etc/systemd/resolved.conf 'DNS=1.0.0.1'); then
+    if $(u hasFile /etc/systemd/resolved.conf) && ! $(u hasContent /etc/systemd/resolved.conf 'DNS=1.0.0.1'); then
         sudo sh -c "printf 'DNS=1.0.0.1 8.8.8.8 8.8.4.4\n' >> /etc/systemd/resolved.conf" 
     fi;
 
-    echo "_U2_INIT_DEP=1" >> $HOME/.bash_env
+    echo "_u_INIT_DEP=1" >> $HOME/.bash_env
 fi;
 
 if ! $(u hasValueq $NO_SWAP) && $(u os linux); then
@@ -81,42 +81,42 @@ fi;
 # ./setup docker
 
 ALL=false;
-if $(u2 string -c "$@" "ALL"); then ALL=true; fi;
+if $(u string -c "$@" "ALL"); then ALL=true; fi;
 
-if $(u2 string -c "$@" "docker") || $ALL; then 
-    if ! $(u2 hasCmd docker); then 
+if $(u string -c "$@" "docker") || $ALL; then 
+    if ! $(u hasCmd docker); then 
         u get -r https://raw.gitmirror.com/docker/docker-install/master/install.sh --mirror Aliyun
         sudo usermod -aG docker $(whoami)
        
-        if $(u2 hasCmd systemctl); then
+        if $(u hasCmd systemctl); then
             sudo systemctl start docker.service
             sudo systemctl enable docker.service
         fi; 
     fi; 
 fi;
 
-if $(u2 string -c "$@" "node") || $ALL; then 
-    if ! $(u2 hasCmd node); then 
-        u2 install nodejs npm
+if $(u string -c "$@" "node") || $ALL; then 
+    if ! $(u hasCmd node); then 
+        u install nodejs npm
     fi;
     npm config set registry http://registry.npmmirror.com
     # original:
     # npm config set registry https://registry.npmjs.org
 fi;
 
-if $(u2 string -c "$@" "bun") || $ALL; then 
-    if ! $(u2 hasCmd bun); then 
-        u2 install unzip
+if $(u string -c "$@" "bun") || $ALL; then 
+    if ! $(u hasCmd bun); then 
+        u install unzip
         u np npm i -g bun --loglevel verbose
-        if ! $(u2 hasContent $HOME/.bash_env BUN_INSTALL); then
+        if ! $(u hasContent $HOME/.bash_env BUN_INSTALL); then
             echo 'export BUN_INSTALL="$HOME/.bun"' >> $HOME/.bash_env 
             echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> $HOME/.bash_env 
         fi; 
     fi; 
 fi;
 
-if $(u2 string -c "$@" "pm2") || $ALL; then 
-    if ! $(u2 hasCmd pm2); then 
+if $(u string -c "$@" "pm2") || $ALL; then 
+    if ! $(u hasCmd pm2); then 
         bun i -g pm2
         u np pm2 install pm2-logrotate
         pm2 set pm2-logrotate:rotateInterval "0 0 1 * *"
