@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-  echo 8.9.2
+  echo 8.9.3
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2211,16 +2211,14 @@ screen() {
   local attach=$(parseGet screen_data a attach r return _)
   local detach=$(parseGet screen_data d detach)
   local ls=$(parseGet screen_data l ls)
-  local choose=$(parseGet screen_data c choose)
   local kill=$(parseGet screen_data k kill)
   local help=$(parseGet screen_data help)
 
   local helpmsg="${FUNCNAME[0]}:\n"
-  helpmsg+='\t-a,--attach,_ \t (string) \t attach to a specific session\n'
+  helpmsg+='\t-a,--attach,_ \t (string) \t attach to a specific session (or choose if multiple)\n'
   helpmsg+='\t-r,--return,_ \t (string) \t return (attach) to a specific session\n'
   helpmsg+='\t-d,--detach \t (flag) \t detach the current client\n'
   helpmsg+='\t-l,--ls \t (flag) \t list all screen sessions\n'
-  helpmsg+='\t-c,--choose \t (flag) \t choose a session\n'
   helpmsg+='\t-k,--kill \t (string) \t kill a session (default: current)\n'
 
   unset -f screen
@@ -2234,17 +2232,37 @@ screen() {
   }
 
   attach_screen() {
-    local sessions=$($SCREEN_BIN -ls 2>/dev/null | awk '/(Detached|Attached)/ {print $1}')
+    local target="${1:-}"
+    target="${target%%.*}"   # strip .pts-0.master etc.
+
+    if $(hasValueq "$target"); then
+      $SCREEN_BIN -r "$target"
+      return
+    fi
+
+    local sessions
+    sessions=$(
+      $SCREEN_BIN -ls 2>/dev/null |
+        awk '/(Detached|Attached)/ { split($1, a, "."); print a[1] }'
+    )
 
     if ! $(hasValueq "$sessions"); then
       start_screen
       return
     fi
 
-    if $(hasValueq $1); then
-      $SCREEN_BIN -x "$1" 2>/dev/null || $SCREEN_BIN -r "$1"
+    local count
+    count=$(printf '%s\n' "$sessions" | wc -l | tr -d ' ')
+
+    if [ "$count" -eq 1 ]; then
+      target="$sessions"
     else
-      $SCREEN_BIN -x 2>/dev/null || $SCREEN_BIN -r
+      target=$(promptSelect "choose your target session:" $sessions)
+      target="${target%%.*}"
+    fi
+
+    if $(hasValueq "$target"); then
+      $SCREEN_BIN -r "$target"
     fi
   }
 
@@ -2258,24 +2276,6 @@ screen() {
 
   ls_screen() {
     $SCREEN_BIN -ls
-  }
-
-  choose_screen() {
-    if $(hasValueq "$STY"); then
-      return $(_ERC "Already inside a screen session. Use 'Ctrl-A \"' to choose a window.")
-    else
-      if $(hasValueq "$1"); then
-        attach_screen "$1"
-        return
-      fi
-      sessions=$($SCREEN_BIN -ls 2>/dev/null | awk '/(Detached|Attached)/ {print $1}')
-      if $(hasValueq "$sessions"); then
-        selected=$(promptSelect "choose your target session:" "$sessions")
-        attach_screen "$selected"
-      else
-        start_screen
-      fi
-    fi
   }
 
   kill_screen() {
@@ -2310,10 +2310,8 @@ screen() {
       fi
     fi
 
-    # Your exact prompt string preserved
     promptResult=$(prompt kill session $target? [Y/n])
 
-    # Your exact prompt logic preserved
     if [ "$promptResult" -eq 1 ] || [ "$promptResult" -eq 0 ]; then
       $SCREEN_BIN -S "$target" -X quit
     fi
@@ -2327,8 +2325,6 @@ screen() {
     detach_screen
   elif $(hasValueq "$ls"); then
     ls_screen
-  elif $(hasValueq "$choose"); then
-    choose_screen
   elif $(hasValueq "$kill"); then
     kill_screen "$kill"
   else
