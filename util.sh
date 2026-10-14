@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-  echo 8.9.3
+  echo 8.9.4
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -62,71 +62,46 @@ _PROFILE() {
 # (number): number
 # return callback, set verbose value to enable
 _RC() {
-  local code="${1:-0}"
-  shift || true
-
-  if [[ -n "$verbose" ]]; then
-    printf 'RC, %s, %s, %s, <%s>, (%s)\n' \
-      "$code" \
-      "$(_U2_BASENAME)" \
-      "$(_UTILDATE)" \
-      "${FUNCNAME[1]:-}" \
-      "$*" >&2
-  fi
-
-  return "$code"
+    if [ -n "$verbose" ]; then
+        echo RC, $1, $(basename "$0"), $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\) >&2
+    fi;
+    return $1
 }
 
 # (string): number
 # error callback, set verbose value to enable
 _ERC() {
-  if [[ -n "$verbose" ]]; then
-    printf 'ERC, 1, %s, %s, <%s>, (%s)\n' \
-      "$(_U2_BASENAME)" \
-      "$(_UTILDATE)" \
-      "${FUNCNAME[1]:-}" \
-      "$*" >&2
-  fi
-
-  return 1
+    if [ -n "$verbose" ]; then
+        echo ERC, 1, $(basename "$0"), $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), "<x "$1" x>" >&2
+    fi;
+    return 1
 }
 
 # (string): string
 # echo callback
 _EC() {
-  if [[ -n "$verbose" ]]; then
-    printf 'EC, 0, %s, %s, <%s>, (%s)\n' \
-      "$(_U2_BASENAME)" \
-      "$(_UTILDATE)" \
-      "${FUNCNAME[1]:-}" \
-      "$*" >&2
-  fi
-
-  printf '%s\n' "$*"
+    if [ -n "$verbose" ]; then
+        echo EC, 0, $(basename "$0"), $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \("${@:2:$#}"\), \"\["$1"\]\" >&2
+    fi;
+    echo "$@"
 }
 
 # (string): string
 # echo debug
 _ED() {
-  if [[ -n "$verbose" ]]; then
-    printf 'ED, 0, %s, %s, <%s>, (%s)\n' \
-      "$(_U2_BASENAME)" \
-      "$(_UTILDATE)" \
-      "${FUNCNAME[1]:-}" \
-      "$*" >&2
-  fi
+    if [ -n "$verbose" ]; then
+        echo ED, 0, $(basename "$0"), $(_UTILDATE), \<${FUNCNAME[ 1 ]}\>, \""$@"\" >&2
+    fi;
 }
 
 # echo array
 _EA() {
-  _ED "printing array {$1}"
-  local -n print_data="$1"
-  local i
-
-  for i in "${!print_data[@]}"; do
-    printf '[%s]: %s\n' "$i" "${print_data[$i]}"
-  done
+    _ED printing array {$1}
+    local -n print_data=$1;
+    for i in "${!print_data[@]}"; do printf '[%s]: %s\n' "$i" "${print_data[$i]}"; done; 
 }
+
+
 # echo to file descriptor 2
 _E2() {
   $@ >&2
