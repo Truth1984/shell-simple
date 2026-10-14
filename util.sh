@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-  echo 8.9.4
+  echo 8.9.5
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2295,7 +2295,7 @@ screen() {
   if $(hasValueq "$help"); then
     printf "$helpmsg"
   elif $(hasValueq "$attach"); then
-    attach_screen "$attach"
+    attach_screen $attach
   elif $(hasValueq "$detach"); then
     detach_screen
   elif $(hasValueq "$ls"); then
