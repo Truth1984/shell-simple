@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-  echo 8.9.5
+  echo 8.9.7
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2573,14 +2573,14 @@ port() {
   parseArg port_data $@
   local infoPort=$(parseGet port_data p port process _)
   local dockerPort=$(parseGet port_data d docker)
-  # local infoPort=$(parseGet port_data i info);
+  local infoPort=$(parseGet port_data i info);
   local killPort=$(parseGet port_data k kill)
   local help=$(parseGet port_data help)
 
   local helpmsg="${FUNCNAME[0]}:\n"
   helpmsg+='\t-p,--port,--process,_ \t (string) \t use port number or process name to grep port info\n'
   helpmsg+='\t-d,--docker \t\t (string) \t use port number or process name to grep docker port info\n'
-  # helpmsg+='\t-i,--info \t\t (int) \t find info with target port number \n'
+  helpmsg+='\t-i,--info \t\t (int) \t find info with target port number \n'
   helpmsg+='\t-k,--kill \t\t (int) \t find pid of target port, and kill it \n'
 
   process_port() {
@@ -2602,9 +2602,11 @@ port() {
 
   docker_port() {
     local grepTarget="$1"
+    unset -f docker
+    DOCKER=$(which docker)
     if ! $(hasValue $grepTarget); then
-      docker ps --format "{{.Ports}}\t:\t{{.Image}}"
-    else docker ps | grep $grepTarget; fi
+      $DOCKER ps --format "{{.Ports}}\t:\t{{.Image}}"
+    else $DOCKER ps | grep $grepTarget; fi
   }
 
   info_port() {
@@ -3459,7 +3461,7 @@ docker() {
     if [ $? -ne 0 ]; then rm -rf ~/.application/$dirName && return $(_ERC "download failed"); fi
 
     _ED importing $name to docker
-    tar -cC ~/.application/$dirName . | docker load && rm -rf ~/.application/$dirName
+    tar -cC ~/.application/$dirName . | $DOCKER load && rm -rf ~/.application/$dirName
 
     _ED importing complete
   }
@@ -3759,11 +3761,33 @@ syscheck() {
   helpmsg+='\t-c,--check,_ \t () \t\t check current system status, threshold=90\n'
   helpmsg+='\t-l,--large \t (string, int) \t large file finder, define [ path=".", length=20 ]\n'
 
+  unset -f docker
+  DOCKER=$(which docker)
+
   large_syscheck() {
     local largeDir=$1 largeLength=$2
     if ! $(hasValueq $largeDir); then largeDir="."; fi
     if ! $(hasValueq $largeLength); then largeLength=20; fi
-    du -ahx $largeDir | sort -rh | head -n $largeLength
+    du -ahx "$largeDir" 2>/dev/null | sort -rh | head -n "$largeLength"
+  }
+
+  # NEW: Dedicated docker resource checker
+  _check_docker_resources() {
+    local cpu_thresh=30 mem_thresh=20
+    # --no-stream prevents blocking; format gives clean parseable output
+    while IFS='|' read -r name cpu mem; do
+      # Strip % signs and whitespace
+      cpu_val="${cpu//%/}"
+      mem_val="${mem//%/}"
+      
+      # Use awk for float-safe comparison
+      if awk "BEGIN {exit !($cpu_val > $cpu_thresh)}"; then
+        _ERC "Warning: Docker container '$name' CPU usage is high: ${cpu} (threshold: >${cpu_thresh}%)"
+      fi
+      if awk "BEGIN {exit !($mem_val > $mem_thresh)}"; then
+        _ERC "Warning: Docker container '$name' MEM usage is high: ${mem} (threshold: >${mem_thresh}%)"
+      fi
+    done < <($DOCKER stats --no-stream --format "{{.Name}}|{{.CPUPerc}}|{{.MemPerc}}" 2>/dev/null)
   }
 
   check_syscheck() {
@@ -3771,18 +3795,16 @@ syscheck() {
     if $(os mac); then
 
       _ED checking volume +
-
       while IFS= read -r line; do
         volumePercent=$(echo "$line" | awk '{print $5}' | sed 's/%//')
         volumeName=$(echo "$line" | awk '{print $1}')
         if [ "$volumePercent" -ge "$check" ]; then
           _ERC "Critical alert: $volumeName is at $volumePercent% usage."
-          large_syscheck $volumeName
+          large_syscheck "$volumeName"
         fi
       done < <(df -h | grep '^/dev/disk' | grep -v '/System')
 
       _ED checking memory +
-
       memLine=$(top -l 1 | grep "PhysMem:")
       usedMem=$(echo "$memLine" | awk '{print $2}' | sed 's/[^0-9]//g')
       unusedMem=$(echo "$memLine" | awk '{print $(NF-1)}' | sed 's/[^0-9]//g')
@@ -3796,7 +3818,6 @@ syscheck() {
       fi
 
       _ED checking CPU +
-
       cores=$(sysctl -n hw.ncpu)
       loadAvg=$(uptime | awk -F'load averages:' '{print $2}' | awk '{print $2}')
       cpuUsage=$(echo "scale=0; ($loadAvg / $cores) * 100 / 1" | bc)
@@ -3808,18 +3829,16 @@ syscheck() {
     elif $(os linux); then
 
       _ED checking volume +
-
       while IFS= read -r line; do
         volumePercent=$(echo "$line" | awk '{print $5}' | sed 's/%//')
         volumeName=$(echo "$line" | awk '{print $1}')
         if [ "$volumePercent" -ge "$check" ]; then
           _ERC "Critical alert: $volumeName is at $volumePercent% usage."
-          large_syscheck $volumeName
+          large_syscheck "$volumeName"
         fi
       done < <(df -h | grep '^/dev/' | grep -v '/boot')
 
       _ED checking memory +
-
       memInfo=$(free | awk '/Mem:/ {print $3, $2}')
       usedMem=$(echo "$memInfo" | awk '{print $1}')
       totalMem=$(echo "$memInfo" | awk '{print $2}')
@@ -3830,7 +3849,6 @@ syscheck() {
       fi
 
       _ED checking CPU +
-
       cores=$(nproc)
       loadAvg=$(uptime | awk -F'load average:' '{print $2}' | cut -d',' -f2 | tr -d ' ')
       cpuUsage=$(echo "scale=0; ($loadAvg / $cores) * 100 / 1" | bc)
@@ -3840,14 +3858,19 @@ syscheck() {
       fi
 
       _ED checking docker +
-
-      if $(hasCmd docker) && $(docker | grep -q restart); then
-        _ERC "Critical alert: docker container keep restarting"
-        docker -p restart
+      if $(hasValue "$DOCKER") && $DOCKER ps --format '{{.Names}}' >/dev/null 2>&1; then
+        # Check for restarting containers (original intent, now safely implemented)
+        restarting=$($DOCKER ps --filter "status=restarting" --format '{{.Names}}' 2>/dev/null)
+        if $(hasValueq "$restarting"); then
+          _ERC "Critical alert: Docker container(s) keep restarting: $restarting"
+        fi
+        # NEW: Check CPU >30% and MEM >20%
+        _check_docker_resources
+      else
+        _ED "Docker not available or daemon not running, skipping docker checks"
       fi
 
     fi
-
   }
 
   if $(hasValueq "$help"); then
