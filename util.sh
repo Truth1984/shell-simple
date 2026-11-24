@@ -5,7 +5,7 @@
 
 # (): string
 version() {
-  echo 8.9.7
+  echo 8.9.8
 }
 
 _U2_Storage_Dir="$HOME/.application"
@@ -2571,16 +2571,14 @@ scan() {
 port() {
   declare -A port_data
   parseArg port_data $@
-  local infoPort=$(parseGet port_data p port process _)
+  local infoPort=$(parseGet port_data p port i info process _)
   local dockerPort=$(parseGet port_data d docker)
-  local infoPort=$(parseGet port_data i info);
   local killPort=$(parseGet port_data k kill)
   local help=$(parseGet port_data help)
 
   local helpmsg="${FUNCNAME[0]}:\n"
   helpmsg+='\t-p,--port,--process,_ \t (string) \t use port number or process name to grep port info\n'
   helpmsg+='\t-d,--docker \t\t (string) \t use port number or process name to grep docker port info\n'
-  helpmsg+='\t-i,--info \t\t (int) \t find info with target port number \n'
   helpmsg+='\t-k,--kill \t\t (int) \t find pid of target port, and kill it \n'
 
   process_port() {
